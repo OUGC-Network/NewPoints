@@ -58,8 +58,9 @@ $l['newpoints_not_enough_points'] = 'You don\'t have enough points. Required: {1
 $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 $l['newpoints_amount_paid'] = 'Amount Paid';
 $l['newpoints_source'] = 'Source';
-$l['newpoints_home_desc'] = 'NewPoints is a complex points system for MyBB software.<br />As you can see, there are various options on the menu on the left that you can use.<br /><br /><strong>How do you earn points?</strong><br /><table align="center"><tr><td align="left"><strong>Source</strong></td><td align="right"><strong>Amount Paid</strong></td></tr>{1}</table><br /><br />Contact your administrator if you have any questions.<br />This software was written by <a href="http://forums.mybb-plugins.com/user-1.html">Pirata Nervo</a> for <a href="http://mybboard.net">MyBB</a>.';
+$l['newpoints_home_desc'] = 'NewPoints is a complex points system for MyBB software.<br />As you can see, there are various options on the menu on the left that you can use.<br /><br /><strong>How do you earn points?</strong>{1}<br /><br />Contact your administrator if you have any questions.<br />This software was written by <a href="http://forums.mybb-plugins.com/user-1.html">Pirata Nervo</a> for <a href="http://mybboard.net">MyBB</a>.';
 $l['newpoints_action'] = 'Action';
 $l['newpoints_chars'] = 'Chars';
 
+$l['newpoints_search_user'] = 'Search for an user..';
 ?>

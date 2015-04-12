@@ -186,6 +186,41 @@ function newpoints_add_template($name, $contents, $sid = -1)
 		"sid" => intval($sid)
 	);
 
+	$query = $db->simple_select('templates', 'tid,title,template', "sid='{$sid}' AND title='{$templatearray['title']}'");
+
+	$templates = array();
+	$duplicates = array();
+
+	while($templ = $db->fetch_array($query))
+	{
+		if(isset($templates[$templ['title']]))
+		{
+			$duplicates[$templ['tid']] = $templ['tid'];
+			$templates[$templ['title']]['template'] = false;
+		}
+		else
+		{
+			$templates[$templ['title']] = $templ;
+		}
+	}
+
+	// Remove duplicates
+	if($duplicates)
+	{
+		$db->delete_query('templates', 'tid IN ('.implode(",", $duplicates).')');
+	}
+
+	// Update if necessary, insert otherwise
+	if(isset($templates[$name]))
+	{
+		if($templates[$name]['template'] !== $contents)
+		{
+			return $db->update_query('templates', $templatearray, "tid={$templates[$name]['tid']}");
+		}
+
+		return false;
+	}
+
 	return $db->insert_query("templates", $templatearray);
 }
 
@@ -238,7 +273,20 @@ function newpoints_add_setting($name, $plugin, $title, $description, $type, $val
 		"value"			=> $db->escape_string($value),
 		"disporder"		=> intval($disporder)
 	);
-	$db->insert_query("newpoints_settings", $setting);
+
+	// Update if setting already exists, insert otherwise.
+	$query = $db->simple_select('newpoints_settings', 'sid', "name='{$setting['name']}' AND plugin='{$setting['plugin']}'");
+
+	if($sid = $db->fetch_field($query, 'sid'))
+	{
+		unset($setting['value']);
+		$db->update_query("newpoints_settings", $setting, "sid='{$sid}'");
+	}
+
+	else
+	{
+		$db->insert_query("newpoints_settings", $setting);
+	}
 	
 	return true;
 	
