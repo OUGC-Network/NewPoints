@@ -277,31 +277,13 @@ function newpoints_plugin_activate()
 	<td class="trow2"><strong>{$currency}:</strong></td>
 	<td class="trow2"><a href="{$mybb->settings[\'bburl\']}/newpoints.php">{$points}</a>{$donate}</td>
 </tr>');
+	
+	newpoints_add_template('newpoints_donate_inline', ' <span class="smalltext">[<a href="javascript: void(0);" onclick="MyBB.popupWindow(\'{$mybb->settings[\'bburl\']}/newpoints.php?action=donate&amp;uid={$uid}&amp;pid={$post[\'pid\']}&amp;modal=1\', null, true); return false;">{$lang->newpoints_donate}</a>]</span>');
 
-	newpoints_add_template('newpoints_donate_inline', ' <span class="smalltext">[<a href="{$mybb->settings[\'bburl\']}/newpoints.php?action=donate&amp;uid={$uid}">{$lang->newpoints_donate}</a>]</span>');
-
-	newpoints_add_template('newpoints_donate', '
-<html>
-<head>
-<title>{$mybb->settings[\'bbname\']} - {$lang->newpoints} - {$lang->newpoints_donate}</title>
-{$headerinclude}
-</head>
-<body>
-{$header}
-<table width="100%" border="0" align="center">
-<tr>
-<td valign="top" width="180">
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead"><strong>{$lang->newpoints_menu}</strong></td>
-</tr>
-{$options}
-</table>
-</td>
-<td valign="top">
-<form action="newpoints.php" method="POST">
+	newpoints_add_template('newpoints_donate_form', '<form action="{$mybb->settings[\'bburl\']}/newpoints.php" method="POST">
 <input type="hidden" name="postcode" value="{$mybb->post_code}" />
 <input type="hidden" name="action" value="do_donate" />
+<input type="hidden" name="pid" value="{$pid}" />
 <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
 <tr>
 <td class="thead" colspan="2"><strong>{$lang->newpoints_donate}</strong></td>
@@ -322,7 +304,34 @@ function newpoints_plugin_activate()
 <td class="tfoot" width="100%" colspan="2" align="center"><input type="submit" name="submit" value="{$lang->newpoints_submit}" class="button" /></td>
 </tr>
 </table>
-</form>
+</form>');
+
+	newpoints_add_template('newpoints_modal', '<div class="modal">
+	<div style="overflow-y: auto; max-height: 400px;">
+		{$code}
+	</div>
+</div>');
+
+	newpoints_add_template('newpoints_donate', '
+<html>
+<head>
+<title>{$mybb->settings[\'bbname\']} - {$lang->newpoints} - {$lang->newpoints_donate}</title>
+{$headerinclude}
+</head>
+<body>
+{$header}
+<table width="100%" border="0" align="center">
+<tr>
+<td valign="top" width="180">
+<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
+<tr>
+<td class="thead"><strong>{$lang->newpoints_menu}</strong></td>
+</tr>
+{$options}
+</table>
+</td>
+<td valign="top">
+{$form}
 </td>
 </tr>
 </table>

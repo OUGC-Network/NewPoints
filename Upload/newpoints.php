@@ -242,7 +242,19 @@ elseif ($mybb->input['action'] == 'donate')
 		
 	if ($uid == $mybb->user['uid'] || $user['username'] == $mybb->user['username'])
 		error($lang->newpoints_cant_donate_self);
-	
+
+	$pid = $mybb->get_input('pid', 1);
+
+	$form = eval($templates->render('newpoints_donate_form'));
+
+	if($mybb->get_input('modal', 1))
+	{
+		$code = $form;
+		$modal = eval($templates->render('newpoints_modal', 1, 0));
+		echo $modal;
+		exit;
+	}
+
 	eval("\$page = \"".$templates->get('newpoints_donate')."\";");
 	
 	$plugins->run_hooks("newpoints_donate_end");
@@ -305,8 +317,15 @@ elseif ($mybb->input['action'] == 'do_donate')
 	newpoints_log('donation', $lang->sprintf($lang->newpoints_donate_log, $touser['username'], $touser['uid'], $amount));
 	
 	$plugins->run_hooks("newpoints_do_donate_end");
-	
-	redirect($mybb->settings['bburl']."/newpoints.php", $lang->sprintf($lang->newpoints_donated, newpoints_format_points($amount)));
+
+	$link = $mybb->settings['bburl']."/newpoints.php";
+
+	if($post = get_post($mybb->get_input('pid', 1)))
+	{
+		$link = get_post_link($post['pid'], $post['tid']).'#pid'.$post['pid'];
+	}
+
+	redirect($link, $lang->sprintf($lang->newpoints_donated, newpoints_format_points($amount)));
 }
 
 $plugins->run_hooks("newpoints_terminate");
