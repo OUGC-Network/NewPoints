@@ -107,36 +107,6 @@ function newpoints_plugin_install()
 			) ENGINE=MyISAM{$collation}");
 	}
 
-	// add settings
-	newpoints_add_setting('newpoints_main_enabled', 'main', 'Is NewPoints enabled?', 'Set to no if you want to disable NewPoints.', 'yesno', 1, 1);
-	newpoints_add_setting('newpoints_main_curname', 'main', 'Currency Name', 'Enter a name for the currency.', 'text', 'Points', 2);
-	newpoints_add_setting('newpoints_main_curprefix', 'main', 'Currency Prefix', 'Enter what you want to display before the number of points.', 'text', '', 3);
-	newpoints_add_setting('newpoints_main_cursuffix', 'main', 'Currency Suffix', 'Enter what you want to display after the number of points.', 'text', '€', 4);
-	newpoints_add_setting('newpoints_main_decimal', 'main', 'Decimal Places', 'Number of decimals to be used.', 'text', '2', 5);
-	newpoints_add_setting('newpoints_main_statsvisible', 'main', 'Statistics visible to users?', 'Set to no if you do not want users to view the statistics.', 'yesno', 1, 6);
-	newpoints_add_setting('newpoints_main_donationsenabled', 'main', 'Donations enabled?', 'Set to no if you want to disable donations.', 'yesno', 1, 7);
-	newpoints_add_setting('newpoints_main_donationspm', 'main', 'Send a PM on donate?', 'Do you want it to automatically send a new private message to a user receiving a donation?', 'yesno', 1, 8);
-	newpoints_add_setting('newpoints_main_stats_lastdonations', 'main', 'Last donations', 'Number of last donations to show.', 'text', 10, 9);
-	newpoints_add_setting('newpoints_main_stats_richestusers', 'main', 'Richest Users', 'Number of richest users to show.', 'text', 10, 9);
-
-	// income settings
-	newpoints_add_setting('newpoints_income_newpost', 'income', 'New Post', 'Amount of points received on new post.', 'text', '10', 1);
-	newpoints_add_setting('newpoints_income_newthread', 'income', 'New Thread', 'Amount of points received on new thread.', 'text', '20', 2);
-	newpoints_add_setting('newpoints_income_newpoll', 'income', 'New Poll', 'Amount of points received on new poll.', 'text', '15', 3);
-	newpoints_add_setting('newpoints_income_perchar', 'income', 'Per Character', 'Amount of points received per character (in new thread and new post).', 'text', '0.01', 4);
-	newpoints_add_setting('newpoints_income_minchar', 'income', 'Minimum Characters', 'Minimum characters required in order to receive the amount of points per character.', 'text', '15', 5);
-	newpoints_add_setting('newpoints_income_newreg', 'income', 'New Registration', 'Amount of points received by the user when registering.', 'text', '50', 6);
-	newpoints_add_setting('newpoints_income_pervote', 'income', 'Per Poll Vote', 'Amount of points received by the user who votes.', 'text', '5', 7);
-	newpoints_add_setting('newpoints_income_perreply', 'income', 'Per Reply', 'Amount of points received by the author of the thread, when someone replies to it.', 'text', '2', 8);
-	newpoints_add_setting('newpoints_income_pmsent', 'income', 'Per PM Sent', 'Amount of points received everytime a user sends a private message.', 'text', '1', 9);
-	newpoints_add_setting('newpoints_income_perrate', 'income', 'Per Rate', 'Amount of points received everytime a user rates a thread.', 'text', '0.05', 9);
-	newpoints_add_setting('newpoints_income_pageview', 'income', 'Per Page View', 'Amount of points received everytime a user views a page.', 'text', '0', 10);
-	newpoints_add_setting('newpoints_income_visit', 'income', 'Per Visit', 'Amount of points received everytime a user visits the forum. ("visits" = new MyBB session (expires after 15 minutes))', 'text', '0.1', 11);
-	newpoints_add_setting('newpoints_income_referral', 'income', 'Per Referral', 'Amount of points received everytime a user is referred. (the referred user is who receives the points)', 'text', '5', 12);
-
-	//rebuild_settings();
-
-	newpoints_rebuild_settings_cache();
 	newpoints_rebuild_rules_cache();
 
 	// add points field
@@ -212,7 +182,9 @@ function newpoints_plugin_uninstall()
 
 	// delete default income settings
 	newpoints_remove_settings("'newpoints_income_newpost','newpoints_income_newthread','newpoints_income_newpoll','newpoints_income_perchar','newpoints_income_minchar','newpoints_income_newreg','newpoints_income_pervote','newpoints_income_perreply','newpoints_income_pmsent','newpoints_income_perrate','newpoints_income_pageview','newpoints_income_visit','newpoints_income_referral'");
-
+	
+	newpoints_remove_templates("'newpoints_postbit','newpoints_profile','newpoints_donate','newpoints_donate_inline','newpoints_statistics','newpoints_statistics_richest_user','newpoints_statistics_donation','newpoints_no_results','newpoints_option','newpoints_home'");
+	
 	// drop tables
 	if($db->table_exists('newpoints_settings'))
 		$db->drop_table('newpoints_settings');
@@ -227,8 +199,19 @@ function newpoints_plugin_uninstall()
 		$db->drop_table('newpoints_grouprules');
 
 	//rebuild_settings();
-
-	$db->delete_query('tasks', 'file=\'backupnewpoints\'');
+	
+	$db->delete_query('tasks', 'file=\'backupnewpoints\''); 
+	
+	//Remove admin permissions
+	change_admin_permission("newpoints", false, -1);
+	change_admin_permission("newpoints", "plugins", -1);
+	change_admin_permission("newpoints", "settings", -1);
+	change_admin_permission("newpoints", "log", -1);
+	change_admin_permission("newpoints", "maintenance", -1);
+	change_admin_permission("newpoints", "forumrules", -1);
+	change_admin_permission("newpoints", "grouprules", -1);
+	change_admin_permission("newpoints", "stats", -1);
+	change_admin_permission("newpoints", "upgrades", -1);
 }
 
 function newpoints_plugin_do_template_edits()
@@ -252,6 +235,42 @@ function newpoints_plugin_undo_template_edits()
 function newpoints_plugin_activate()
 {
 	global $db, $lang;
+
+	$disporder = 0;
+
+	// add settings
+	newpoints_add_setting('newpoints_main_enabled', 'main', 'Is NewPoints enabled?', 'Set to no if you want to disable NewPoints.', 'yesno', 1, ++$disporder);
+	newpoints_add_setting('newpoints_main_curname', 'main', 'Currency Name', 'Enter a name for the currency.', 'text', 'Points', ++$disporder);
+	newpoints_add_setting('newpoints_main_curprefix', 'main', 'Currency Prefix', 'Enter what you want to display before the number of points.', 'text', '', ++$disporder);
+	newpoints_add_setting('newpoints_main_cursuffix', 'main', 'Currency Suffix', 'Enter what you want to display after the number of points.', 'text', '€', ++$disporder);
+	newpoints_add_setting('newpoints_main_decimal', 'main', 'Decimal Places', 'Number of decimals to be used.', 'text', '2', ++$disporder);
+	newpoints_add_setting('newpoints_main_statsvisible', 'main', 'Statistics visible to users?', 'Set to no if you do not want users to view the statistics.', 'yesno', 1, ++$disporder);
+	newpoints_add_setting('newpoints_main_donationsenabled', 'main', 'Donations enabled?', 'Set to no if you want to disable donations.', 'yesno', 1, ++$disporder);
+	newpoints_add_setting('newpoints_main_donationspm', 'main', 'Send a PM on donate?', 'Do you want it to automatically send a new private message to a user receiving a donation?', 'yesno', 1, ++$disporder);
+	newpoints_add_setting('newpoints_main_stats_lastdonations', 'main', 'Last donations', 'Number of last donations to show.', 'numeric', 10, ++$disporder);
+	newpoints_add_setting('newpoints_main_stats_richestusers', 'main', 'Richest Users', 'Number of richest users to show.', 'numeric', 10, ++$disporder);
+
+	$disporder = 0;
+
+	// income settings
+	newpoints_add_setting('newpoints_income_newpost', 'income', 'New Post', 'Amount of points received on new post.', 'text', '10', ++$disporder);
+	newpoints_add_setting('newpoints_income_newthread', 'income', 'New Thread', 'Amount of points received on new thread.', 'text', '20', ++$disporder);
+	newpoints_add_setting('newpoints_income_newpoll', 'income', 'New Poll', 'Amount of points received on new poll.', 'text', '15', ++$disporder);
+	newpoints_add_setting('newpoints_income_perchar', 'income', 'Per Character', 'Amount of points received per character (in new thread and new post).', 'text', '0.01', ++$disporder);
+	newpoints_add_setting('newpoints_income_minchar', 'income', 'Minimum Characters', 'Minimum characters required in order to receive the amount of points per character.', 'text', '15', ++$disporder);
+	newpoints_add_setting('newpoints_income_newreg', 'income', 'New Registration', 'Amount of points received by the user when registering.', 'text', '50', ++$disporder);
+	newpoints_add_setting('newpoints_income_pervote', 'income', 'Per Poll Vote', 'Amount of points received by the user who votes.', 'text', '5', ++$disporder);
+	newpoints_add_setting('newpoints_income_perreply', 'income', 'Per Reply', 'Amount of points received by the author of the thread, when someone replies to it.', 'text', '2', ++$disporder);
+	newpoints_add_setting('newpoints_income_pmsent', 'income', 'Per PM Sent', 'Amount of points received everytime a user sends a private message.', 'text', '1', ++$disporder);
+	newpoints_add_setting('newpoints_income_perrate', 'income', 'Per Rate', 'Amount of points received everytime a user rates a thread.', 'text', '0.05', ++$disporder);
+	newpoints_add_setting('newpoints_income_pageview', 'income', 'Per Page View', 'Amount of points received everytime a user views a page.', 'text', '0', ++$disporder);
+	newpoints_add_setting('newpoints_income_visit', 'income', 'Per Visit', 'Amount of points received everytime a user visits the forum. ("visits" = new MyBB session (expires after 15 minutes))', 'text', '0.1', ++$disporder);
+	newpoints_add_setting('newpoints_income_referral', 'income', 'Per Referral', 'Amount of points received everytime a user is referred. (the referred user is who receives the points)', 'text', '5', ++$disporder);
+	
+	// delete removed settings
+	//newpoints_remove_settings("''");
+	
+	newpoints_rebuild_settings_cache();
 
 	newpoints_add_template('newpoints_postbit', '<br /><span class="smalltext">{$currency}: <a href="{$mybb->settings[\'bburl\']}/newpoints.php">{$points}</a></span>{$donate}');
 	newpoints_add_template('newpoints_profile', '<tr>
@@ -289,7 +308,7 @@ function newpoints_plugin_activate()
 </tr>
 <tr>
 <td class="trow1" width="50%"><strong>{$lang->newpoints_user}:</strong><br /><span class="smalltext">{$lang->newpoints_user_desc}</span></td>
-<td class="trow1" width="50%"><input type="text" name="username" value="{$user[\'username\']}" class="textbox" id="username" /></td>
+<td class="trow1" width="50%"><input type="text" name="username" value="{$user[\'username\']}" class="textbox" id="username" size="20" /></td>
 </tr>
 <tr>
 <td class="trow2" width="50%"><strong>{$lang->newpoints_amount}:</strong><br /><span class="smalltext">{$lang->newpoints_amount_desc}</span></td>
@@ -309,7 +328,7 @@ function newpoints_plugin_activate()
 </table>
 {$footer}
 <link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css">
-<script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=185"></script>
+<script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1804"></script>
 <script type="text/javascript">
 <!--
 if(use_xmlhttprequest == "1")
@@ -440,11 +459,10 @@ if(use_xmlhttprequest == "1")
 
 	newpoints_add_template('newpoints_option', '
 <tr>
-<td class="{$bgcolor}" width="100%">{$option}</td>
+<td class="{$bgcolor}" width="100%">{$raquo}<a href="{$mybb->settings[\'bburl\']}/newpoints.php{$action}">{$lang_string}</a></td>
 </tr>');
-
-	newpoints_add_template('newpoints_home', '
-<html>
+	
+	newpoints_add_template('newpoints_home', '<html>
 <head>
 <title>{$mybb->settings[\'bbname\']} - {$lang->newpoints}</title>
 {$headerinclude}
@@ -476,6 +494,13 @@ if(use_xmlhttprequest == "1")
 {$footer}
 </body>
 </html>');
+	
+	newpoints_add_template('newpoints_home_income_row', '<tr><td valign="middle" align="left"><span style="border-bottom: 1px dashed; cursor: help;" title="{$setting[\'description\']}">{$setting[\'title\']}</span></td><td valign="middle" align="right">{$value}</td></tr>');
+	
+	newpoints_add_template('newpoints_home_income_table', '<br /><table align="center"><tr><td align="left"><strong>Source</strong></td><td align="right"><strong>Amount Paid</strong></td></tr>{$income_settings}</table>');
+
+	// remove removed templates here
+	//newpoints_remove_templates("''");
 
 	newpoints_do_template_edits();
 
@@ -494,21 +519,18 @@ if(use_xmlhttprequest == "1")
 function newpoints_plugin_deactivate()
 {
 	global $db, $mybb;
-
-	newpoints_remove_templates("'newpoints_postbit','newpoints_profile','newpoints_donate','newpoints_donate_inline','newpoints_statistics','newpoints_statistics_richest_user','newpoints_statistics_donation','newpoints_no_results','newpoints_option','newpoints_home'");
-
 	newpoints_undo_template_edits();
 
 	//Change admin permissions
-	change_admin_permission("newpoints", false, -1);
-	change_admin_permission("newpoints", "plugins", -1);
-	change_admin_permission("newpoints", "settings", -1);
-	change_admin_permission("newpoints", "log", -1);
-	change_admin_permission("newpoints", "maintenance", -1);
-	change_admin_permission("newpoints", "forumrules", -1);
-	change_admin_permission("newpoints", "grouprules", -1);
-	change_admin_permission("newpoints", "stats", -1);
-	change_admin_permission("newpoints", "upgrades", -1);
+	change_admin_permission("newpoints", false, 0);
+	change_admin_permission("newpoints", "plugins", 0);
+	change_admin_permission("newpoints", "settings", 0);
+	change_admin_permission("newpoints", "log", 0);
+	change_admin_permission("newpoints", "maintenance", 0);
+	change_admin_permission("newpoints", "forumrules", 0);
+	change_admin_permission("newpoints", "grouprules", 0);
+	change_admin_permission("newpoints", "stats", 0);
+	change_admin_permission("newpoints", "upgrades", 0);
 }
 
 ?>

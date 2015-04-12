@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/inc/languages/newpoints.lang.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -58,8 +58,7 @@ $l['newpoints_not_enough_points'] = 'You don\'t have enough points. Required: {1
 $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 $l['newpoints_amount_paid'] = 'Amount Paid';
 $l['newpoints_source'] = 'Source';
-$l['newpoints_home_desc'] = 'NewPoints is a complex points system for MyBB software.<br />As you can see, there are various options on the menu on the left that you can use.<br /><br /><strong>How do you earn points?</strong><br /><table align="center"><tr><td align="left"><strong>Source</strong></td><td align="right"><strong>Amount Paid</strong></td></tr>{1}</table><br />';
-$l['newpoints_home_credits'] = '<br />Contact your administrator if you have any questions.<br />This software was written by <a href="http://forums.mybb-plugins.com/user-1.html">Diogo Parrinha</a> for <a href="http://mybb.com">MyBB</a>.';
+$l['newpoints_home_desc'] = 'NewPoints is a complex points system for MyBB software.<br />As you can see, there are various options on the menu on the left that you can use.<br /><br /><strong>How do you earn points?</strong>{1}<br /><br />Contact your administrator if you have any questions.<br />This software was written by <a href="http://forums.mybb-plugins.com/user-1.html">Pirata Nervo</a> for <a href="http://mybboard.net">MyBB</a>.';
 $l['newpoints_action'] = 'Action';
 $l['newpoints_chars'] = 'Chars';
 $l['newpoints_max_donations_control'] = 'You have reached the maximum of {1} over the last 15 minutes. Please wait before making a new one.';
@@ -93,4 +92,5 @@ $l['newpoints_setting_newpoints_income_referral_title'] = 'Per Referral';
 $l['newpoints_setting_newpoints_income_referral_desc'] = 'Amount of points received everytime a user is referred. (the referred user is who receives the points)';
 
 
+$l['newpoints_search_user'] = 'Search for an user..';
 ?>

@@ -32,9 +32,16 @@ define('THIS_SCRIPT', 'newpoints.php');
 define("NP_DISABLE_GUESTS", 0);
 
 // Templates used by NewPoints
-$templatelist  = "newpoints_home,newpoints_donate,newpoints_statistics,newpoints_statistics_richest_user,newpoints_statistics_donation,newpoints_no_results,newpoints_option";
+$templatelist  = "newpoints_home,newpoints_donate,newpoints_statistics,newpoints_statistics_richest_user,newpoints_statistics_donation,newpoints_no_results,newpoints_option,newpoints_home_income_row,newpoints_home_income_table";
 
 require_once "./global.php";
+
+if(!function_exists('newpoints_load_settings'))
+{
+	error_no_permission();
+}
+
+$mybb->input['action'] = $mybb->get_input('action');
 
 $plugins->run_hooks("newpoints_begin");
 
@@ -49,26 +56,22 @@ $mybb->input['action'] = $mybb->get_input('action');
 
 // build the menu
 
-$menu = array();
 // default menu options
-$menu[0] = '<a href="'.$mybb->settings['bburl'].'/newpoints.php">'.$lang->newpoints_home.'</a>';
-if ($mybb->settings['newpoints_main_statsvisible'] == 1)
-	$menu[1] = '<a href="'.$mybb->settings['bburl'].'/newpoints.php?action=stats">'.$lang->newpoints_statistics.'</a>';
-if ($mybb->settings['newpoints_main_donationsenabled'] == 1)
-	$menu[2] = '<a href="'.$mybb->settings['bburl'].'/newpoints.php?action=donate">'.$lang->newpoints_donate.'</a>';
-	
-if ($mybb->input['action'] == '')
-{
-	$menu[0] = "&raquo; ".$menu[0];
-}
-elseif ($mybb->input['action'] == 'stats')
-{
-	$menu[1] = "&raquo; ".$menu[1];
-}
-elseif ($mybb->input['action'] == 'donate')
-{
-	$menu[2] = "&raquo; ".$menu[2];
-}
+$menu = array(
+	array(
+		'lang_string'	=> 'newpoints_home',
+	),
+	array(
+		'action'		=> 'stats',
+		'lang_string'	=> 'newpoints_statistics',
+		'setting'		=> 'newpoints_main_statsvisible',
+	),
+	array(
+		'action'		=> 'donate',
+		'lang_string'	=> 'newpoints_donate',
+		'setting'		=> 'newpoints_main_donationsenabled',
+	)
+);
 
 $menu = $plugins->run_hooks("newpoints_default_menu", $menu);
 
@@ -77,8 +80,27 @@ $options = '';
 
 foreach($menu as $option)
 {
+	if(isset($option['setting']) && !$mybb->settings[$option['setting']])
+	{
+		continue;
+	}
+
 	$bgcolor = alt_trow();
-	
+
+	$action = '';
+	if(isset($option['action']))
+	{
+		$action = '?action='.$option['action'];
+	}
+
+	$raquo = '';
+	if ($mybb->input['action'] == (string)$option['action'])
+	{
+		$raquo = '&raquo; ';
+	}
+
+	$lang_string = $lang->{$option['lang_string']};
+
 	$plugins->run_hooks("newpoints_menu_build_option");
 	eval("\$options .= \"".$templates->get('newpoints_option')."\";");
 }
@@ -100,19 +122,27 @@ if (!$mybb->input['action'])
 	$query = $db->simple_select('newpoints_settings', '*', 'plugin=\'income\'');
 	while ($setting = $db->fetch_array($query))
 	{
+		$lang_var = 'setting_'.$setting['name'];
+		$lang_var_desc = $lang_var.'_desc';
+		if(!empty($lang->{$lang_var}))
+		{
+			$setting['title'] = $lang->{$lang_var};
+		}
+		if(!empty($lang->{$lang_var_desc}))
+		{
+			$setting['description'] = $lang->{$lang_var_desc};
+		}
+
 		if ($setting['name'] == 'newpoints_income_minchar')
 			$value = $setting['value']." ".$lang->newpoints_chars;
 		else
 			$value = newpoints_format_points($setting['value']);
 
-		$desc = 'newpoints_setting_'.$setting['name'].'_desc';
-		$title = 'newpoints_setting_'.$setting['name'].'_title';
-
-		$income_settings .= '<tr><td valign="middle" align="left"><span style="border-bottom: 1px dashed; cursor: help;" title="'."{$lang->{$desc}}".'">'."{$lang->{$title}}".'</span></td><td valign="middle" align="right">'.$value.'</td></tr>';
+		$income_settings .= eval($templates->render('newpoints_home_income_row'));
 	}
-	
-	$plugins->run_hooks("newpoints_home_end", $income_settings);
-	
+
+	$income_settings = eval($templates->render('newpoints_home_income_table'));
+
 	$lang->newpoints_home_desc = $lang->sprintf($lang->newpoints_home_desc, $income_settings);
 	
 	eval("\$page = \"".$templates->get('newpoints_home')."\";");
