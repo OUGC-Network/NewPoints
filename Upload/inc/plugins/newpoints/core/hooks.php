@@ -94,6 +94,7 @@ if (NP_HOOKS == 1)
 elseif (NP_HOOKS == 2)
 {
 	$plugins->add_hook('global_start', 'newpoints_plugins_start');
+    $plugins->add_hook('global_intermediate', 'newpoints_global_intermediate');
 	$plugins->add_hook('xmlhttp', 'newpoints_load_xmlhttp'); // we want to make sure plugins can use the xmlhttp file
 	$plugins->add_hook('archive_start', 'newpoints_load_archive'); // we want to make sure plugins can use the archive
 	
@@ -209,12 +210,28 @@ elseif (NP_HOOKS == 2)
 		$plugins->run_hooks("newpoints_global_start");
 	}
 
+    function newpoints_global_intermediate()
+    {
+        global $mybb;
+        global $newpointsUserBalanceFormatted;
+
+        if(!isset($mybb->user['newpoints'])) {
+            $mybb->user['newpoints'] = 0;
+        } else {
+            $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
+        }
+
+        $newpointsUserBalanceFormatted = newpoints_format_points($mybb->user['newpoints']);
+    }
+
 	// Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 	// global_start can't be used by NP plugins
 	function newpoints_load_xmlhttp()
 	{
 		global $plugins;
-		
+
+        newpoints_global_intermediate();
+
 		newpoints_load_plugins();
 		//newpoints_load_settings();
 		
@@ -242,7 +259,7 @@ elseif (NP_HOOKS == 2)
 		$lang->load("newpoints");
 		
 		$currency = $mybb->settings['newpoints_main_curname'];
-		$points = newpoints_format_points($post['newpoints']);
+		$points = $post['newpointsPostUserBalanceFormatted'] = newpoints_format_points($post['newpoints']);
 		$uid = intval($post['uid']);
 		
 		if ($mybb->settings['newpoints_main_donationsenabled'] && $post['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0)
@@ -263,11 +280,13 @@ elseif (NP_HOOKS == 2)
 			$newpoints_profile = '';
 			return;
 		}
+
+        global $newpointsProfileUserBalanceFormatted;
 		
 		$lang->load("newpoints");
 		
 		$currency = $mybb->settings['newpoints_main_curname'];
-		$points = newpoints_format_points($memprofile['newpoints']);
+		$points = $newpointsProfileUserBalanceFormatted = newpoints_format_points($memprofile['newpoints']);
 		$uid = intval($memprofile['uid']);
 		
 		if ($mybb->settings['newpoints_main_donationsenabled'] && $memprofile['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0)

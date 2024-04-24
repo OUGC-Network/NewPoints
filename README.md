@@ -1,7 +1,43 @@
-## NewPoints
+## 📜 Table of Contents <a name = "table_of_contents"></a>
+
+- [About](#about)
+- [Getting Started](#getting_started)
+	- [Dependencies](#dependencies)
+	- [File Structure](#file_structure)
+	- [Install](#install)
+	- [Update](#update)
+	- [Template Modifications](#template_modifications)
+- [Settings](#settings)
+	- [File Level Settings](#file_level_settings)
+- [Templates](#templates)
+- [Usage](#usage)
+	- [Subscriptions](#usage_subscriptions)
+- [Built Using](#built_using)
+- [Authors](#authors)
+- [Acknowledgments](#acknowledgement)
+- [Support & Feedback](#support)
+
+## 🚀 About <a name = "about"></a>
+
 NewPoints is the best points system for MyBB. Efficient, feature rich and easy to use.
 
 NewPoints is in its most stable stage since it has reached v2. Enjoy it!
+
+[Go up to Table of Contents](#table_of_contents)
+
+## 📍 Getting Started <a name = "getting_started"></a>
+
+The following information will assist you into getting a copy of this plugin up and running on your forum.
+
+### Template Modifications <a name = "template_modifications"></a>
+
+To display the page link it is required that you edit the following template for each of your themes.
+
+1. Place `{$newpointsUserBalanceFormatted}` or `{$GLOBALS['newpointsUserBalanceFormatted']}` in any template to display the current user points.
+2. Place `{$newpointsProfileUserBalanceFormatted}` or `{$GLOBALS['newpointsProfileUserBalanceFormatted']}` in any `member_profile*` template to display the profile user points.
+3. Place `{$post['newpointsPostUserBalanceFormatted']}` in any `postbit*` template to display the post user points.
+
+[Go up to Table of Contents](#table_of_contents)
 
 ### Features
 
