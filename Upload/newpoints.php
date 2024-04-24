@@ -41,6 +41,8 @@ if(!function_exists('newpoints_load_settings'))
 	error_no_permission();
 }
 
+global $mybb, $plugins, $lang, $db, $templates;
+
 $mybb->input['action'] = $mybb->get_input('action');
 
 $plugins->run_hooks("newpoints_begin");
@@ -75,7 +77,7 @@ $menu = array(
 
 $menu = $plugins->run_hooks("newpoints_default_menu", $menu);
 
-$bgcolor = alt_trow();
+$bgcolor = alt_trow(true);
 $options = '';
 
 foreach($menu as $option)
@@ -85,24 +87,28 @@ foreach($menu as $option)
 		continue;
 	}
 
-	$bgcolor = alt_trow();
+	$action = $raquo = $lang_string = '';
 
-	$action = '';
 	if(isset($option['action']))
 	{
 		$action = '?action='.$option['action'];
+
+        if ($mybb->get_input('action') === (string)$option['action'])
+        {
+            $raquo = '&raquo; ';
+        }
 	}
 
-	$raquo = '';
-	if ($mybb->input['action'] == (string)$option['action'])
-	{
-		$raquo = '&raquo; ';
-	}
-
-	$lang_string = $lang->{$option['lang_string']};
+    if(isset($option['lang_string']) && isset($lang->{$option['lang_string']}))
+    {
+        $lang_string = $lang->{$option['lang_string']};
+    }
 
 	$plugins->run_hooks("newpoints_menu_build_option");
+
 	eval("\$options .= \"".$templates->get('newpoints_option')."\";");
+
+    $bgcolor = alt_trow();
 }
 
 $plugins->run_hooks("newpoints_start");
@@ -141,11 +147,13 @@ if (!$mybb->input['action'])
 		$income_settings .= eval($templates->render('newpoints_home_income_row'));
 	}
 
-	$income_settings = eval($templates->render('newpoints_home_income_table'));
+    $plugins->run_hooks("newpoints_home_end", $income_settings);
+
+    $income_settings = eval($templates->render('newpoints_home_income_table'));
 
 	$lang->newpoints_home_desc = $lang->sprintf($lang->newpoints_home_desc, $income_settings);
-	
-	eval("\$page = \"".$templates->get('newpoints_home')."\";");
+
+    $page = eval($templates->render('newpoints_home'));
 	
 	output_page($page);
 }
@@ -190,8 +198,8 @@ if ($mybb->input['action'] == 'stats')
 	// get latest donations
 	$query = $db->query("
 		SELECT l.*,u.usergroup,u.displaygroup
-		FROM ".TABLE_PREFIX."newpoints_log l
-		LEFT JOIN ".TABLE_PREFIX."users u ON (u.uid=l.uid)
+		FROM ".constant('TABLE_PREFIX')."newpoints_log l
+		LEFT JOIN ".constant('TABLE_PREFIX')."users u ON (u.uid=l.uid)
 		WHERE l.action='donation'
 		ORDER BY l.date DESC
 		LIMIT ".intval($mybb->settings['newpoints_main_stats_lastdonations'])."
@@ -272,7 +280,7 @@ elseif ($mybb->input['action'] == 'do_donate')
 	
 	if($mybb->user['usergroup'] != 4)
 	{
-		$q = $db->simple_select('newpoints_log', 'COUNT(*) as donations', 'action=\'donation\' AND date>'.(TIME_NOW-15*60*60).' AND uid='.(int)$mybb->user['uid']);
+		$q = $db->simple_select('newpoints_log', 'COUNT(*) as donations', 'action=\'donation\' AND date>'.(constant('TIME_NOW')-15*60*60).' AND uid='.(int)$mybb->user['uid']);
 		$totaldonations = (int)$db->fetch_field($q, 'donations');
 		if($totaldonations >= MAX_DONATIONS_CONTROL)
 		{
@@ -331,5 +339,3 @@ elseif ($mybb->input['action'] == 'do_donate')
 $plugins->run_hooks("newpoints_terminate");
 
 exit;
-
-?>

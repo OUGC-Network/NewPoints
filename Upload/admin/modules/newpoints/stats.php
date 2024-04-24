@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/stats.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -31,6 +31,8 @@ if(!defined("IN_MYBB"))
 {
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
+
+global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
@@ -114,5 +116,3 @@ if (!$mybb->input['action']) // view stats
 $plugins->run_hooks("newpoints_admin_stats_terminate");
 
 $page->output_footer();
-
-?>

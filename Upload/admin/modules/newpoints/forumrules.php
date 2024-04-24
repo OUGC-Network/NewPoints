@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/forumrules.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -31,6 +31,8 @@ if(!defined("IN_MYBB"))
 {
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
+
+global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
@@ -283,5 +285,3 @@ elseif ($mybb->input['action'] == 'delete_rule')
 $plugins->run_hooks("newpoints_admin_forumrules_terminate");
 
 $page->output_footer();
-
-?>

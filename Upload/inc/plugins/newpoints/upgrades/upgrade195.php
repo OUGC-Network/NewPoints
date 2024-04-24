@@ -48,5 +48,3 @@ function upgrade195_run()
 	newpoints_rebuild_settings_cache();
 	newpoints_rebuild_rules_cache();
 }
-
-?>

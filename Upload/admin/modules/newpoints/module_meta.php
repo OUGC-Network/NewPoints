@@ -106,4 +106,3 @@ function newpoints_admin_permissions()
 	
 	return array("name" => $lang->newpoints, "permissions" => $admin_permissions, "disporder" => 60);
 }
-?>

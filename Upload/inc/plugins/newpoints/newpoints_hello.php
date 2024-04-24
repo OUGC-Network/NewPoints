@@ -3,7 +3,7 @@
  *
  *   NewPoints Hello plugin (/inc/plugins/newpoints/newpoints_hello.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -31,6 +31,8 @@ if(!defined("IN_MYBB"))
 {
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
+
+global $plugins;
 
 $plugins->add_hook("pre_output_page", "newpoints_hello_world");
 
@@ -137,5 +139,3 @@ function newpoints_hello_world($page)
 	$page = str_replace("<!-- end: header -->", "<!-- end: header -->".$lang->newpoints_hello_message, $page);
 	return $page;
 }
-
-?>

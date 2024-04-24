@@ -28,7 +28,9 @@
 
 if(!defined("IN_MYBB") || !defined("NP_HOOKS"))
 	die("This file cannot be accessed directly.");
-	
+
+global $plugins;
+
 if (NP_HOOKS == 1)
 {
 	$plugins->add_hook('admin_load', 'newpoints_admin_load_hook');
@@ -1031,7 +1033,7 @@ elseif (NP_HOOKS == 2)
 			newpoints_addpoints($thread['uid'], -$mybb->settings['newpoints_income_newpoll'], $forumrules['rate'], $grouprules['rate']);
 		}
 		
-		$q = $db->simple_select('posts', 'COUNT(*) as total_replies', 'uid!='.(int)$thread['uid'].' AND tid='.(int)$thead['tid']);
+		$q = $db->simple_select('posts', 'COUNT(*) as total_replies', 'uid!='.(int)$thread['uid'].' AND tid='.(int)$thread['tid']);
 		$thread['replies'] = (int)$db->fetch_field($q, 'total_replies');
 		newpoints_addpoints($thread['uid'], -($thread['replies']*$mybb->settings['newpoints_income_perreply']), $forumrules['rate'], $grouprules['rate']);
 		
@@ -1395,20 +1397,20 @@ elseif (NP_HOOKS == 2)
 		
 		if ($mybb->settings['newpoints_income_visit'] != 0)
 		{
-			if((TIME_NOW - $mybb->user['lastactive']) > 900)
+			if((constant('TIME_NOW') - $mybb->user['lastactive']) > 900)
 				newpoints_addpoints($mybb->user['uid'], $mybb->settings['newpoints_income_visit'], 1, $grouprules[$mybb->user['usergroup']]['rate']);
 		}
 		
 		foreach($grouprules as $gid => $rule)
 		{
-			if ($rule['pointsearn'] == 0 || $rule['period'] == 0 || $rule['lastpay']>(TIME_NOW - $rule['period']))
+			if ($rule['pointsearn'] == 0 || $rule['period'] == 0 || $rule['lastpay']>(constant('TIME_NOW') - $rule['period']))
 				continue;
 
 			$amount = floatval($rule['pointsearn']);
 
 			$userupdates[$gid] = $amount;
 			// update rule with last payment
-			$db->update_query('newpoints_grouprules', array('lastpay' => TIME_NOW), 'rid=\''.(int)$rule['rid'].'\'');
+			$db->update_query('newpoints_grouprules', array('lastpay' => (int)constant('TIME_NOW')), 'rid=\''.(int)$rule['rid'].'\'');
 			
 			// Re-cache rules (lastpay must be updated)
 			newpoints_rebuild_rules_cache();
@@ -1530,5 +1532,3 @@ elseif (NP_HOOKS == 2)
 		}
 	}
 }
-
-?>

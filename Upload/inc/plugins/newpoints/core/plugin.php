@@ -37,7 +37,7 @@ function newpoints_plugin_info()
 		"website"		=> "http://www.consoleaddicted.com",
 		"author"		=> "Diogo Parrinha",
 		"authorsite"	=> "http://www.mybb-plugins.com",
-		"version"		=> "2.1.2",
+		"version"		=> "3.0",
 		"guid" 			=> "152e7f9f32fadb777d58fda000eb7a9e",
 		"compatibility" => "18*"
 	);
@@ -52,7 +52,7 @@ function newpoints_plugin_install()
 	// create tables
 	if(!$db->table_exists("newpoints_settings"))
     {
-		$db->write_query("CREATE TABLE `".TABLE_PREFIX."newpoints_settings` (
+		$db->write_query("CREATE TABLE `".$db->table_prefix."newpoints_settings` (
 		  `sid` int(10) UNSIGNED NOT NULL auto_increment,
 		  `plugin` varchar(100) NOT NULL default '',
 		  `name` varchar(100) NOT NULL default '',
@@ -67,7 +67,7 @@ function newpoints_plugin_install()
 
 	if(!$db->table_exists("newpoints_log"))
     {
-		$db->write_query("CREATE TABLE `".TABLE_PREFIX."newpoints_log` (
+		$db->write_query("CREATE TABLE `".$db->table_prefix."newpoints_log` (
 		  `lid` bigint(30) UNSIGNED NOT NULL auto_increment,
 		  `action` varchar(100) NOT NULL default '',
 		  `data` text NOT NULL,
@@ -80,7 +80,7 @@ function newpoints_plugin_install()
 
 	if(!$db->table_exists("newpoints_forumrules"))
     {
-		$db->write_query("CREATE TABLE `".TABLE_PREFIX."newpoints_forumrules` (
+		$db->write_query("CREATE TABLE `".$db->table_prefix."newpoints_forumrules` (
 		  `rid` bigint(30) UNSIGNED NOT NULL auto_increment,
 		  `fid` int(10) UNSIGNED NOT NULL default '0',
 		  `name` varchar(100) NOT NULL default '',
@@ -94,7 +94,7 @@ function newpoints_plugin_install()
 
 	if(!$db->table_exists("newpoints_grouprules"))
     {
-		$db->write_query("CREATE TABLE `".TABLE_PREFIX."newpoints_grouprules` (
+		$db->write_query("CREATE TABLE `".$db->table_prefix."newpoints_grouprules` (
 		  `rid` bigint(30) UNSIGNED NOT NULL auto_increment,
 		  `gid` int(10) UNSIGNED NOT NULL default '0',
 		  `name` varchar(100) NOT NULL default '',
@@ -111,7 +111,7 @@ function newpoints_plugin_install()
 
 	// add points field
 	if (!$db->field_exists('newpoints', 'users'))
-		$db->write_query("ALTER TABLE `".TABLE_PREFIX."users` ADD `newpoints` DECIMAL(16,2) NOT NULL DEFAULT '0';");
+		$db->write_query("ALTER TABLE `".$db->table_prefix."users` ADD `newpoints` DECIMAL(16,2) NOT NULL DEFAULT '0';");
 
 	// create task
 	$new_task = array(
@@ -154,10 +154,10 @@ function newpoints_plugin_uninstall()
 		foreach($active_plugins as $plugin)
 		{
 			// Ignore missing plugins
-			if(!file_exists(MYBB_ROOT."inc/plugins/newpoints/".$plugin.".php"))
+			if(!file_exists(constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin.".php"))
 				continue;
 
-			require_once MYBB_ROOT."inc/plugins/newpoints/".$plugin.".php";
+			require_once constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin.".php";
 
 			if(function_exists("{$plugin}_deactivate"))
 			{
@@ -177,7 +177,7 @@ function newpoints_plugin_uninstall()
 	$cache->delete('newpoints_plugins');
 		
 	if ($db->field_exists('newpoints', 'users'))
-		$db->write_query("ALTER TABLE `".TABLE_PREFIX."users` DROP `newpoints`;");
+		$db->write_query("ALTER TABLE `".$db->table_prefix."users` DROP `newpoints`;");
 
 	// Delete all templates
 	$query = $db->simple_select('templategroups', 'prefix', "prefix='newpoints'");
@@ -229,7 +229,7 @@ function newpoints_plugin_uninstall()
 function newpoints_plugin_do_template_edits()
 {
 	// do edits
-	require_once MYBB_ROOT."inc/adminfunctions_templates.php";
+	require_once constant('MYBB_ROOT')."inc/adminfunctions_templates.php";
 	find_replace_templatesets("postbit_classic", '#'.preg_quote('{$post[\'user_details\']}').'#', '{$post[\'user_details\']}'.'{$post[\'newpoints_postbit\']}');
 	find_replace_templatesets("postbit", '#'.preg_quote('{$post[\'user_details\']}').'#', '{$post[\'user_details\']}'.'{$post[\'newpoints_postbit\']}');
 	find_replace_templatesets("member_profile", '#'.preg_quote('{$warning_level}').'#', '{$warning_level}'.'{$newpoints_profile}');
@@ -238,7 +238,7 @@ function newpoints_plugin_do_template_edits()
 function newpoints_plugin_undo_template_edits()
 {
 	// undo edits
-	require_once MYBB_ROOT."inc/adminfunctions_templates.php";
+	require_once constant('MYBB_ROOT')."inc/adminfunctions_templates.php";
 	find_replace_templatesets("postbit_classic", '#'.preg_quote('{$post[\'newpoints_postbit\']}').'#', '', 0);
 	find_replace_templatesets("postbit", '#'.preg_quote('{$post[\'newpoints_postbit\']}').'#', '', 0);
 	find_replace_templatesets("member_profile", '#'.preg_quote('{$newpoints_profile}').'#', '', 0);
@@ -320,5 +320,3 @@ function newpoints_plugin_deactivate()
 	change_admin_permission("newpoints", "stats", 0);
 	change_admin_permission("newpoints", "upgrades", 0);
 }
-
-?>

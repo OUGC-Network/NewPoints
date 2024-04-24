@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/upgrades.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -32,6 +32,8 @@ if(!defined("IN_MYBB"))
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
+global $lang, $plugins, $page, $db, $mybb;
+
 $lang->load('newpoints');
 
 $plugins->run_hooks("newpoints_admin_upgrades_begin");
@@ -57,14 +59,14 @@ if (!$mybb->input['action']) // view upgrades
 	// table
 	$table = new Table;
 	$table->construct_header($lang->newpoints_upgrades_name, array('width' => '70%'));
-	$table->construct_header($lang->newpoints_upgrades_options, array('width' => '30%', 'class' => 'align_center'));
+	$table->construct_header($lang->options, array('width' => '30%', 'class' => 'align_center'));
 
 	if (!empty($upgrades))
 	{
 		foreach($upgrades as $upgrade)
 		{
 			$codename = str_replace(".php", "", $upgrade);
-			require_once MYBB_ROOT."inc/plugins/newpoints/upgrades/".$upgrade;
+			require_once constant('MYBB_ROOT')."inc/plugins/newpoints/upgrades/".$upgrade;
 			$infofunc = $codename."_info";
 			if(!function_exists($infofunc))
 			{
@@ -105,7 +107,7 @@ elseif ($mybb->input['action'] == 'run')
 		
 		$upgrade = $mybb->input['upgrade_file'];
 																				 
-		require_once MYBB_ROOT."inc/plugins/newpoints/upgrades/".$upgrade.".php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/upgrades/".$upgrade.".php";
 		$runfunc = $upgrade."_run";
 		if(!function_exists($runfunc))
 		{
@@ -148,7 +150,7 @@ function newpoints_get_upgrades()
 	$upgrades_list = array();
 	
 	// open directory
-	$dir = @opendir(MYBB_ROOT.'inc/plugins/newpoints/upgrades/');
+	$dir = @opendir(constant('MYBB_ROOT').'inc/plugins/newpoints/upgrades/');
 	
 	// browse upgrades directory
 	if($dir)
@@ -158,7 +160,7 @@ function newpoints_get_upgrades()
 			if($file == '.' || $file == '..')
 				continue;
 			
-			if(!is_dir(MYBB_ROOT.'inc/plugins/newpoints/upgrades/'.$file))
+			if(!is_dir(constant('MYBB_ROOT').'inc/plugins/newpoints/upgrades/'.$file))
 			{
 				$ext = get_extension($file);
 				if($ext == 'php')
@@ -173,5 +175,3 @@ function newpoints_get_upgrades()
 	
 	return $upgrades_list;
 }
-
-?>

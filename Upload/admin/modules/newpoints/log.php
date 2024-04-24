@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/log.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -32,6 +32,8 @@ if(!defined("IN_MYBB"))
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
+global $lang, $plugins, $page, $db, $mybb;
+
 $lang->load('newpoints');
 
 $plugins->run_hooks("newpoints_admin_log_begin");
@@ -51,7 +53,7 @@ if (!$mybb->input['action']) // view logs
 	$page->output_nav_tabs($sub_tabs, 'newpoints_log');
 	
 	$per_page = 10;
-	if($mybb->input['page'] && $mybb->input['page'] > 1)
+	if($mybb->get_input('page', \MyBB::INPUT_INT) > 1)
 	{
 		$mybb->input['page'] = intval($mybb->input['page']);
 		$start = ($mybb->input['page']*$per_page)-$per_page;
@@ -65,6 +67,8 @@ if (!$mybb->input['action']) // view logs
 	$sql = '';
 	
 	$filter_msg = '';
+
+	$url_filters = '';
 	
 	// Process "username" search
 	if(isset($mybb->input['username']) && $mybb->input['username'] != '')
@@ -96,7 +100,9 @@ if (!$mybb->input['action']) // view logs
 			$sql .= ' AND (';
 			$close = ')';
 		}
-		
+
+		$url_filters = '';
+
 		foreach($mybb->input['fields'] as $field)
 		{
 			$field = htmlspecialchars_uni($field);
@@ -162,7 +168,7 @@ if (!$mybb->input['action']) // view logs
 	
 	// Get all actions
 	$fields = array();
-	$q = $db->query("SELECT action FROM `".TABLE_PREFIX."newpoints_log` GROUP BY action");
+	$q = $db->query("SELECT action FROM `".$db->table_prefix."newpoints_log` GROUP BY action");
 	while($action = $db->fetch_field($q, 'action'))
 		$fields[htmlspecialchars_uni($action)] = htmlspecialchars_uni($action);
 	
@@ -171,7 +177,7 @@ if (!$mybb->input['action']) // view logs
 	echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
 		
 	$form_container = new FormContainer($lang->newpoints_log_filter);
-	$form_container->output_row($lang->newpoints_filter_username, $lang->newpoints_filter_username_desc, $form->generate_text_box('username', htmlspecialchars_uni($mybb->input['username']), array('id' => 'username')), 'username');
+	$form_container->output_row($lang->newpoints_filter_username, $lang->newpoints_filter_username_desc, $form->generate_text_box('username', htmlspecialchars_uni($mybb->get_input('username')), array('id' => 'username')), 'username');
 	$form_container->output_row($lang->newpoints_filter_actions, $lang->newpoints_filter_actions_desc, $form->generate_select_box('fields[]', $fields, $selected, array('id' => 'fields', 'multiple' => true)), 'fields');
 	$form_container->end();
 
@@ -258,7 +264,7 @@ elseif ($mybb->input['action'] == 'prune')
 			admin_redirect("index.php?module=newpoints-log");
 		}
 		
-		$db->delete_query('newpoints_log', 'date < '.(TIME_NOW - intval($mybb->input['days'])*60*60*24));
+		$db->delete_query('newpoints_log', 'date < '.((int)constant('TIME_NOW') - intval($mybb->input['days'])*60*60*24));
 		flash_message($lang->newpoints_log_pruned, 'success');
 		admin_redirect('index.php?module=newpoints-log');
 	}
@@ -285,5 +291,3 @@ elseif ($mybb->input['action'] == 'prune')
 $plugins->run_hooks("newpoints_admin_log_terminate");
 
 $page->output_footer();
-
-?>

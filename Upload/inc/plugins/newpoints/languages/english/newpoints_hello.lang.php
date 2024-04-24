@@ -27,5 +27,3 @@
 ****************************************************************************/
 
 $l['newpoints_hello_message'] = "<p>Hello World!<br />This is a sample NewPoints plugin that displays this message on all pages. As you can see, it works just like MyBB plugins do.</p>";
-
-?>

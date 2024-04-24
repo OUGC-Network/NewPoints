@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/inc/tasks/backupnewpoints.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -42,7 +42,7 @@ function task_backupnewpoints($task)
 // a modified copy of task_backupdb() from backupdb.php
 function backupnewpoints_backupdb()
 {
-	global $db, $config, $lang, $plugins;
+	global $mybb, $db, $config, $lang, $plugins;
 	static $contents;
 
 	@set_time_limit(0);
@@ -54,7 +54,7 @@ function backupnewpoints_backupdb()
 			$config['admin_dir'] = "admin";
 		}
 	
-		define('MYBB_ADMIN_DIR', MYBB_ROOT.$config['admin_dir'].'/');
+		define('MYBB_ADMIN_DIR', constant('MYBB_ROOT').$config['admin_dir'].'/');
 	}
 	
 	// Check if folder is writable, before allowing submission
@@ -66,7 +66,7 @@ function backupnewpoints_backupdb()
 	{
 		$db->set_table_prefix('');
 		
-		$file = MYBB_ADMIN_DIR.'/backups/backupnewpoints/backup_'.substr(md5($mybb->user['uid'].TIME_NOW), 0, 10).random_str(54);
+		$file = MYBB_ADMIN_DIR.'/backups/backupnewpoints/backup_'.substr(md5($mybb->user['uid'].constant('TIME_NOW')), 0, 10).random_str(54);
 		
 		if(function_exists('gzopen'))
 		{
@@ -78,18 +78,18 @@ function backupnewpoints_backupdb()
 		}
 		
 		// backup default tables and newpoints field from users table
-		$tables = array(TABLE_PREFIX.'newpoints_log', TABLE_PREFIX.'newpoints_settings', TABLE_PREFIX.'newpoints_forumrules', TABLE_PREFIX.'newpoints_grouprules', TABLE_PREFIX.'users', TABLE_PREFIX.'datacache');
+		$tables = array($db->table_prefix.'newpoints_log', $db->table_prefix.'newpoints_settings', $db->table_prefix.'newpoints_forumrules', $db->table_prefix.'newpoints_grouprules', $db->table_prefix.'users', $db->table_prefix.'datacache');
 		$backup_fields = array('newpoints');
 		
 		$backup_fields = $plugins->run_hooks("newpoints_task_backup_tables", $backup_fields);
 	
-		$time = date('dS F Y \a\t H:i', TIME_NOW);
+		$time = date('dS F Y \a\t H:i', constant('TIME_NOW'));
 		$header = "-- MyBB Database Backup\n-- Generated: {$time}\n-- -------------------------------------\n\n";
 		$contents = $header;
 		foreach($tables as $table)
 		{
 			$plugins->run_hooks("newpoints_task_backup_table");
-			if ($table == TABLE_PREFIX.'users')
+			if ($table == $db->table_prefix.'users')
 			{
 				backupnewpoints_clear_overflow($fp, $contents);
 				
@@ -107,26 +107,26 @@ function backupnewpoints_backupdb()
 					backupnewpoints_clear_overflow($fp, $contents);
 				}
 			}
-			elseif ($table == TABLE_PREFIX.'datacache')
+			elseif ($table == $db->table_prefix.'datacache')
 			{
 				backupnewpoints_clear_overflow($fp, $contents);
 				
 				$query = $db->simple_select($table, 'cache', 'title=\'newpoints_plugins\'', array('limit' => 1));
 				$row = $db->fetch_array($query);
 
-				$contents .= "UPDATE `".TABLE_PREFIX."datacache` SET `cache` = '".$row['cache']."' WHERE `title` = 'newpoints_plugins';\n";
+				$contents .= "UPDATE `".$db->table_prefix."datacache` SET `cache` = '".$row['cache']."' WHERE `title` = 'newpoints_plugins';\n";
 				backupnewpoints_clear_overflow($fp, $contents);
 				
 				$query = $db->simple_select($table, 'cache', 'title=\'newpoints_rules\'', array('limit' => 1));
 				$row = $db->fetch_array($query);
 
-				$contents .= "UPDATE `".TABLE_PREFIX."datacache` SET `cache` = '".$row['cache']."' WHERE `title` = 'newpoints_rules';\n";
+				$contents .= "UPDATE `".$db->table_prefix."datacache` SET `cache` = '".$row['cache']."' WHERE `title` = 'newpoints_rules';\n";
 				backupnewpoints_clear_overflow($fp, $contents);
 				
 				$query = $db->simple_select($table, 'cache', 'title=\'newpoints_settings\'', array('limit' => 1));
 				$row = $db->fetch_array($query);
 
-				$contents .= "UPDATE `".TABLE_PREFIX."datacache` SET `cache` = '".$row['cache']."' WHERE `title` = 'newpoints_settings';\n";
+				$contents .= "UPDATE `".$db->table_prefix."datacache` SET `cache` = '".$row['cache']."' WHERE `title` = 'newpoints_settings';\n";
 				backupnewpoints_clear_overflow($fp, $contents);
 			}
 			else {
@@ -143,7 +143,7 @@ function backupnewpoints_backupdb()
 				$contents .= $structure;*/
 				backupnewpoints_clear_overflow($fp, $contents);
 				
-				if ($table == TABLE_PREFIX.'datacache')
+				if ($table == $db->table_prefix.'datacache')
 					$where = "title='newpoints_plugins'";
 				else
 					$where = '';
@@ -172,7 +172,7 @@ function backupnewpoints_backupdb()
 			}
 		}
 		
-		$db->set_table_prefix(TABLE_PREFIX);
+		$db->set_table_prefix($db->table_prefix);
 		
 		if(function_exists('gzopen'))
 		{
@@ -205,5 +205,3 @@ function backupnewpoints_clear_overflow($fp, &$contents)
 		
 	$contents = '';	
 }
-
-?>

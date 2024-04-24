@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/maintenance.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -32,6 +32,8 @@ if(!defined("IN_MYBB"))
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
+global $lang, $plugins, $page, $db, $mybb;
+
 $lang->load('newpoints');
 
 $plugins->run_hooks("newpoints_admin_maintenance_begin");
@@ -49,7 +51,7 @@ $sub_tabs['newpoints_maintenance'] = array(
 $sub_tabs['newpoints_maintenance_edituser'] = array(
 	'title'			=> $lang->newpoints_maintenance_edituser,
 	'link'			=> 'index.php?module=newpoints-maintenance&amp;action=edituser',
-	'description'	=> $lang->newpoints_maintenance_edituser_description
+	'description'	=> $lang->newpoints_maintenance_edituser_desc
 );
 
 if (!$mybb->input['action']) // show page with various actions that can be taken
@@ -488,5 +490,3 @@ elseif ($mybb->input['action'] == 'reconstruct')
 $plugins->run_hooks("newpoints_admin_maintenance_terminate");
 
 $page->output_footer();
-
-?>

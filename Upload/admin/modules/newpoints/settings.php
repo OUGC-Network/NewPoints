@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/settings.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -31,6 +31,8 @@ if(!defined("IN_MYBB"))
 {
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
+
+global $lang, $plugins, $page, $db, $mybb, $cache, $config;
 
 $lang->load('newpoints');
 
@@ -157,7 +159,7 @@ if($mybb->input['action'] == "change")
 		
 		$form = new Form("index.php?module=newpoints-settings&amp;action=change", "post", "change");
 	
-		echo $form->generate_hidden_field("gid", $group['gid']);
+		echo $form->generate_hidden_field("gid", $groupinfo['gid']);
 	}
 	else
 	{
@@ -212,10 +214,10 @@ if($mybb->input['action'] == "change")
 		}
 		else if($type[0] == "cpstyle")
 		{
-			$dir = @opendir(MYBB_ROOT.$config['admin_dir']."/styles");
+			$dir = @opendir(constant('MYBB_ROOT').$config['admin_dir']."/styles");
 			while($folder = readdir($dir))
 			{
-				if($file != "." && $file != ".." && @file_exists(MYBB_ROOT.$config['admin_dir']."/styles/$folder/main.css"))
+				if($folder != "." && $folder != ".." && @file_exists(constant('MYBB_ROOT').$config['admin_dir']."/styles/$folder/main.css"))
 				{
 					$folders[$folder] = ucfirst($folder);
 				}
@@ -421,7 +423,7 @@ if(!$mybb->input['action'])
 	$page->add_breadcrumb_item($lang->newpoints_settings, 'index.php?module=newpoints-settings');
 	
 	$page->output_header($lang->board_settings);
-	if($message)
+	if(isset($message))
 	{
 		$page->output_inline_message($message);
 	}
@@ -457,7 +459,12 @@ if(!$mybb->input['action'])
 	$table->construct_row();
 
 	$plugins_cache = $cache->read("newpoints_plugins");
-	$active_plugins = $plugins_cache['active'];
+
+	$active_plugins = [];
+
+	if(!empty($plugins_cache) && is_array($plugins_cache['active'])) {
+		$active_plugins = $plugins_cache['active'];
+	}
 	
 	if (!empty($active_plugins))
 	{
@@ -508,12 +515,12 @@ function newpoints_get_plugininfo($plugin)
 	global $mybb, $plugins, $theme, $db, $templates, $cache;
 
 	// Ignore potentially missing plugins.
-	if(!file_exists(MYBB_ROOT."inc/plugins/newpoints/".$plugin.".php"))
+	if(!file_exists(constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin.".php"))
 	{
 		return false;
 	}
 
-	require_once MYBB_ROOT."inc/plugins/newpoints/".$plugin.".php";
+	require_once constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin.".php";
 
 	$info_func = "{$plugin}_info";
 	if(!function_exists($info_func))
@@ -524,5 +531,3 @@ function newpoints_get_plugininfo($plugin)
 	
 	return $plugin_info;
 }
-
-?>

@@ -98,5 +98,3 @@ function upgrade11_run()
 </body>
 </html>');
 }
-
-?>

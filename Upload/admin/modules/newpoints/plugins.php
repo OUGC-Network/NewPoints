@@ -3,7 +3,7 @@
  *
  *   NewPoints plugin (/admin/modules/newpoints/plugins.php)
  *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
  *   
  *   Website: http://www.mybb-plugins.com
  *
@@ -31,6 +31,8 @@ if(!defined("IN_MYBB"))
 {
 	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
+
+global $lang, $plugins, $page, $db, $mybb, $cache;
 
 $lang->load('newpoints');
 
@@ -71,7 +73,7 @@ if($mybb->input['action'] == "activate" || $mybb->input['action'] == "deactivate
 	$file = basename($codename.".php");
 
 	// Check if the file exists and throw an error if it doesn't
-	if(!file_exists(MYBB_ROOT."inc/plugins/newpoints/$file"))
+	if(!file_exists(constant('MYBB_ROOT')."inc/plugins/newpoints/$file"))
 	{
 		flash_message($lang->error_invalid_plugin, 'error');
 		admin_redirect("index.php?module=newpoints-plugins");
@@ -80,7 +82,7 @@ if($mybb->input['action'] == "activate" || $mybb->input['action'] == "deactivate
 	$plugins_cache = $cache->read("newpoints_plugins");
 	$active_plugins = $plugins_cache['active'];
 
-	require_once MYBB_ROOT."inc/plugins/newpoints/$file";
+	require_once constant('MYBB_ROOT')."inc/plugins/newpoints/$file";
 
 	$installed_func = "{$codename}_is_installed";
 	$installed = true;
@@ -165,7 +167,13 @@ if($mybb->input['action'] == "activate" || $mybb->input['action'] == "deactivate
 if (!$mybb->input['action']) // view plugins
 {
 	$plugins_cache = $cache->read("newpoints_plugins");
-	$active_plugins = $plugins_cache['active'];
+
+	$active_plugins = [];
+
+	if(!empty($plugins_cache) && is_array($plugins_cache['active']))
+	{
+		$active_plugins = $plugins_cache['active'];
+	}
 	
 	$plugins_list = newpoints_get_plugins();
 	
@@ -180,7 +188,7 @@ if (!$mybb->input['action']) // view plugins
 	{
 		foreach($plugins_list as $plugin)
 		{
-			require_once MYBB_ROOT."inc/plugins/newpoints/".$plugin;
+			require_once constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin;
 			$codename = str_replace(".php", "", $plugin);
 			$infofunc = $codename."_info";
 			if(!function_exists($infofunc))
@@ -246,7 +254,7 @@ if (!$mybb->input['action']) // view plugins
 				}
 			}
 			// Plugin is activated and installed
-			else if($active_plugins[$codename])
+			else if(isset($active_plugins[$codename]))
 			{
 				$table->construct_cell("<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->deactivate}</a>", array("class" => "align_center", "width" => 150));
 				if($uninstall_button)
@@ -300,7 +308,7 @@ function newpoints_get_plugins()
 	$plugins_list = array();
 	
 	// open directory
-	$dir = @opendir(MYBB_ROOT.'inc/plugins/newpoints/');
+	$dir = @opendir(constant('MYBB_ROOT').'inc/plugins/newpoints/');
 	
 	// browse plugins directory
 	if($dir)
@@ -310,7 +318,7 @@ function newpoints_get_plugins()
 			if($file == '.' || $file == '..')
 				continue;
 			
-			if(!is_dir(MYBB_ROOT.'inc/plugins/newpoints/'.$file))
+			if(!is_dir(constant('MYBB_ROOT').'inc/plugins/newpoints/'.$file))
 			{
 				$ext = get_extension($file);
 				if($ext == 'php')
@@ -330,7 +338,7 @@ function newpoints_iscompatible($plugininfo)
 {
 	if(!is_array($plugininfo))
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/".$plugininfo.".php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugininfo.".php";
 		$infofunc = $plugininfo."_info";
 		if(!function_exists($infofunc))
 		{
@@ -360,5 +368,3 @@ function newpoints_iscompatible($plugininfo)
 	
 	return false;
 }
-
-?>

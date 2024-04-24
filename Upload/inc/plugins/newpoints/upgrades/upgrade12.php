@@ -51,7 +51,7 @@ function upgrade12_run()
 	if($db->table_exists('newpoints_grouprules'))
 		$db->drop_table('newpoints_grouprules');
 	
-	$db->write_query("CREATE TABLE `".TABLE_PREFIX."newpoints_forumrules` (
+	$db->write_query("CREATE TABLE `".$db->table_prefix."newpoints_forumrules` (
 	  `rid` bigint(30) UNSIGNED NOT NULL auto_increment,
 	  `fid` int(10) UNSIGNED NOT NULL default '0',
 	  `name` varchar(100) NOT NULL default '',
@@ -62,7 +62,7 @@ function upgrade12_run()
 	  PRIMARY KEY  (`rid`)
 		) ENGINE=MyISAM");
 	
-	$db->write_query("CREATE TABLE `".TABLE_PREFIX."newpoints_grouprules` (
+	$db->write_query("CREATE TABLE `".$db->table_prefix."newpoints_grouprules` (
 	  `rid` bigint(30) UNSIGNED NOT NULL auto_increment,
 	  `gid` int(10) UNSIGNED NOT NULL default '0',
 	  `name` varchar(100) NOT NULL default '',
@@ -74,5 +74,3 @@ function upgrade12_run()
 	  PRIMARY KEY  (`rid`)
 		) ENGINE=MyISAM");
 }
-
-?>

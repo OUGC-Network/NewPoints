@@ -36,9 +36,13 @@ if(!defined("IN_MYBB"))
 // but also add a page on ACP to run the check and fix any missing settings or perhaps do the check via task.
 if (defined('IN_ADMINCP'))
 {
+	global $mybb;
+
 	// Plugins get "require_once" on Plugins List and Plugins Check and we do not want to load our settings when our file is required by those
-	if ($mybb->input['module'] != "config-plugins" && $GLOBALS['db']->table_exists("newpoints_settings"))
+	if ($mybb->get_input('module') != "config-plugins" && $GLOBALS['db']->table_exists("newpoints_settings"))
+	{
 		newpoints_load_settings();
+	}
 }
 else
 	newpoints_load_settings();
@@ -76,7 +80,7 @@ else {
 }
 
 // load hooks
-require_once MYBB_ROOT."inc/plugins/newpoints/core/hooks.php";
+require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/hooks.php";
 
 if (defined('IN_ADMINCP'))
 {
@@ -84,49 +88,49 @@ if (defined('IN_ADMINCP'))
 
 	function newpoints_info()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		return newpoints_plugin_info();
 	}
 
 	function newpoints_install()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		newpoints_plugin_install();
 	}
 
 	function newpoints_is_installed()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		return newpoints_plugin_is_installed();
 	}
 
 	function newpoints_uninstall()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		newpoints_plugin_uninstall();
 	}
 
 	function newpoints_do_template_edits()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		newpoints_plugin_do_template_edits();
 	}
 
 	function newpoints_undo_template_edits()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		newpoints_plugin_undo_template_edits();
 	}
 
 	function newpoints_activate()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		newpoints_plugin_activate();
 	}
 
 	function newpoints_deactivate()
 	{
-		require_once MYBB_ROOT."inc/plugins/newpoints/core/plugin.php";
+		require_once constant('MYBB_ROOT')."inc/plugins/newpoints/core/plugin.php";
 		newpoints_plugin_deactivate();
 	}
 }
@@ -145,7 +149,7 @@ function newpoints_count_characters($message)
 	global $parser;
 	if(!is_object($parser))
 	{
-		require_once MYBB_ROOT.'inc/class_parser.php';
+		require_once constant('MYBB_ROOT').'inc/class_parser.php';
 		$parser = new postParser;
 	}
 
@@ -576,7 +580,7 @@ if(use_xmlhttprequest == "1")
 			'template'	=> $db->escape_string($code),
 			'version'	=> 1,
 			'sid'		=> -2,
-			'dateline'	=> TIME_NOW
+			'dateline'	=> (int)constant('TIME_NOW')
 		);
 
 		// Update
@@ -765,14 +769,16 @@ function newpoints_addpoints($uid, $points, $forumrate = 1, $grouprate = 1, $iss
 	//$db->update_query("users", array('newpoints' => 'newpoints+('.floatval($points).')'), 'uid=\''.intval($uid).'\'', '', true);
 	
 	if ($isstring) // where username
-		$db->write_query("UPDATE ".TABLE_PREFIX."users SET newpoints=newpoints+'".floatval(round($points*$forumrate*$grouprate, intval($mybb->settings['newpoints_main_decimal'])))."' WHERE username='".$db->escape_string($uid)."'");
+		$db->write_query("UPDATE ".$db->table_prefix."users SET newpoints=newpoints+'".floatval(round($points*$forumrate*$grouprate, intval($mybb->settings['newpoints_main_decimal'])))."' WHERE username='".$db->escape_string($uid)."'");
 	else // where uid
 	{
 		// if immediate, run the query now otherwise add it to shutdown to avoid slow down
 		if ($immediate)
-			$db->write_query("UPDATE ".TABLE_PREFIX."users SET newpoints=newpoints+'".floatval(round($points*$forumrate*$grouprate, intval($mybb->settings['newpoints_main_decimal'])))."' WHERE uid='".intval($uid)."'");
+			$db->write_query("UPDATE ".$db->table_prefix."users SET newpoints=newpoints+'".floatval(round($points*$forumrate*$grouprate, intval($mybb->settings['newpoints_main_decimal'])))."' WHERE uid='".intval($uid)."'");
 		else
 		{
+			isset($userpoints) || $userpoints = [];
+
 			$userpoints[intval($uid)] += floatval(round($points*$forumrate*$grouprate, intval($mybb->settings['newpoints_main_decimal'])));
 		}
 	}
@@ -793,9 +799,9 @@ function newpoints_update_addpoints()
 		foreach($userpoints as $uid => $amount)
 		{
 			if($amount < 0)
-				$db->write_query('UPDATE `'.TABLE_PREFIX.'users` SET `newpoints` = `newpoints`-('.abs((float)$amount).') WHERE `uid`=\''.$uid.'\'');
+				$db->write_query('UPDATE `'.$db->table_prefix.'users` SET `newpoints` = `newpoints`-('.abs((float)$amount).') WHERE `uid`=\''.$uid.'\'');
 			else
-				$db->write_query('UPDATE `'.TABLE_PREFIX.'users` SET `newpoints` = `newpoints`+('.(float)$amount.') WHERE `uid`=\''.$uid.'\'');
+				$db->write_query('UPDATE `'.$db->table_prefix.'users` SET `newpoints` = `newpoints`+('.(float)$amount.') WHERE `uid`=\''.$uid.'\'');
 		}
 		unset($userpoints);
 	}
@@ -998,7 +1004,7 @@ function newpoints_find_replace_templatesets($title, $find, $replace)
 	global $db;
 
 	$query = $db->write_query("
-		SELECT template, tid FROM ".TABLE_PREFIX."templates WHERE title='$title' AND sid=-1
+		SELECT template, tid FROM ".$db->table_prefix."templates WHERE title='$title' AND sid=-1
 	");
 	while($template = $db->fetch_array($query))
 	{
@@ -1018,7 +1024,7 @@ function newpoints_find_replace_templatesets($title, $find, $replace)
 	{
 		foreach($update as $template)
 		{
-			$updatetemp = array("template" => $db->escape_string($template['template']), "dateline" => TIME_NOW);
+			$updatetemp = array("template" => $db->escape_string($template['template']), "dateline" => (int)constant('TIME_NOW'));
 			$db->update_query("templates", $updatetemp, "tid='".$template['tid']."'");
 		}
 	}
@@ -1048,7 +1054,7 @@ function newpoints_log($action, $data = '', $username='', $uid=0)
 		$uid = $mybb->user['uid'];
 	}
 		
-	$db->insert_query('newpoints_log', array('action' => $db->escape_string($action), 'data' => $db->escape_string($data), 'date' => TIME_NOW, 'uid' => intval($uid), 'username' => $db->escape_string($username)));
+	$db->insert_query('newpoints_log', array('action' => $db->escape_string($action), 'data' => $db->escape_string($data), 'date' => (int)constant('TIME_NOW'), 'uid' => intval($uid), 'username' => $db->escape_string($username)));
 	
 	return true;
 }
@@ -1110,13 +1116,14 @@ function newpoints_load_plugins()
 		$mybb->user['newpoints'] = 0;
 	
 	$pluginlist = $cache->read("newpoints_plugins");
-	if(is_array($pluginlist['active']))
+
+	if(!empty($pluginlist) && is_array($pluginlist['active']))
 	{
 		foreach($pluginlist['active'] as $plugin)
 		{
-			if($plugin != "" && file_exists(MYBB_ROOT."inc/plugins/newpoints/".$plugin.".php"))
+			if($plugin != "" && file_exists(constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin.".php"))
 			{
-				require_once MYBB_ROOT."inc/plugins/newpoints/".$plugin.".php";
+				require_once constant('MYBB_ROOT')."inc/plugins/newpoints/".$plugin.".php";
 			}
 		}
 		
@@ -1179,9 +1186,9 @@ function newpoints_lang_load($plugin)
 	if ($plugin == '')
 		return;
 		
-	$lang->set_path(MYBB_ROOT."inc/plugins/newpoints/languages");
+	$lang->set_path(constant('MYBB_ROOT')."inc/plugins/newpoints/languages");
 	$lang->load($plugin);
-	$lang->set_path(MYBB_ROOT."inc/languages");
+	$lang->set_path(constant('MYBB_ROOT')."inc/languages");
 }
 
 // Updates users' points by user group - used by group rules
@@ -1193,12 +1200,8 @@ function newpoints_update_users()
 	{
 		foreach($userupdates as $gid => $amount)
 		{
-			$db->write_query('UPDATE `'.TABLE_PREFIX.'users` SET `newpoints` = `newpoints`+'.$amount.' WHERE `usergroup`='.$gid);
+			$db->write_query('UPDATE `'.$db->table_prefix.'users` SET `newpoints` = `newpoints`+'.$amount.' WHERE `usergroup`='.$gid);
 		}
 		unset($userupdates);
 	}
 }
-
-// &#71;&#101;&#110;&#101;&#114;&#105;&#99;
-
-?>
