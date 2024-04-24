@@ -2,34 +2,33 @@
 /***************************************************************************
  *
  *   NewPoints Hello plugin (/inc/plugins/newpoints/newpoints_hello.php)
- *	 Author: Pirata Nervo
+ *     Author: Pirata Nervo
  *   Copyright: � 2014 Pirata Nervo
- *   
+ *
  *   Website: http://www.mybb-plugins.com
  *
  *   A hello world plugin for NewPoints.
  *
  ***************************************************************************/
- 
+
 /****************************************************************************
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-****************************************************************************/
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if(!defined("IN_MYBB"))
-{
-	die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined("IN_MYBB")) {
+    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
 }
 
 global $plugins;
@@ -38,27 +37,27 @@ $plugins->add_hook("pre_output_page", "newpoints_hello_world");
 
 function newpoints_hello_info()
 {
-	/**
-	 * Array of information about the plugin.
-	 * name: The name of the plugin
-	 * description: Description of what the plugin does
-	 * website: The website the plugin is maintained at (Optional)
-	 * author: The name of the author of the plugin
-	 * authorsite: The URL to the website of the author (Optional)
-	 * version: The version number of the plugin
-	 * guid: Unique ID issued by the MyBB Mods site for version checking
-	 * compatibility: A CSV list of MyBB versions supported. Ex, "121,123", "12*". Wildcards supported.
-	 */
-	return array(
-		"name"			=> "Hello World!",
-		"description"	=> "A sample plugin that prints hello world depending on the settings.",
-		"website"		=> "http://www.consoleworld.net",
-		"author"		=> "Pirata Nervo",
-		"authorsite"	=> "http://www.mybb-plugins.com",
-		"version"		=> "1.0",
-		"guid" 			=> "",
-		"compatibility" => "*"
-	);
+    /**
+     * Array of information about the plugin.
+     * name: The name of the plugin
+     * description: Description of what the plugin does
+     * website: The website the plugin is maintained at (Optional)
+     * author: The name of the author of the plugin
+     * authorsite: The URL to the website of the author (Optional)
+     * version: The version number of the plugin
+     * guid: Unique ID issued by the MyBB Mods site for version checking
+     * compatibility: A CSV list of MyBB versions supported. Ex, "121,123", "12*". Wildcards supported.
+     */
+    return array(
+        "name" => "Hello World!",
+        "description" => "A sample plugin that prints hello world depending on the settings.",
+        "website" => "http://www.consoleworld.net",
+        "author" => "Pirata Nervo",
+        "authorsite" => "http://www.mybb-plugins.com",
+        "version" => "1.0",
+        "guid" => "",
+        "compatibility" => "*"
+    );
 }
 
 /**
@@ -80,12 +79,12 @@ function newpoints_hello_info()
  *
  * function newpoints_hello_is_installed()
  * {
- *		global $db;
- *		if($db->table_exists("newpoints_hello_world"))
- *  	{
- *  		return true;
- *		}
- *		return false;
+ *        global $db;
+ *        if($db->table_exists("newpoints_hello_world"))
+ *    {
+ *        return true;
+ *        }
+ *        return false;
  * }
  *
  * _uninstall():
@@ -103,12 +102,21 @@ function newpoints_hello_info()
  */
 function newpoints_hello_activate()
 {
-	global $db, $mybb;
-	// add settings
-	// take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-	newpoints_add_setting('newpoints_hello_show', 'newpoints_hello', 'Show message', 'Set to yes if you want to show the hello message on every page.', 'yesno', 1, 1);
-	rebuild_settings();
+    global $db, $mybb;
+    // add settings
+    // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
+    newpoints_add_setting(
+        'newpoints_hello_show',
+        'newpoints_hello',
+        'Show message',
+        'Set to yes if you want to show the hello message on every page.',
+        'yesno',
+        1,
+        1
+    );
+    rebuild_settings();
 }
+
 /*
  * _deactivate():
  *    Called whenever a plugin is deactivated. This should essentially "hide" the plugin from view
@@ -119,23 +127,24 @@ function newpoints_hello_activate()
  */
 function newpoints_hello_deactivate()
 {
-	global $db, $mybb;
-	// delete settings
-	// take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-	newpoints_remove_settings("'newpoints_hello_show'");
-	rebuild_settings();
+    global $db, $mybb;
+    // delete settings
+    // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
+    newpoints_remove_settings("'newpoints_hello_show'");
+    rebuild_settings();
 }
 
 
 function newpoints_hello_world($page)
 {
-	global $mybb, $lang;
-	if ($mybb->settings['newpoints_hello_show'] != 1)
-		return;
-	
-	// load language files
-	newpoints_lang_load('newpoints_hello');
-		
-	$page = str_replace("<!-- end: header -->", "<!-- end: header -->".$lang->newpoints_hello_message, $page);
-	return $page;
+    global $mybb, $lang;
+    if ($mybb->settings['newpoints_hello_show'] != 1) {
+        return;
+    }
+
+    // load language files
+    newpoints_lang_load('newpoints_hello');
+
+    $page = str_replace("<!-- end: header -->", "<!-- end: header -->" . $lang->newpoints_hello_message, $page);
+    return $page;
 }

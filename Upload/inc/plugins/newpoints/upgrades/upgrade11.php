@@ -2,53 +2,66 @@
 /***************************************************************************
  *
  *   NewPoints plugin (/inc/plugins/upgrades/upgrade11.php)
- *	 Author: Pirata Nervo
+ *     Author: Pirata Nervo
  *   Copyright: © 2014 Pirata Nervo
- *   
+ *
  *   Website: http://www.mybb-plugins.com
  *
  *   Upgrade file to upgrade NewPoints 1.0 to NewPoints 1.1
  *
  ***************************************************************************/
- 
-/****************************************************************************
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-****************************************************************************/
 
-if(!defined("IN_MYBB"))
-	die("This file cannot be accessed directly.");
-	
-if (!defined('IN_ADMINCP'))
-	die("This file must be accessed from the Administrator Panel.");
+/****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ****************************************************************************/
+
+if (!defined("IN_MYBB")) {
+    die("This file cannot be accessed directly.");
+}
+
+if (!defined('IN_ADMINCP')) {
+    die("This file must be accessed from the Administrator Panel.");
+}
 
 function upgrade11_info()
 {
-	return array('new_version' => '1.1',
-				 'name' => 'Upgrade to 1.1',
-				 'description' => 'Upgrade NewPoints 1.0 to NewPoints 1.1'
-				 );
+    return array(
+        'new_version' => '1.1',
+        'name' => 'Upgrade to 1.1',
+        'description' => 'Upgrade NewPoints 1.0 to NewPoints 1.1'
+    );
 }
 
 // upgrade function
 function upgrade11_run()
 {
-	newpoints_add_setting('newpoints_income_referral', 'income', 'Per Referral', 'Amount of points received everytime a user is referred. (the referred user is who receives the points)', 'text', '5', 12);
-	change_admin_permission("newpoints", "upgrades", 1);
-	
-	newpoints_remove_templates("'newpoints_donate'");
-	
-	newpoints_add_template('newpoints_donate', '
+    newpoints_add_setting(
+        'newpoints_income_referral',
+        'income',
+        'Per Referral',
+        'Amount of points received everytime a user is referred. (the referred user is who receives the points)',
+        'text',
+        '5',
+        12
+    );
+    change_admin_permission("newpoints", "upgrades", 1);
+
+    newpoints_remove_templates("'newpoints_donate'");
+
+    newpoints_add_template(
+        'newpoints_donate',
+        '
 <html>
 <head>
 <title>{$lang->newpoints} - {$lang->newpoints_donate}</title>
@@ -96,5 +109,6 @@ function upgrade11_run()
 </table>
 {$footer}
 </body>
-</html>');
+</html>'
+    );
 }

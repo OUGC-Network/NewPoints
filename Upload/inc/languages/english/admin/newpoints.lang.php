@@ -2,29 +2,29 @@
 /***************************************************************************
  *
  *   NewPoints plugin (/inc/languages/admin/newpoints.lang.php)
- *	 Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
- *   
+ *     Author: Pirata Nervo
+ *   Copyright: ï¿½ 2014 Pirata Nervo
+ *
  *   Website: http://www.mybb-plugins.com
  *
  *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
  ***************************************************************************/
- 
+
 /****************************************************************************
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-****************************************************************************/
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ****************************************************************************/
 
 $l['newpoints'] = "NewPoints";
 $l['newpoints_submit_button'] = 'Submit';
@@ -71,7 +71,7 @@ $l['newpoints_log_prune'] = 'Prune log entries';
 $l['newpoints_older_than'] = 'Older than';
 $l['newpoints_older_than_desc'] = 'Prune log entries older than the number of days you enter.';
 $l['newpoints_log_pruned'] = 'Log entries successfully pruned.';
-$l['newpoints_log_pruneconfirm'] =' Are you sure you want to prune log entries?';
+$l['newpoints_log_pruneconfirm'] = ' Are you sure you want to prune log entries?';
 $l['newpoints_invalid_username'] = 'Invalid username selected.';
 $l['newpoints_log_filter'] = 'Filters';
 $l['newpoints_filter_username'] = 'Username';
@@ -207,5 +207,3 @@ $l['newpoints_no_upgrades'] = 'No upgrades found.';
 $l['newpoints_upgrades_notice'] = 'You should backup your database before running an upgrade script.<br /><small>Only run upgrade files if you\'re sure about what you\'re doing</small>';
 $l['newpoints_upgrades_ran'] = 'Upgrade script ran successfully.';
 $l['newpoints_upgrades_newversion'] = 'New version';
-
-?>
