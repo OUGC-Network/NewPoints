@@ -27,15 +27,15 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if (!defined("IN_MYBB")) {
-    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined('IN_MYBB')) {
+    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
 global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks("newpoints_admin_forumrules_begin");
+$plugins->run_hooks('newpoints_admin_forumrules_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_forumrules, 'index.php?module=newpoints-forumrules');
 
@@ -63,12 +63,12 @@ if (!$mybb->input['action']) // view forumrules
 {
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules');
 
-    $plugins->run_hooks("newpoints_admin_forumrules_noaction_start");
+    $plugins->run_hooks('newpoints_admin_forumrules_noaction_start');
 
     echo "<p class=\"notice\">{$lang->newpoints_forumrules_notice}</p>";
 
     // table
-    $table = new Table;
+    $table = new Table();
     $table->construct_header($lang->newpoints_forumrules_name, array('width' => '50%'));
     $table->construct_header($lang->newpoints_forumrules_title, array('width' => '30%'));
     $table->construct_header($lang->newpoints_forumrules_options, array('width' => '20%', 'class' => 'align_center'));
@@ -76,16 +76,16 @@ if (!$mybb->input['action']) // view forumrules
     $query = $db->simple_select('newpoints_forumrules', '*', '', array('order_by' => 'rid', 'order_dir' => 'ASC'));
     while ($rule = $db->fetch_array($query)) {
         $table->construct_cell(
-            htmlspecialchars_uni($rule['name']) . "<br /><small>" . htmlspecialchars_uni(
+            htmlspecialchars_uni($rule['name']) . '<br /><small>' . htmlspecialchars_uni(
                 $rule['description']
-            ) . "</small>"
+            ) . '</small>'
         );
 
         $forum = get_forum($rule['fid']);
 
-        $link = "<a href=\"" . $mybb->settings['bburl'] . "/" . get_forum_link(
+        $link = "<a href=\"" . $mybb->settings['bburl'] . '/' . get_forum_link(
                 $rule['fid']
-            ) . "\" target=\"_blank\">" . $forum['name'] . "</a>";
+            ) . "\" target=\"_blank\">" . $forum['name'] . '</a>';
         $table->construct_cell($link);
         $table->construct_cell(
             "<a href=\"index.php?module=newpoints-forumrules&amp;action=delete_rule&amp;rid={$rule['rid']}\" target=\"_self\">{$lang->newpoints_delete}</a> - <a href=\"index.php?module=newpoints-forumrules&amp;action=edit&amp;rid={$rule['rid']}\" target=\"_self\">{$lang->newpoints_edit}</a>",
@@ -102,22 +102,22 @@ if (!$mybb->input['action']) // view forumrules
 
     $table->output($lang->newpoints_forumrules_rules);
 
-    $plugins->run_hooks("newpoints_admin_forumrules_noaction_end");
+    $plugins->run_hooks('newpoints_admin_forumrules_noaction_end');
 } elseif ($mybb->input['action'] == 'add') {
-    $plugins->run_hooks("newpoints_admin_forumrules_add_start");
+    $plugins->run_hooks('newpoints_admin_forumrules_add_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules_add');
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-forumrules");
+            admin_redirect('index.php?module=newpoints-forumrules');
         }
 
         if (!$mybb->input['name'] || !$mybb->input['forum']) {
             flash_message($lang->newpoints_missing_fields, 'error');
-            admin_redirect("index.php?module=newpoints-forumrules");
+            admin_redirect('index.php?module=newpoints-forumrules');
         }
 
         $insert_query = array(
@@ -129,7 +129,7 @@ if (!$mybb->input['action']) // view forumrules
             'fid' => intval($mybb->input['forum'])
         );
 
-        $insert_query = $plugins->run_hooks("newpoints_admin_forumrules_add_insert", $insert_query);
+        $insert_query = $plugins->run_hooks('newpoints_admin_forumrules_add_insert', $insert_query);
 
         $db->insert_query('newpoints_forumrules', $insert_query);
 
@@ -138,16 +138,16 @@ if (!$mybb->input['action']) // view forumrules
         newpoints_rebuild_rules_cache($array);
 
         flash_message($lang->newpoints_forumrules_added, 'success');
-        admin_redirect("index.php?module=newpoints-forumrules");
+        admin_redirect('index.php?module=newpoints-forumrules');
     }
 
-    $form = new Form("index.php?module=newpoints-forumrules&amp;action=add", "post", "newpoints");
+    $form = new Form('index.php?module=newpoints-forumrules&amp;action=add', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
+    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
 
     $form_container = new FormContainer($lang->newpoints_forumrules_addrule);
     $form_container->output_row(
-        $lang->newpoints_forumrules_name . "<em>*</em>",
+        $lang->newpoints_forumrules_name . '<em>*</em>',
         $lang->newpoints_forumrules_name_desc,
         $form->generate_text_box('name', '', array('id' => 'name')),
         'name'
@@ -159,7 +159,7 @@ if (!$mybb->input['action']) // view forumrules
         'description'
     );
     $form_container->output_row(
-        $lang->newpoints_forumrules_rate . "<em>*</em>",
+        $lang->newpoints_forumrules_rate . '<em>*</em>',
         $lang->newpoints_forumrules_rate_desc,
         $form->generate_text_box('rate', '1', array('id' => 'rate')),
         'rate'
@@ -177,14 +177,14 @@ if (!$mybb->input['action']) // view forumrules
         'minpost'
     );
     $form_container->output_row(
-        $lang->newpoints_forumrules_forum . "<em>*</em>",
+        $lang->newpoints_forumrules_forum . '<em>*</em>',
         $lang->newpoints_forumrules_forum_desc,
         $form->generate_forum_select('forum', 0, array('id' => 'forum', 'main_option' => $lang->newpoints_select_forum)
         ),
         'forum'
     );
 
-    $plugins->run_hooks("newpoints_admin_forumrules_add");
+    $plugins->run_hooks('newpoints_admin_forumrules_add');
 
     $form_container->end();
 
@@ -194,20 +194,20 @@ if (!$mybb->input['action']) // view forumrules
     $form->output_submit_wrapper($buttons);
     $form->end();
 } elseif ($mybb->input['action'] == 'edit') {
-    $plugins->run_hooks("newpoints_admin_forumrules_edit_start");
+    $plugins->run_hooks('newpoints_admin_forumrules_edit_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules_edit');
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-forumrules");
+            admin_redirect('index.php?module=newpoints-forumrules');
         }
 
         if (!$mybb->input['name'] || !$mybb->input['forum']) {
             flash_message($lang->newpoints_missing_fields, 'error');
-            admin_redirect("index.php?module=newpoints-forumrules");
+            admin_redirect('index.php?module=newpoints-forumrules');
         }
 
         $update_query = array(
@@ -219,7 +219,7 @@ if (!$mybb->input['action']) // view forumrules
             'fid' => intval($mybb->input['forum'])
         );
 
-        $update_query = $plugins->run_hooks("newpoints_admin_forumrules_edit_update", $update_query);
+        $update_query = $plugins->run_hooks('newpoints_admin_forumrules_edit_update', $update_query);
 
         $db->update_query('newpoints_forumrules', $update_query, 'rid=' . intval($mybb->input['rid']));
 
@@ -228,24 +228,24 @@ if (!$mybb->input['action']) // view forumrules
         newpoints_rebuild_rules_cache();
 
         flash_message($lang->newpoints_forumrules_edited, 'success');
-        admin_redirect("index.php?module=newpoints-forumrules");
+        admin_redirect('index.php?module=newpoints-forumrules');
     }
 
     $query = $db->simple_select('newpoints_forumrules', '*', 'rid=\'' . intval($mybb->input['rid']) . '\'');
     $rule = $db->fetch_array($query);
     if (!$rule) {
         flash_message($lang->newpoints_forumrules_invalid, 'error');
-        admin_redirect("index.php?module=newpoints-forumrules");
+        admin_redirect('index.php?module=newpoints-forumrules');
     }
 
-    $form = new Form("index.php?module=newpoints-forumrules&amp;action=edit", "post", "newpoints");
+    $form = new Form('index.php?module=newpoints-forumrules&amp;action=edit', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
-    echo $form->generate_hidden_field("rid", $rule['rid']);
+    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
+    echo $form->generate_hidden_field('rid', $rule['rid']);
 
     $form_container = new FormContainer($lang->newpoints_forumrules_editrule);
     $form_container->output_row(
-        $lang->newpoints_forumrules_name . "<em>*</em>",
+        $lang->newpoints_forumrules_name . '<em>*</em>',
         $lang->newpoints_forumrules_name_desc,
         $form->generate_text_box('name', htmlspecialchars_uni($rule['name']), array('id' => 'name')),
         'name'
@@ -258,7 +258,7 @@ if (!$mybb->input['action']) // view forumrules
         'description'
     );
     $form_container->output_row(
-        $lang->newpoints_forumrules_rate . "<em>*</em>",
+        $lang->newpoints_forumrules_rate . '<em>*</em>',
         $lang->newpoints_forumrules_rate_desc,
         $form->generate_text_box('rate', floatval($rule['rate']), array('id' => 'rate')),
         'rate'
@@ -276,7 +276,7 @@ if (!$mybb->input['action']) // view forumrules
         'minpost'
     );
     $form_container->output_row(
-        $lang->newpoints_forumrules_forum . "<em>*</em>",
+        $lang->newpoints_forumrules_forum . '<em>*</em>',
         $lang->newpoints_forumrules_forum_desc,
         $form->generate_forum_select(
             'forum',
@@ -286,7 +286,7 @@ if (!$mybb->input['action']) // view forumrules
         'forum'
     );
 
-    $plugins->run_hooks("newpoints_admin_forumrules_edit");
+    $plugins->run_hooks('newpoints_admin_forumrules_edit');
 
     $form_container->end();
 
@@ -298,14 +298,14 @@ if (!$mybb->input['action']) // view forumrules
 } elseif ($mybb->input['action'] == 'delete_rule') {
     if ($mybb->input['no']) // user clicked no
     {
-        admin_redirect("index.php?module=newpoints-forumrules");
+        admin_redirect('index.php?module=newpoints-forumrules');
     }
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-forumrules");
+            admin_redirect('index.php?module=newpoints-forumrules');
         }
 
         if (!$db->fetch_field(
@@ -337,12 +337,12 @@ if (!$mybb->input['action']) // view forumrules
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
     echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array("name" => "no", 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
 }
 
-$plugins->run_hooks("newpoints_admin_forumrules_terminate");
+$plugins->run_hooks('newpoints_admin_forumrules_terminate');
 
 $page->output_footer();

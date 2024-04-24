@@ -26,7 +26,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-$l['newpoints'] = "NewPoints";
+$l['newpoints'] = 'NewPoints';
 $l['newpoints_home'] = 'Home';
 $l['newpoints_menu'] = 'Menu';
 $l['newpoints_donate'] = 'Donate';

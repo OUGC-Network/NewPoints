@@ -27,15 +27,15 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if (!defined("IN_MYBB")) {
-    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined('IN_MYBB')) {
+    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
 global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks("newpoints_admin_stats_begin");
+$plugins->run_hooks('newpoints_admin_stats_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_stats, 'index.php?module=newpoints-stats');
 
@@ -52,10 +52,10 @@ if (!$mybb->input['action']) // view stats
 {
     $fields = array('uid', 'username', 'newpoints');
 
-    $plugins->run_hooks("newpoints_admin_stats_noaction_start");
+    $plugins->run_hooks('newpoints_admin_stats_noaction_start');
 
     // table
-    $table = new Table;
+    $table = new Table();
     $table->construct_header($lang->newpoints_stats_user, array('width' => '50%'));
     $table->construct_header($lang->newpoints_stats_points, array('width' => '50%', 'class' => 'align_center'));
 
@@ -84,10 +84,10 @@ if (!$mybb->input['action']) // view stats
 
     $table->output($lang->newpoints_stats_richest_users);
 
-    echo "<br />";
+    echo '<br />';
 
     // table
-    $table = new Table;
+    $table = new Table();
     $table->construct_header($lang->newpoints_stats_to, array('width' => '30%'));
     $table->construct_header($lang->newpoints_stats_from, array('width' => '30%'));
     $table->construct_header($lang->newpoints_stats_amount, array('width' => '20%', 'class' => 'align_center'));
@@ -114,7 +114,7 @@ if (!$mybb->input['action']) // view stats
 
         $table->construct_cell(newpoints_format_points($data[2]), array('class' => 'align_center'));
         $table->construct_cell(
-            my_date($mybb->settings['dateformat'], intval($stats['date']), '', false) . ", " . my_date(
+            my_date($mybb->settings['dateformat'], intval($stats['date']), '', false) . ', ' . my_date(
                 $mybb->settings['timeformat'],
                 intval($stats['date'])
             ),
@@ -131,9 +131,9 @@ if (!$mybb->input['action']) // view stats
 
     $table->output($lang->newpoints_stats_lastdonations);
 
-    $plugins->run_hooks("newpoints_admin_stats_noaction_end");
+    $plugins->run_hooks('newpoints_admin_stats_noaction_end');
 }
 
-$plugins->run_hooks("newpoints_admin_stats_terminate");
+$plugins->run_hooks('newpoints_admin_stats_terminate');
 
 $page->output_footer();

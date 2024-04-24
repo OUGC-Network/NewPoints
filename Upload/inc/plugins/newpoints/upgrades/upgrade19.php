@@ -26,12 +26,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-if (!defined("IN_MYBB")) {
-    die("This file cannot be accessed directly.");
+if (!defined('IN_MYBB')) {
+    die('This file cannot be accessed directly.');
 }
 
 if (!defined('IN_ADMINCP')) {
-    die("This file must be accessed from the Administrator Panel.");
+    die('This file must be accessed from the Administrator Panel.');
 }
 
 function upgrade19_info()
@@ -49,9 +49,9 @@ function upgrade19_run()
     global $db;
 
     $db->write_query(
-        "ALTER TABLE `" . $db->table_prefix . "newpoints_forumrules` MODIFY `pointsview` DECIMAL(16,2) NOT NULL default '0';"
+        'ALTER TABLE `' . $db->table_prefix . "newpoints_forumrules` MODIFY `pointsview` DECIMAL(16,2) NOT NULL default '0';"
     );
     $db->write_query(
-        "ALTER TABLE `" . $db->table_prefix . "newpoints_forumrules` MODIFY `pointspost` DECIMAL(16,2) NOT NULL default '0';"
+        'ALTER TABLE `' . $db->table_prefix . "newpoints_forumrules` MODIFY `pointspost` DECIMAL(16,2) NOT NULL default '0';"
     );
 }

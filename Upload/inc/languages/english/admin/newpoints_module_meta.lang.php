@@ -26,22 +26,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-$l['newpoints'] = "NewPoints";
+$l['newpoints'] = 'NewPoints';
 
-$l['nav_plugins'] = "Plugins";
-$l['nav_settings'] = "Settings";
-$l['nav_log'] = "Log";
-$l['nav_maintenance'] = "Maintenance";
-$l['nav_forumrules'] = "Forum Rules";
-$l['nav_grouprules'] = "Group Rules";
-$l['nav_stats'] = "Statistics";
-$l['nav_upgrades'] = "Upgrades";
+$l['nav_plugins'] = 'Plugins';
+$l['nav_settings'] = 'Settings';
+$l['nav_log'] = 'Log';
+$l['nav_maintenance'] = 'Maintenance';
+$l['nav_forumrules'] = 'Forum Rules';
+$l['nav_grouprules'] = 'Group Rules';
+$l['nav_stats'] = 'Statistics';
+$l['nav_upgrades'] = 'Upgrades';
 
-$l['can_manage_newpoints'] = "Can Manage NewPoints?";
-$l['can_manage_settings'] = "Can Manage Settings?";
-$l['can_manage_log'] = "Can Manage Log?";
-$l['can_manage_maintenance'] = "Can Manage Maintenance?";
-$l['can_manage_forumrules'] = "Can Manage Forum Rules?";
-$l['can_manage_grouprules'] = "Can Manage Group Rules?";
-$l['can_manage_stats'] = "Can Manage Statistics?";
-$l['can_manage_upgrades'] = "Can Manage Upgrades?";
+$l['can_manage_newpoints'] = 'Can Manage NewPoints?';
+$l['can_manage_settings'] = 'Can Manage Settings?';
+$l['can_manage_log'] = 'Can Manage Log?';
+$l['can_manage_maintenance'] = 'Can Manage Maintenance?';
+$l['can_manage_forumrules'] = 'Can Manage Forum Rules?';
+$l['can_manage_grouprules'] = 'Can Manage Group Rules?';
+$l['can_manage_stats'] = 'Can Manage Statistics?';
+$l['can_manage_upgrades'] = 'Can Manage Upgrades?';

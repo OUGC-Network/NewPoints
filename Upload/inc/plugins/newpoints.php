@@ -26,8 +26,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-if (!defined("IN_MYBB")) {
-    die("This file cannot be accessed directly.");
+if (!defined('IN_MYBB')) {
+    die('This file cannot be accessed directly.');
 }
 
 // Load NewPoints' settings whenever NewPoints plugin is executed
@@ -39,7 +39,7 @@ if (defined('IN_ADMINCP')) {
     global $mybb;
 
     // Plugins get "require_once" on Plugins List and Plugins Check and we do not want to load our settings when our file is required by those
-    if ($mybb->get_input('module') != "config-plugins" && $GLOBALS['db']->table_exists("newpoints_settings")) {
+    if ($mybb->get_input('module') != 'config-plugins' && $GLOBALS['db']->table_exists('newpoints_settings')) {
         newpoints_load_settings();
     }
 } else {
@@ -66,62 +66,62 @@ define('MAX_DONATIONS_CONTROL', '5'); // Maximum donations someone can send each
 
 // load plugins and do other stuff
 if (defined('IN_ADMINCP')) {
-    define("NP_HOOKS", 1); // 1 means Admin
+    define('NP_HOOKS', 1); // 1 means Admin
 } else {
-    define("NP_HOOKS", 2); // 2 means outside ACP
+    define('NP_HOOKS', 2); // 2 means outside ACP
 }
 
 // load hooks
-require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/hooks.php";
+require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/hooks.php';
 
 if (defined('IN_ADMINCP')) {
     global $db, $mybb;
 
     function newpoints_info()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         return newpoints_plugin_info();
     }
 
     function newpoints_install()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         newpoints_plugin_install();
     }
 
     function newpoints_is_installed()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         return newpoints_plugin_is_installed();
     }
 
     function newpoints_uninstall()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         newpoints_plugin_uninstall();
     }
 
     function newpoints_do_template_edits()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         newpoints_plugin_do_template_edits();
     }
 
     function newpoints_undo_template_edits()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         newpoints_plugin_undo_template_edits();
     }
 
     function newpoints_activate()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         newpoints_plugin_activate();
     }
 
     function newpoints_deactivate()
     {
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/core/plugin.php";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
         newpoints_plugin_deactivate();
     }
 }
@@ -140,7 +140,7 @@ function newpoints_count_characters($message)
     global $parser;
     if (!is_object($parser)) {
         require_once constant('MYBB_ROOT') . 'inc/class_parser.php';
-        $parser = new postParser;
+        $parser = new postParser();
     }
 
     $message = $parser->parse_message($message, array(
@@ -191,7 +191,7 @@ function newpoints_jsspecialchars($str)
 {
     // Converts & -> &amp; allowing Unicode
     // Parses out HTML comments as the XHTML validator doesn't seem to like them
-    $string = preg_replace(array("#\<\!--.*?--\>#", "#&(?!\#[0-9]+;)#"), array('', '&amp;'), $str);
+    $string = preg_replace(array('#\<\!--.*?--\>#', '#&(?!\#[0-9]+;)#'), array('', '&amp;'), $str);
     return strtr(
         $string,
         array("\n" => '\n', "\r" => '\r', '\\' => '\\\\', '"' => '\x22', "'" => '\x27', '<' => '&lt;', '>' => '&gt;')
@@ -213,7 +213,7 @@ function newpoints_remove_templates($templates)
         return false;
     }
 
-    return $db->delete_query('templates', "title IN (" . $templates . ")");
+    return $db->delete_query('templates', 'title IN (' . $templates . ')');
 }
 
 /**
@@ -221,7 +221,7 @@ function newpoints_remove_templates($templates)
  *
  * @param string the title of the template
  * @param string the contents of the template
- * @param integer the sid of the template
+ * @param int the sid of the template
  * @return bool false if something went wrong
  *
  */
@@ -234,9 +234,9 @@ function newpoints_add_template($name, $contents, $sid = -1)
     }
 
     $templatearray = array(
-        "title" => $db->escape_string($name),
-        "template" => $db->escape_string($contents),
-        "sid" => intval($sid)
+        'title' => $db->escape_string($name),
+        'template' => $db->escape_string($contents),
+        'sid' => intval($sid)
     );
 
     $query = $db->simple_select(
@@ -259,7 +259,7 @@ function newpoints_add_template($name, $contents, $sid = -1)
 
     // Remove duplicates
     if ($duplicates) {
-        $db->delete_query('templates', 'tid IN (' . implode(",", $duplicates) . ')');
+        $db->delete_query('templates', 'tid IN (' . implode(',', $duplicates) . ')');
     }
 
     // Update if necessary, insert otherwise
@@ -271,7 +271,7 @@ function newpoints_add_template($name, $contents, $sid = -1)
         return false;
     }
 
-    return $db->insert_query("templates", $templatearray);
+    return $db->insert_query('templates', $templatearray);
 }
 
 /**
@@ -551,7 +551,7 @@ if(use_xmlhttprequest == "1")
 
     // Delete duplicated master templates, if they exist.
     if ($duplicates) {
-        $db->delete_query('templates', 'tid IN (' . implode(",", $duplicates) . ')');
+        $db->delete_query('templates', 'tid IN (' . implode(',', $duplicates) . ')');
     }
 
     // Update or create templates.
@@ -610,7 +610,7 @@ function newpoints_remove_settings($settings)
         return false;
     }
 
-    $db->delete_query('newpoints_settings', "name IN (" . $settings . ")");
+    $db->delete_query('newpoints_settings', 'name IN (' . $settings . ')');
     //$db->delete_query('settings', "name IN (".$settings.")");
 
     return true;
@@ -625,7 +625,7 @@ function newpoints_remove_settings($settings)
  * @param string the description of the setting
  * @param string the type of the setting ('text', 'textarea', etc...)
  * @param string the value of the setting
- * @param integer the display order of the setting
+ * @param int the display order of the setting
  * @return bool false on failure, true on success
  *
  */
@@ -638,13 +638,13 @@ function newpoints_add_setting($name, $plugin, $title, $description, $type, $val
     }
 
     $setting = array(
-        "name" => $db->escape_string($name),
-        "plugin" => $db->escape_string($plugin),
-        "title" => $db->escape_string($title),
-        "description" => $db->escape_string($description),
-        "type" => $db->escape_string($type),
-        "value" => $db->escape_string($value),
-        "disporder" => intval($disporder)
+        'name' => $db->escape_string($name),
+        'plugin' => $db->escape_string($plugin),
+        'title' => $db->escape_string($title),
+        'description' => $db->escape_string($description),
+        'type' => $db->escape_string($type),
+        'value' => $db->escape_string($value),
+        'disporder' => intval($disporder)
     );
 
     // Update if setting already exists, insert otherwise.
@@ -656,9 +656,9 @@ function newpoints_add_setting($name, $plugin, $title, $description, $type, $val
 
     if ($sid = $db->fetch_field($query, 'sid')) {
         unset($setting['value']);
-        $db->update_query("newpoints_settings", $setting, "sid='{$sid}'");
+        $db->update_query('newpoints_settings', $setting, "sid='{$sid}'");
     } else {
-        $db->insert_query("newpoints_settings", $setting);
+        $db->insert_query('newpoints_settings', $setting);
     }
 
     return true;
@@ -732,10 +732,10 @@ function newpoints_add_settings($plugin, $settings)
 /**
  * Adds/Subtracts points to a user
  *
- * @param integer the id of the user
+ * @param int the id of the user
  * @param float the number of points to add or subtract (if a negative value)
- * @param integer the forum income rate
- * @param integer the user group income rate
+ * @param int the forum income rate
+ * @param int the user group income rate
  * @param bool if the uid is a string in case we don't have the uid we can update the points field by searching for the user name
  * @param bool true if you want to run the query immediatly. Default is false which means the query will be run on shut down. Note that if the previous paremeter is set to true, the query is run immediatly
  * Note: some pages (by other plugins) do not run queries on shutdown so adding this to shutdown may not be good if you're not sure if it will run.
@@ -759,7 +759,7 @@ function newpoints_addpoints($uid, $points, $forumrate = 1, $grouprate = 1, $iss
     if ($isstring) // where username
     {
         $db->write_query(
-            "UPDATE " . $db->table_prefix . "users SET newpoints=newpoints+'" . floatval(
+            'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . floatval(
                 round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']))
             ) . "' WHERE username='" . $db->escape_string($uid) . "'"
         );
@@ -768,7 +768,7 @@ function newpoints_addpoints($uid, $points, $forumrate = 1, $grouprate = 1, $iss
         // if immediate, run the query now otherwise add it to shutdown to avoid slow down
         if ($immediate) {
             $db->write_query(
-                "UPDATE " . $db->table_prefix . "users SET newpoints=newpoints+'" . floatval(
+                'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . floatval(
                     round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']))
                 ) . "' WHERE uid='" . intval($uid) . "'"
             );
@@ -813,7 +813,7 @@ function newpoints_update_addpoints()
  * Get rules of a certain group or forum
  *
  * @param string the type of rule: 'forum' or 'group'
- * @param integer the id of the group or forum
+ * @param int the id of the group or forum
  * @return bool false if something went wrong
  *
  */
@@ -835,7 +835,7 @@ function newpoints_getrules($type, $id)
 
     $rule = array();
 
-    $cachedrules = $cache->read("newpoints_rules");
+    $cachedrules = $cache->read('newpoints_rules');
     if ($cachedrules === false) {
         // Something's wrong so let's get rule from DB
         // To fix this issue, the administrator should edit a rule and save it (all rules are re-cached when one is added/edited)
@@ -876,7 +876,7 @@ function newpoints_getallrules($type)
 
     $rules = array();
 
-    $cachedrules = $cache->read("newpoints_rules");
+    $cachedrules = $cache->read('newpoints_rules');
     if ($cachedrules === false) {
         // Something's wrong so let's get the rules from DB
         // To fix this issue, the administrator should edit a rule and save it (all rules are re-cached when one is added/edited)
@@ -908,14 +908,14 @@ function newpoints_rebuild_rules_cache(&$rules = array())
     $rules = array();
 
     // Query forum rules
-    $query = $db->simple_select("newpoints_forumrules");
+    $query = $db->simple_select('newpoints_forumrules');
     while ($rule = $db->fetch_array($query)) {
         $rules['forum'][$rule['fid']] = $rule;
     }
     $db->free_result($query);
 
     // Query group rules
-    $query = $db->simple_select("newpoints_grouprules");
+    $query = $db->simple_select('newpoints_grouprules');
     while ($rule = $db->fetch_array($query)) {
         $rules['group'][$rule['gid']] = $rule;
     }
@@ -973,7 +973,7 @@ function newpoints_getuser_byname($username, $fields = '*')
 /**
  * Get the user group data of the gid
  *
- * @param integer the usergroup ID
+ * @param int the usergroup ID
  * @return array the user data
  *
  */
@@ -1004,8 +1004,8 @@ function newpoints_find_replace_templatesets($title, $find, $replace)
     global $db;
 
     $query = $db->write_query(
-        "
-		SELECT template, tid FROM " . $db->table_prefix . "templates WHERE title='$title' AND sid=-1
+        '
+		SELECT template, tid FROM ' . $db->table_prefix . "templates WHERE title='$title' AND sid=-1
 	"
     );
     while ($template = $db->fetch_array($query)) {
@@ -1023,10 +1023,10 @@ function newpoints_find_replace_templatesets($title, $find, $replace)
     if (is_array($update)) {
         foreach ($update as $template) {
             $updatetemp = array(
-                "template" => $db->escape_string($template['template']),
-                "dateline" => (int)constant('TIME_NOW')
+                'template' => $db->escape_string($template['template']),
+                'dateline' => (int)constant('TIME_NOW')
             );
-            $db->update_query("templates", $updatetemp, "tid='" . $template['tid'] . "'");
+            $db->update_query('templates', $updatetemp, "tid='" . $template['tid'] . "'");
         }
     }
     return true;
@@ -1106,9 +1106,9 @@ function newpoints_check_permissions($groups_comma)
         return false;
     }
 
-    $groups = explode(",", $groups_comma);
+    $groups = explode(',', $groups_comma);
 
-    $ourgroups = explode(",", $mybb->user['additionalgroups']);
+    $ourgroups = explode(',', $mybb->user['additionalgroups']);
     $ourgroups[] = $mybb->user['usergroup'];
 
     if (count(array_intersect($ourgroups, $groups)) == 0) {
@@ -1129,12 +1129,12 @@ function newpoints_load_plugins()
         $mybb->user['newpoints'] = 0;
     }
 
-    $pluginlist = $cache->read("newpoints_plugins");
+    $pluginlist = $cache->read('newpoints_plugins');
 
     if (!empty($pluginlist) && is_array($pluginlist['active'])) {
         foreach ($pluginlist['active'] as $plugin) {
-            if ($plugin != "" && file_exists(constant('MYBB_ROOT') . "inc/plugins/newpoints/" . $plugin . ".php")) {
-                require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/" . $plugin . ".php";
+            if ($plugin != '' && file_exists(constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php')) {
+                require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php';
             }
         }
 
@@ -1146,7 +1146,7 @@ function newpoints_load_settings()
 {
     global $mybb, $db, $cache;
 
-    $settings = $cache->read("newpoints_settings");
+    $settings = $cache->read('newpoints_settings');
     if ($settings !== false && !empty($settings)) {
         foreach ($settings as $name => $value) {
             $mybb->settings[$name] = $value;
@@ -1172,11 +1172,11 @@ function newpoints_rebuild_settings_cache(&$settings = array())
     $settings = array();
 
     $options = array(
-        "order_by" => "title",
-        "order_dir" => "ASC"
+        'order_by' => 'title',
+        'order_dir' => 'ASC'
     );
 
-    $query = $db->simple_select("newpoints_settings", "value, name", "", $options);
+    $query = $db->simple_select('newpoints_settings', 'value, name', '', $options);
     while ($setting = $db->fetch_array($query)) {
         //$setting['value'] = str_replace("\"", "\\\"", $setting['value']);
         $settings[$setting['name']] = $setting['value'];
@@ -1194,9 +1194,9 @@ function newpoints_lang_load($plugin)
         return;
     }
 
-    $lang->set_path(constant('MYBB_ROOT') . "inc/plugins/newpoints/languages");
+    $lang->set_path(constant('MYBB_ROOT') . 'inc/plugins/newpoints/languages');
     $lang->load($plugin);
-    $lang->set_path(constant('MYBB_ROOT') . "inc/languages");
+    $lang->set_path(constant('MYBB_ROOT') . 'inc/languages');
 }
 
 // Updates users' points by user group - used by group rules

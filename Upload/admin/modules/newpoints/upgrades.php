@@ -27,15 +27,15 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if (!defined("IN_MYBB")) {
-    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined('IN_MYBB')) {
+    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
 global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks("newpoints_admin_upgrades_begin");
+$plugins->run_hooks('newpoints_admin_upgrades_begin');
 
 if (!$mybb->input['action']) // view upgrades
 {
@@ -56,22 +56,22 @@ if (!$mybb->input['action']) // view upgrades
     $upgrades = newpoints_get_upgrades();
 
     // table
-    $table = new Table;
+    $table = new Table();
     $table->construct_header($lang->newpoints_upgrades_name, array('width' => '70%'));
     $table->construct_header($lang->options, array('width' => '30%', 'class' => 'align_center'));
 
     if (!empty($upgrades)) {
         foreach ($upgrades as $upgrade) {
-            $codename = str_replace(".php", "", $upgrade);
-            require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/upgrades/" . $upgrade;
-            $infofunc = $codename . "_info";
+            $codename = str_replace('.php', '', $upgrade);
+            require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/' . $upgrade;
+            $infofunc = $codename . '_info';
             if (!function_exists($infofunc)) {
                 continue;
             }
 
             $upgradeinfo = $infofunc();
 
-            $table->construct_cell($upgradeinfo['name'] . "<br /><small>" . $upgradeinfo['description'] . "</small>");
+            $table->construct_cell($upgradeinfo['name'] . '<br /><small>' . $upgradeinfo['description'] . '</small>');
             $table->construct_cell(
                 "<a href=\"index.php?module=newpoints-upgrades&amp;action=run&amp;upgrade_file=" . $codename . "&amp;my_post_key={$mybb->post_code}\" target=\"_self\">{$lang->newpoints_run}</a>",
                 array('class' => 'align_center')
@@ -88,24 +88,24 @@ if (!$mybb->input['action']) // view upgrades
 } elseif ($mybb->input['action'] == 'run') {
     if ($mybb->input['no']) // user clicked no
     {
-        admin_redirect("index.php?module=newpoints-upgrades");
+        admin_redirect('index.php?module=newpoints-upgrades');
     }
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-upgrades");
+            admin_redirect('index.php?module=newpoints-upgrades');
         }
 
         $upgrade = $mybb->input['upgrade_file'];
 
-        require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/upgrades/" . $upgrade . ".php";
-        $runfunc = $upgrade . "_run";
+        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/' . $upgrade . '.php';
+        $runfunc = $upgrade . '_run';
         if (!function_exists($runfunc)) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-upgrades");
+            admin_redirect('index.php?module=newpoints-upgrades');
         }
 
         $runfunc();
@@ -120,9 +120,9 @@ if (!$mybb->input['action']) // view upgrades
 
     $mybb->input['upgrade_file'] = htmlspecialchars($mybb->input['upgrade_file']);
     $form = new Form(
-        "index.php?module=newpoints-upgrades&amp;action=run&amp;upgrade_file=" . str_replace(
-            ".php",
-            "",
+        'index.php?module=newpoints-upgrades&amp;action=run&amp;upgrade_file=' . str_replace(
+            '.php',
+            '',
             $mybb->input['upgrade_file']
         ) . "&amp;my_post_key={$mybb->post_code}", 'post'
     );
@@ -131,13 +131,13 @@ if (!$mybb->input['action']) // view upgrades
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
     echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array("name" => "no", 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
 }
 
-$plugins->run_hooks("newpoints_admin_upgrades_terminate");
+$plugins->run_hooks('newpoints_admin_upgrades_terminate');
 
 $page->output_footer();
 

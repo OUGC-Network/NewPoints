@@ -26,7 +26,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-$l['newpoints'] = "NewPoints";
+$l['newpoints'] = 'NewPoints';
 $l['newpoints_submit_button'] = 'Submit';
 $l['newpoints_reset_button'] = 'Reset';
 $l['newpoints_error'] = 'An unknown error has occurred.';
@@ -40,7 +40,7 @@ $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 ///////////////// Plugins
 $l['newpoints_plugins'] = 'Plugins';
 $l['newpoints_plugins_description'] = 'Here you can manage NewPoints plugins.';
-$l['newpoints_plugin_incompatible'] = "This plugin is incompatible with NewPoints {1}";
+$l['newpoints_plugin_incompatible'] = 'This plugin is incompatible with NewPoints {1}';
 
 ///////////////// Settings
 $l['newpoints_settings'] = 'Settings';

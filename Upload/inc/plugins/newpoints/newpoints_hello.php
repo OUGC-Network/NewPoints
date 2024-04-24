@@ -27,13 +27,13 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if (!defined("IN_MYBB")) {
-    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined('IN_MYBB')) {
+    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
 global $plugins;
 
-$plugins->add_hook("pre_output_page", "newpoints_hello_world");
+$plugins->add_hook('pre_output_page', 'newpoints_hello_world');
 
 function newpoints_hello_info()
 {
@@ -49,14 +49,14 @@ function newpoints_hello_info()
      * compatibility: A CSV list of MyBB versions supported. Ex, "121,123", "12*". Wildcards supported.
      */
     return array(
-        "name" => "Hello World!",
-        "description" => "A sample plugin that prints hello world depending on the settings.",
-        "website" => "http://www.consoleworld.net",
-        "author" => "Pirata Nervo",
-        "authorsite" => "http://www.mybb-plugins.com",
-        "version" => "1.0",
-        "guid" => "",
-        "compatibility" => "*"
+        'name' => 'Hello World!',
+        'description' => 'A sample plugin that prints hello world depending on the settings.',
+        'website' => 'http://www.consoleworld.net',
+        'author' => 'Pirata Nervo',
+        'authorsite' => 'http://www.mybb-plugins.com',
+        'version' => '1.0',
+        'guid' => '',
+        'compatibility' => '*'
     );
 }
 
@@ -145,6 +145,6 @@ function newpoints_hello_world($page)
     // load language files
     newpoints_lang_load('newpoints_hello');
 
-    $page = str_replace("<!-- end: header -->", "<!-- end: header -->" . $lang->newpoints_hello_message, $page);
+    $page = str_replace('<!-- end: header -->', '<!-- end: header -->' . $lang->newpoints_hello_message, $page);
     return $page;
 }

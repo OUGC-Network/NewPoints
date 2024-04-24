@@ -27,15 +27,15 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if (!defined("IN_MYBB")) {
-    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined('IN_MYBB')) {
+    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
 global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks("newpoints_admin_log_begin");
+$plugins->run_hooks('newpoints_admin_log_begin');
 
 if (!$mybb->input['action']) // view logs
 {
@@ -52,7 +52,7 @@ if (!$mybb->input['action']) // view logs
     $page->output_nav_tabs($sub_tabs, 'newpoints_log');
 
     $per_page = 10;
-    if ($mybb->get_input('page', \MyBB::INPUT_INT) > 1) {
+    if ($mybb->get_input('page', MyBB::INPUT_INT) > 1) {
         $mybb->input['page'] = intval($mybb->input['page']);
         $start = ($mybb->input['page'] * $per_page) - $per_page;
     } else {
@@ -76,7 +76,7 @@ if (!$mybb->input['action']) // view logs
         $uid = $db->fetch_field($query, 'uid');
         if ($uid <= 0) {
             flash_message($lang->newpoints_invalid_username, 'error');
-            admin_redirect("index.php?module=newpoints-log");
+            admin_redirect('index.php?module=newpoints-log');
         }
 
         $sql .= 'uid=' . (int)$uid;
@@ -123,24 +123,24 @@ if (!$mybb->input['action']) // view logs
     }
 
     if ($filter_msg != '') {
-        echo "<p class=\"notice\">" . $lang->sprintf($lang->newpoints_filter, $filter_msg) . "</p><br />";
+        echo "<p class=\"notice\">" . $lang->sprintf($lang->newpoints_filter, $filter_msg) . '</p><br />';
     }
 
     echo "<p class=\"notice\">{$lang->newpoints_log_notice}</p>";
 
-    $query = $db->simple_select("newpoints_log", "COUNT(lid) as log_entries", $sql);
-    $total_rows = $db->fetch_field($query, "log_entries");
+    $query = $db->simple_select('newpoints_log', 'COUNT(lid) as log_entries', $sql);
+    $total_rows = $db->fetch_field($query, 'log_entries');
     if ($total_rows > $per_page) {
-        echo "<br />" . draw_admin_pagination(
+        echo '<br />' . draw_admin_pagination(
                 $mybb->input['page'],
                 $per_page,
                 $total_rows,
-                "index.php?module=newpoints-log&amp;page={page}" . $url_filters
+                'index.php?module=newpoints-log&amp;page={page}' . $url_filters
             );
     }
 
     // table
-    $table = new Table;
+    $table = new Table();
     $table->construct_header($lang->newpoints_log_action, array('width' => '15%'));
     $table->construct_header($lang->newpoints_log_data, array('width' => '30%'));
     $table->construct_header($lang->newpoints_log_user, array('width' => '20%'));
@@ -160,7 +160,7 @@ if (!$mybb->input['action']) // view logs
         $link = build_profile_link(htmlspecialchars_uni($log['username']), intval($log['uid']));
         $table->construct_cell($link);
         $table->construct_cell(
-            my_date($mybb->settings['dateformat'], intval($log['date']), '', false) . ", " . my_date(
+            my_date($mybb->settings['dateformat'], intval($log['date']), '', false) . ', ' . my_date(
                 $mybb->settings['timeformat'],
                 intval($log['date'])
             ),
@@ -181,18 +181,18 @@ if (!$mybb->input['action']) // view logs
 
     $table->output($lang->newpoints_log_entries);
 
-    echo "<br />";
+    echo '<br />';
 
     // Get all actions
     $fields = array();
-    $q = $db->query("SELECT action FROM `" . $db->table_prefix . "newpoints_log` GROUP BY action");
+    $q = $db->query('SELECT action FROM `' . $db->table_prefix . 'newpoints_log` GROUP BY action');
     while ($action = $db->fetch_field($q, 'action')) {
         $fields[htmlspecialchars_uni($action)] = htmlspecialchars_uni($action);
     }
 
-    $form = new Form("index.php?module=newpoints-log", "post", "newpoints");
+    $form = new Form('index.php?module=newpoints-log', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
+    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
 
     $form_container = new FormContainer($lang->newpoints_log_filter);
     $form_container->output_row(
@@ -218,11 +218,11 @@ if (!$mybb->input['action']) // view logs
     $form->output_submit_wrapper($buttons);
     $form->end();
 
-    echo "<br />";
+    echo '<br />';
 
-    $form = new Form("index.php?module=newpoints-log&amp;action=prune", "post", "newpoints");
+    $form = new Form('index.php?module=newpoints-log&amp;action=prune', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
+    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
 
     $form_container = new FormContainer($lang->newpoints_log_prune);
     $form_container->output_row(
@@ -233,7 +233,7 @@ if (!$mybb->input['action']) // view logs
     );
     $form_container->end();
 
-    $buttons = array();;
+    $buttons = array();
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -241,14 +241,14 @@ if (!$mybb->input['action']) // view logs
 } elseif ($mybb->input['action'] == 'delete_log') {
     if ($mybb->input['no']) // user clicked no
     {
-        admin_redirect("index.php?module=newpoints-log");
+        admin_redirect('index.php?module=newpoints-log');
     }
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-log");
+            admin_redirect('index.php?module=newpoints-log');
         }
 
         if (!$db->fetch_field(
@@ -278,21 +278,21 @@ if (!$mybb->input['action']) // view logs
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
     echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array("name" => "no", 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
 } elseif ($mybb->input['action'] == 'prune') {
     if ($mybb->input['no']) // user clicked no
     {
-        admin_redirect("index.php?module=newpoints-log");
+        admin_redirect('index.php?module=newpoints-log');
     }
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-log");
+            admin_redirect('index.php?module=newpoints-log');
         }
 
         $db->delete_query(
@@ -317,12 +317,12 @@ if (!$mybb->input['action']) // view logs
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
     echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array("name" => "no", 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
 }
 
-$plugins->run_hooks("newpoints_admin_log_terminate");
+$plugins->run_hooks('newpoints_admin_log_terminate');
 
 $page->output_footer();

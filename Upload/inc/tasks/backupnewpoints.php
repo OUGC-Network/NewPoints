@@ -30,9 +30,9 @@ function task_backupnewpoints($task)
 {
     global $mybb, $db, $lang, $cache, $plugins;
 
-    $lang->load("newpoints");
+    $lang->load('newpoints');
 
-    $plugins->run_hooks("newpoints_task_backup");
+    $plugins->run_hooks('newpoints_task_backup');
 
     backupnewpoints_backupdb();
 
@@ -49,14 +49,14 @@ function backupnewpoints_backupdb()
 
     if (!defined('MYBB_ADMIN_DIR')) {
         if (!isset($config['admin_dir'])) {
-            $config['admin_dir'] = "admin";
+            $config['admin_dir'] = 'admin';
         }
 
         define('MYBB_ADMIN_DIR', constant('MYBB_ROOT') . $config['admin_dir'] . '/');
     }
 
     // Check if folder is writable, before allowing submission
-    if (!is_writable(MYBB_ADMIN_DIR . "/backups/backupnewpoints")) {
+    if (!is_writable(MYBB_ADMIN_DIR . '/backups/backupnewpoints')) {
         return false;
     } else {
         $db->set_table_prefix('');
@@ -84,13 +84,13 @@ function backupnewpoints_backupdb()
         );
         $backup_fields = array('newpoints');
 
-        $backup_fields = $plugins->run_hooks("newpoints_task_backup_tables", $backup_fields);
+        $backup_fields = $plugins->run_hooks('newpoints_task_backup_tables', $backup_fields);
 
         $time = date('dS F Y \a\t H:i', constant('TIME_NOW'));
         $header = "-- MyBB Database Backup\n-- Generated: {$time}\n-- -------------------------------------\n\n";
         $contents = $header;
         foreach ($tables as $table) {
-            $plugins->run_hooks("newpoints_task_backup_table");
+            $plugins->run_hooks('newpoints_task_backup_table');
             if ($table == $db->table_prefix . 'users') {
                 backupnewpoints_clear_overflow($fp, $contents);
 
@@ -99,7 +99,7 @@ function backupnewpoints_backupdb()
                     $update = '';
 
                     foreach ($backup_fields as $field) {
-                        $update .= "UPDATE `" . TABLE_PREFIX . "users` SET `{$field}` = '" . $row[$field] . "' WHERE `uid` = '" . $row['uid'] . "';\n";
+                        $update .= 'UPDATE `' . TABLE_PREFIX . "users` SET `{$field}` = '" . $row[$field] . "' WHERE `uid` = '" . $row['uid'] . "';\n";
                     }
 
                     $contents .= $update;
@@ -111,19 +111,19 @@ function backupnewpoints_backupdb()
                 $query = $db->simple_select($table, 'cache', 'title=\'newpoints_plugins\'', array('limit' => 1));
                 $row = $db->fetch_array($query);
 
-                $contents .= "UPDATE `" . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_plugins';\n";
+                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_plugins';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
 
                 $query = $db->simple_select($table, 'cache', 'title=\'newpoints_rules\'', array('limit' => 1));
                 $row = $db->fetch_array($query);
 
-                $contents .= "UPDATE `" . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_rules';\n";
+                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_rules';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
 
                 $query = $db->simple_select($table, 'cache', 'title=\'newpoints_settings\'', array('limit' => 1));
                 $row = $db->fetch_array($query);
 
-                $contents .= "UPDATE `" . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_settings';\n";
+                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_settings';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
             } else {
                 $field_list = array();
@@ -132,7 +132,7 @@ function backupnewpoints_backupdb()
                     $field_list[] = $field['Field'];
                 }
 
-                $fields = implode(",", $field_list);
+                $fields = implode(',', $field_list);
 
                 /*$structure = $db->show_create_table($table).";\n";
                 $contents .= $structure;*/
@@ -149,7 +149,7 @@ function backupnewpoints_backupdb()
                     $insert = "INSERT INTO {$table} ($fields) VALUES (";
                     $comma = '';
                     foreach ($field_list as $field) {
-                        if (!isset($row[$field]) || trim($row[$field]) == "") {
+                        if (!isset($row[$field]) || trim($row[$field]) == '') {
                             $insert .= $comma . "''";
                         } else {
                             $insert .= $comma . "'" . $db->escape_string($row[$field]) . "'";

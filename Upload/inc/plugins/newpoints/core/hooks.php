@@ -26,8 +26,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-if (!defined("IN_MYBB") || !defined("NP_HOOKS")) {
-    die("This file cannot be accessed directly.");
+if (!defined('IN_MYBB') || !defined('NP_HOOKS')) {
+    die('This file cannot be accessed directly.');
 }
 
 global $plugins;
@@ -47,7 +47,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_load, we must allow them to hook to newpoints_admin_load
-        $plugins->run_hooks("newpoints_admin_load");
+        $plugins->run_hooks('newpoints_admin_load');
     }
 
     function newpoints_admin_menu_hook(&$sub_menu)
@@ -59,7 +59,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_newpoints_menu, we must allow them to hook to newpoints_admin_newpoints_menu
-        $sub_menu = $plugins->run_hooks("newpoints_admin_newpoints_menu", $sub_menu);
+        $sub_menu = $plugins->run_hooks('newpoints_admin_newpoints_menu', $sub_menu);
     }
 
     function newpoints_admin_action_handler_hook(&$actions)
@@ -71,7 +71,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_newpoints_action_handler, we must allow them to hook to newpoints_newpoints_action_handler
-        $actions = $plugins->run_hooks("newpoints_admin_newpoints_action_handler", $actions);
+        $actions = $plugins->run_hooks('newpoints_admin_newpoints_action_handler', $actions);
     }
 
     function newpoints_admin_permissions_hook(&$admin_permissions)
@@ -83,7 +83,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_newpoints_permissions, we must allow them to hook to newpoints_newpoints_permissions
-        $admin_permissions = $plugins->run_hooks("newpoints_admin_newpoints_permissions", $admin_permissions);
+        $admin_permissions = $plugins->run_hooks('newpoints_admin_newpoints_permissions', $admin_permissions);
     }
 } // outside ACP hooks
 elseif (NP_HOOKS == 2) {
@@ -99,7 +99,7 @@ elseif (NP_HOOKS == 2) {
     $plugins->add_hook('postbit_announcement', 'newpoints_postbit', 50); // set priority to 50
 
     // member profile
-    $plugins->add_hook("member_profile_end", "newpoints_profile");
+    $plugins->add_hook('member_profile_end', 'newpoints_profile');
 
     // per new post
     $plugins->add_hook('datahandler_post_insert_post', 'newpoints_newpost');
@@ -138,7 +138,7 @@ elseif (NP_HOOKS == 2) {
     $plugins->add_hook('class_moderation_delete_poll', 'newpoints_deletepoll');
 
     // per new registration
-    $plugins->add_hook("member_do_register_end", "newpoints_newreg");
+    $plugins->add_hook('member_do_register_end', 'newpoints_newreg');
 
     // per poll vote
     $plugins->add_hook('polls_vote_process', 'newpoints_pervote');
@@ -181,7 +181,7 @@ elseif (NP_HOOKS == 2) {
         //newpoints_load_settings();
 
         // as plugins can't hook to archive_start, we must allow them to hook to newpoints_archive_start
-        $plugins->run_hooks("newpoints_archive_start");
+        $plugins->run_hooks('newpoints_archive_start');
     }
 
     // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
@@ -200,7 +200,7 @@ elseif (NP_HOOKS == 2) {
         }
 
         // as plugins can't hook to global_start, we must allow them to hook to global_start
-        $plugins->run_hooks("newpoints_global_start");
+        $plugins->run_hooks('newpoints_global_start');
     }
 
     function newpoints_global_intermediate()
@@ -229,7 +229,7 @@ elseif (NP_HOOKS == 2) {
         //newpoints_load_settings();
 
         // as plugins can't hook to xmlhttp, we must allow them to hook to newpoints_xmlhttp
-        $plugins->run_hooks("newpoints_xmlhttp");
+        $plugins->run_hooks('newpoints_xmlhttp');
     }
 
     // postbit
@@ -247,7 +247,7 @@ elseif (NP_HOOKS == 2) {
             return;
         }
 
-        $lang->load("newpoints");
+        $lang->load('newpoints');
 
         $currency = $mybb->settings['newpoints_main_curname'];
         $points = $post['newpointsPostUserBalanceFormatted'] = newpoints_format_points($post['newpoints']);
@@ -274,7 +274,7 @@ elseif (NP_HOOKS == 2) {
 
         global $newpointsProfileUserBalanceFormatted;
 
-        $lang->load("newpoints");
+        $lang->load('newpoints');
 
         $currency = $mybb->settings['newpoints_main_curname'];
         $points = $newpointsProfileUserBalanceFormatted = newpoints_format_points($memprofile['newpoints']);
@@ -298,7 +298,7 @@ elseif (NP_HOOKS == 2) {
     {
         global $db, $mybb, $post, $thread;
 
-        if ($mybb->input['action'] != "do_newreply" || $post['savedraft']) {
+        if ($mybb->input['action'] != 'do_newreply' || $post['savedraft']) {
             return;
         }
 
@@ -543,7 +543,7 @@ elseif (NP_HOOKS == 2) {
             return;
         }
 
-        if ($mybb->input['action'] != "do_editpost" || $mybb->input['editdraft']) {
+        if ($mybb->input['action'] != 'do_editpost' || $mybb->input['editdraft']) {
             return;
         }
 
@@ -620,9 +620,9 @@ elseif (NP_HOOKS == 2) {
             return;
         }
 
-        if ($mybb->input['action'] != "edit_post") {
+        if ($mybb->input['action'] != 'edit_post') {
             return;
-        } elseif ($mybb->input['action'] == "edit_post" && $mybb->input['do'] != 'update_post') {
+        } elseif ($mybb->input['action'] == 'edit_post' && $mybb->input['do'] != 'update_post') {
             return;
         }
 
@@ -665,12 +665,12 @@ elseif (NP_HOOKS == 2) {
         $oldcharcount = newpoints_count_characters($post['message']);
 
         $message = strval($_POST['value']);
-        if (my_strtolower($charset) != "utf-8") {
-            if (function_exists("iconv")) {
-                $message = iconv($charset, "UTF-8//IGNORE", $message);
-            } elseif (function_exists("mb_convert_encoding")) {
-                $message = @mb_convert_encoding($message, $charset, "UTF-8");
-            } elseif (my_strtolower($charset) == "iso-8859-1") {
+        if (my_strtolower($charset) != 'utf-8') {
+            if (function_exists('iconv')) {
+                $message = iconv($charset, 'UTF-8//IGNORE', $message);
+            } elseif (function_exists('mb_convert_encoding')) {
+                $message = @mb_convert_encoding($message, $charset, 'UTF-8');
+            } elseif (my_strtolower($charset) == 'iso-8859-1') {
                 $message = utf8_decode($message);
             }
         }
@@ -945,7 +945,7 @@ elseif (NP_HOOKS == 2) {
     {
         global $db, $mybb, $fid, $thread;
 
-        if ($mybb->input['action'] != "do_newthread" || $mybb->input['savedraft']) {
+        if ($mybb->input['action'] != 'do_newthread' || $mybb->input['savedraft']) {
             return;
         }
 
@@ -1451,7 +1451,7 @@ elseif (NP_HOOKS == 2) {
             return;
         }
 
-        $query = $db->simple_select("polls", "*", "pid = '{$pid}'");
+        $query = $db->simple_select('polls', '*', "pid = '{$pid}'");
         $poll = $db->fetch_array($query);
 
         $fid = $poll['fid'];
@@ -1748,7 +1748,7 @@ elseif (NP_HOOKS == 2) {
 
         $forumrules = newpoints_getrules('forum', $fid);
         if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-            $lang->load("newpoints");
+            $lang->load('newpoints');
             error(
                 $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
             );
@@ -1773,7 +1773,7 @@ elseif (NP_HOOKS == 2) {
 
         $forumrules = newpoints_getrules('forum', $fid);
         if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-            $lang->load("newpoints");
+            $lang->load('newpoints');
             error(
                 $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
             );
@@ -1790,7 +1790,7 @@ elseif (NP_HOOKS == 2) {
 
         $forumrules = newpoints_getrules('forum', $fid);
         if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-            $lang->load("newpoints");
+            $lang->load('newpoints');
             error(
                 $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
             );
@@ -1809,7 +1809,7 @@ elseif (NP_HOOKS == 2) {
 
         $forumrules = newpoints_getrules('forum', $fid);
         if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-            $lang->load("newpoints");
+            $lang->load('newpoints');
             error(
                 $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
             );
@@ -1826,7 +1826,7 @@ elseif (NP_HOOKS == 2) {
 
         $forumrules = newpoints_getrules('forum', $fid);
         if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-            $lang->load("newpoints");
+            $lang->load('newpoints');
             error(
                 $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
             );
@@ -1843,7 +1843,7 @@ elseif (NP_HOOKS == 2) {
 
         $forumrules = newpoints_getrules('forum', $fid);
         if ($forumrules['pointspost'] > $mybb->user['newpoints']) {
-            $lang->load("newpoints");
+            $lang->load('newpoints');
             error(
                 $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointspost']))
             );

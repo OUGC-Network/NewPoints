@@ -27,15 +27,15 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
-if (!defined("IN_MYBB")) {
-    die("Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.");
+if (!defined('IN_MYBB')) {
+    die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
 global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks("newpoints_admin_grouprules_begin");
+$plugins->run_hooks('newpoints_admin_grouprules_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_grouprules, 'index.php?module=newpoints-grouprules');
 
@@ -63,12 +63,12 @@ if (!$mybb->input['action']) // view grouprules
 {
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules');
 
-    $plugins->run_hooks("newpoints_admin_grouprules_noaction_start");
+    $plugins->run_hooks('newpoints_admin_grouprules_noaction_start');
 
     echo "<p class=\"notice\">{$lang->newpoints_grouprules_notice}</p>";
 
     // table
-    $table = new Table;
+    $table = new Table();
     $table->construct_header($lang->newpoints_grouprules_name, array('width' => '50%'));
     $table->construct_header($lang->newpoints_grouprules_title, array('width' => '30%'));
     $table->construct_header($lang->newpoints_grouprules_options, array('width' => '20%', 'class' => 'align_center'));
@@ -76,9 +76,9 @@ if (!$mybb->input['action']) // view grouprules
     $query = $db->simple_select('newpoints_grouprules', '*', '', array('order_by' => 'rid', 'order_dir' => 'ASC'));
     while ($rule = $db->fetch_array($query)) {
         $table->construct_cell(
-            htmlspecialchars_uni($rule['name']) . "<br /><small>" . htmlspecialchars_uni(
+            htmlspecialchars_uni($rule['name']) . '<br /><small>' . htmlspecialchars_uni(
                 $rule['description']
-            ) . "</small>"
+            ) . '</small>'
         );
 
         $group = newpoints_get_usergroup($rule['gid']);
@@ -99,22 +99,22 @@ if (!$mybb->input['action']) // view grouprules
 
     $table->output($lang->newpoints_grouprules_rules);
 
-    $plugins->run_hooks("newpoints_admin_grouprules_noaction_end");
+    $plugins->run_hooks('newpoints_admin_grouprules_noaction_end');
 } elseif ($mybb->input['action'] == 'add') {
-    $plugins->run_hooks("newpoints_admin_grouprules_add_start");
+    $plugins->run_hooks('newpoints_admin_grouprules_add_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules_add');
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-grouprules");
+            admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         if (!$mybb->input['name'] || !$mybb->input['group']) {
             flash_message($lang->newpoints_missing_fields, 'error');
-            admin_redirect("index.php?module=newpoints-grouprules");
+            admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         $insert_query = array(
@@ -126,7 +126,7 @@ if (!$mybb->input['action']) // view grouprules
             'period' => intval($mybb->input['period'])
         );
 
-        $insert_query = $plugins->run_hooks("newpoints_admin_grouprules_add_insert", $insert_query);
+        $insert_query = $plugins->run_hooks('newpoints_admin_grouprules_add_insert', $insert_query);
 
         $db->insert_query('newpoints_grouprules', $insert_query);
 
@@ -135,22 +135,22 @@ if (!$mybb->input['action']) // view grouprules
         newpoints_rebuild_rules_cache($array);
 
         flash_message($lang->newpoints_grouprules_added, 'success');
-        admin_redirect("index.php?module=newpoints-grouprules");
+        admin_redirect('index.php?module=newpoints-grouprules');
     }
 
     $options[0] = $lang->newpoints_select_group;
-    $query = $db->simple_select("usergroups", "gid, title", "", array('order_by' => 'title'));
+    $query = $db->simple_select('usergroups', 'gid, title', '', array('order_by' => 'title'));
     while ($usergroup = $db->fetch_array($query)) {
         $options[$usergroup['gid']] = $usergroup['title'];
     }
 
-    $form = new Form("index.php?module=newpoints-grouprules&amp;action=add", "post", "newpoints");
+    $form = new Form('index.php?module=newpoints-grouprules&amp;action=add', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
+    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
 
     $form_container = new FormContainer($lang->newpoints_grouprules_addrule);
     $form_container->output_row(
-        $lang->newpoints_grouprules_name . "<em>*</em>",
+        $lang->newpoints_grouprules_name . '<em>*</em>',
         $lang->newpoints_grouprules_name_desc,
         $form->generate_text_box('name', '', array('id' => 'name')),
         'name'
@@ -162,7 +162,7 @@ if (!$mybb->input['action']) // view grouprules
         'description'
     );
     $form_container->output_row(
-        $lang->newpoints_grouprules_rate . "<em>*</em>",
+        $lang->newpoints_grouprules_rate . '<em>*</em>',
         $lang->newpoints_grouprules_rate_desc,
         $form->generate_text_box('rate', '1', array('id' => 'rate')),
         'rate'
@@ -180,13 +180,13 @@ if (!$mybb->input['action']) // view grouprules
         'period'
     );
     $form_container->output_row(
-        $lang->newpoints_grouprules_group . "<em>*</em>",
+        $lang->newpoints_grouprules_group . '<em>*</em>',
         $lang->newpoints_grouprules_group_desc,
         $form->generate_select_box('group', $options, 0, array('id' => 'group')),
         'group'
     );
 
-    $form_container = $plugins->run_hooks("newpoints_admin_grouprules_add", $form_container);
+    $form_container = $plugins->run_hooks('newpoints_admin_grouprules_add', $form_container);
 
     $form_container->end();
 
@@ -196,20 +196,20 @@ if (!$mybb->input['action']) // view grouprules
     $form->output_submit_wrapper($buttons);
     $form->end();
 } elseif ($mybb->input['action'] == 'edit') {
-    $plugins->run_hooks("newpoints_admin_grouprules_edit_start");
+    $plugins->run_hooks('newpoints_admin_grouprules_edit_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules_edit');
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-grouprules");
+            admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         if (!$mybb->input['name'] || !$mybb->input['group']) {
             flash_message($lang->newpoints_missing_fields, 'error');
-            admin_redirect("index.php?module=newpoints-grouprules");
+            admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         $update_query = array(
@@ -221,7 +221,7 @@ if (!$mybb->input['action']) // view grouprules
             'period' => intval($mybb->input['period'])
         );
 
-        $update_query = $plugins->run_hooks("newpoints_admin_grouprules_edit_update", $update_query);
+        $update_query = $plugins->run_hooks('newpoints_admin_grouprules_edit_update', $update_query);
 
         $db->update_query('newpoints_grouprules', $update_query, 'rid=' . intval($mybb->input['rid']));
 
@@ -230,30 +230,30 @@ if (!$mybb->input['action']) // view grouprules
         newpoints_rebuild_rules_cache();
 
         flash_message($lang->newpoints_grouprules_edited, 'success');
-        admin_redirect("index.php?module=newpoints-grouprules");
+        admin_redirect('index.php?module=newpoints-grouprules');
     }
 
     $query = $db->simple_select('newpoints_grouprules', '*', 'rid=\'' . intval($mybb->input['rid']) . '\'');
     $rule = $db->fetch_array($query);
     if (!$rule) {
         flash_message($lang->newpoints_grouprules_invalid, 'error');
-        admin_redirect("index.php?module=newpoints-grouprules");
+        admin_redirect('index.php?module=newpoints-grouprules');
     }
 
     $options[0] = $lang->newpoints_select_group;
-    $query = $db->simple_select("usergroups", "gid, title", "", array('order_by' => 'title'));
+    $query = $db->simple_select('usergroups', 'gid, title', '', array('order_by' => 'title'));
     while ($usergroup = $db->fetch_array($query)) {
         $options[$usergroup['gid']] = $usergroup['title'];
     }
 
-    $form = new Form("index.php?module=newpoints-grouprules&amp;action=edit", "post", "newpoints");
+    $form = new Form('index.php?module=newpoints-grouprules&amp;action=edit', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field("my_post_key", $mybb->post_code);
-    echo $form->generate_hidden_field("rid", $rule['rid']);
+    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
+    echo $form->generate_hidden_field('rid', $rule['rid']);
 
     $form_container = new FormContainer($lang->newpoints_grouprules_editrule);
     $form_container->output_row(
-        $lang->newpoints_grouprules_name . "<em>*</em>",
+        $lang->newpoints_grouprules_name . '<em>*</em>',
         $lang->newpoints_grouprules_name_desc,
         $form->generate_text_box('name', htmlspecialchars_uni($rule['name']), array('id' => 'name')),
         'name'
@@ -266,7 +266,7 @@ if (!$mybb->input['action']) // view grouprules
         'description'
     );
     $form_container->output_row(
-        $lang->newpoints_grouprules_rate . "<em>*</em>",
+        $lang->newpoints_grouprules_rate . '<em>*</em>',
         $lang->newpoints_grouprules_rate_desc,
         $form->generate_text_box('rate', floatval($rule['rate']), array('id' => 'rate')),
         'rate'
@@ -284,13 +284,13 @@ if (!$mybb->input['action']) // view grouprules
         'period'
     );
     $form_container->output_row(
-        $lang->newpoints_grouprules_group . "<em>*</em>",
+        $lang->newpoints_grouprules_group . '<em>*</em>',
         $lang->newpoints_grouprules_group_desc,
         $form->generate_select_box('group', $options, intval($rule['gid']), array('id' => 'group')),
         'group'
     );
 
-    $form_container = $plugins->run_hooks("newpoints_admin_grouprules_edit", $form_container);
+    $form_container = $plugins->run_hooks('newpoints_admin_grouprules_edit', $form_container);
 
     $form_container->end();
 
@@ -302,14 +302,14 @@ if (!$mybb->input['action']) // view grouprules
 } elseif ($mybb->input['action'] == 'delete_rule') {
     if ($mybb->input['no']) // user clicked no
     {
-        admin_redirect("index.php?module=newpoints-grouprules");
+        admin_redirect('index.php?module=newpoints-grouprules');
     }
 
-    if ($mybb->request_method == "post") {
+    if ($mybb->request_method == 'post') {
         if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = "get";
+            $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
-            admin_redirect("index.php?module=newpoints-grouprules");
+            admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         if (!$db->fetch_field(
@@ -341,12 +341,12 @@ if (!$mybb->input['action']) // view grouprules
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
     echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array("name" => "no", 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
 }
 
-$plugins->run_hooks("newpoints_admin_grouprules_terminate");
+$plugins->run_hooks('newpoints_admin_grouprules_terminate');
 
 $page->output_footer();

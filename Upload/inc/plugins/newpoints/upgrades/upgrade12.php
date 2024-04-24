@@ -26,12 +26,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-if (!defined("IN_MYBB")) {
-    die("This file cannot be accessed directly.");
+if (!defined('IN_MYBB')) {
+    die('This file cannot be accessed directly.');
 }
 
 if (!defined('IN_ADMINCP')) {
-    die("This file must be accessed from the Administrator Panel.");
+    die('This file must be accessed from the Administrator Panel.');
 }
 
 function upgrade12_info()
@@ -57,7 +57,7 @@ function upgrade12_run()
     }
 
     $db->write_query(
-        "CREATE TABLE `" . $db->table_prefix . "newpoints_forumrules` (
+        'CREATE TABLE `' . $db->table_prefix . "newpoints_forumrules` (
 	  `rid` bigint(30) UNSIGNED NOT NULL auto_increment,
 	  `fid` int(10) UNSIGNED NOT NULL default '0',
 	  `name` varchar(100) NOT NULL default '',
@@ -70,7 +70,7 @@ function upgrade12_run()
     );
 
     $db->write_query(
-        "CREATE TABLE `" . $db->table_prefix . "newpoints_grouprules` (
+        'CREATE TABLE `' . $db->table_prefix . "newpoints_grouprules` (
 	  `rid` bigint(30) UNSIGNED NOT NULL auto_increment,
 	  `gid` int(10) UNSIGNED NOT NULL default '0',
 	  `name` varchar(100) NOT NULL default '',

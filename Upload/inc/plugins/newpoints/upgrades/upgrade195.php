@@ -26,12 +26,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-if (!defined("IN_MYBB")) {
-    die("This file cannot be accessed directly.");
+if (!defined('IN_MYBB')) {
+    die('This file cannot be accessed directly.');
 }
 
 if (!defined('IN_ADMINCP')) {
-    die("This file must be accessed from the Administrator Panel.");
+    die('This file must be accessed from the Administrator Panel.');
 }
 
 function upgrade195_info()

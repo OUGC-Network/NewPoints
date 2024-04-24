@@ -26,12 +26,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-if (!defined("IN_MYBB")) {
-    die("This file cannot be accessed directly.");
+if (!defined('IN_MYBB')) {
+    die('This file cannot be accessed directly.');
 }
 
 if (!defined('IN_ADMINCP')) {
-    die("This file must be accessed from the Administrator Panel.");
+    die('This file must be accessed from the Administrator Panel.');
 }
 
 function upgrade11_info()
@@ -55,7 +55,7 @@ function upgrade11_run()
         '5',
         12
     );
-    change_admin_permission("newpoints", "upgrades", 1);
+    change_admin_permission('newpoints', 'upgrades', 1);
 
     newpoints_remove_templates("'newpoints_donate'");
 
