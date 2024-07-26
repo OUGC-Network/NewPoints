@@ -43,23 +43,23 @@ $page->add_breadcrumb_item($lang->newpoints_forumrules, 'index.php?module=newpoi
 
 $page->output_header($lang->newpoints_forumrules);
 
-$sub_tabs['newpoints_forumrules'] = array(
+$sub_tabs['newpoints_forumrules'] = [
     'title' => $lang->newpoints_forumrules,
     'link' => 'index.php?module=newpoints-forumrules',
     'description' => $lang->newpoints_forumrules_description
-);
+];
 
-$sub_tabs['newpoints_forumrules_add'] = array(
+$sub_tabs['newpoints_forumrules_add'] = [
     'title' => $lang->newpoints_forumrules_add,
     'link' => 'index.php?module=newpoints-forumrules&amp;action=add',
     'description' => $lang->newpoints_forumrules_add_description
-);
+];
 
-$sub_tabs['newpoints_forumrules_edit'] = array(
+$sub_tabs['newpoints_forumrules_edit'] = [
     'title' => $lang->newpoints_forumrules_edit,
     'link' => 'index.php?module=newpoints-forumrules&amp;action=edit',
     'description' => $lang->newpoints_forumrules_edit_description
-);
+];
 
 if (!$mybb->input['action']) // view forumrules
 {
@@ -71,11 +71,11 @@ if (!$mybb->input['action']) // view forumrules
 
     // table
     $table = new Table();
-    $table->construct_header($lang->newpoints_forumrules_name, array('width' => '50%'));
-    $table->construct_header($lang->newpoints_forumrules_title, array('width' => '30%'));
-    $table->construct_header($lang->newpoints_forumrules_options, array('width' => '20%', 'class' => 'align_center'));
+    $table->construct_header($lang->newpoints_forumrules_name, ['width' => '50%']);
+    $table->construct_header($lang->newpoints_forumrules_title, ['width' => '30%']);
+    $table->construct_header($lang->newpoints_forumrules_options, ['width' => '20%', 'class' => 'align_center']);
 
-    $query = $db->simple_select('newpoints_forumrules', '*', '', array('order_by' => 'rid', 'order_dir' => 'ASC'));
+    $query = $db->simple_select('newpoints_forumrules', '*', '', ['order_by' => 'rid', 'order_dir' => 'ASC']);
     while ($rule = $db->fetch_array($query)) {
         $table->construct_cell(
             htmlspecialchars_uni($rule['name']) . '<br /><small>' . htmlspecialchars_uni(
@@ -91,14 +91,14 @@ if (!$mybb->input['action']) // view forumrules
         $table->construct_cell($link);
         $table->construct_cell(
             "<a href=\"index.php?module=newpoints-forumrules&amp;action=delete_rule&amp;rid={$rule['rid']}\" target=\"_self\">{$lang->newpoints_delete}</a> - <a href=\"index.php?module=newpoints-forumrules&amp;action=edit&amp;rid={$rule['rid']}\" target=\"_self\">{$lang->newpoints_edit}</a>",
-            array('class' => 'align_center')
+            ['class' => 'align_center']
         ); // delete button
 
         $table->construct_row();
     }
 
     if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->newpoints_forumrules_none, array('colspan' => 3));
+        $table->construct_cell($lang->newpoints_forumrules_none, ['colspan' => 3]);
         $table->construct_row();
     }
 
@@ -122,21 +122,21 @@ if (!$mybb->input['action']) // view forumrules
             admin_redirect('index.php?module=newpoints-forumrules');
         }
 
-        $insert_query = array(
+        $insert_query = [
             'name' => $db->escape_string($mybb->input['name']),
             'description' => $db->escape_string($mybb->input['description']),
             'rate' => floatval($mybb->input['rate']),
             'pointsview' => intval($mybb->input['minview']),
             'pointspost' => intval($mybb->input['minpost']),
             'fid' => intval($mybb->input['forum'])
-        );
+        ];
 
         $insert_query = run_hooks('admin_forumrules_add_insert', $insert_query);
 
         $db->insert_query('newpoints_forumrules', $insert_query);
 
         // Rebuild rules cache
-        $array = array();
+        $array = [];
         newpoints_rebuild_rules_cache($array);
 
         flash_message($lang->newpoints_forumrules_added, 'success');
@@ -151,37 +151,37 @@ if (!$mybb->input['action']) // view forumrules
     $form_container->output_row(
         $lang->newpoints_forumrules_name . '<em>*</em>',
         $lang->newpoints_forumrules_name_desc,
-        $form->generate_text_box('name', '', array('id' => 'name')),
+        $form->generate_text_box('name', '', ['id' => 'name']),
         'name'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_desc,
         $lang->newpoints_forumrules_desc_desc,
-        $form->generate_text_box('description', '', array('id' => 'description')),
+        $form->generate_text_box('description', '', ['id' => 'description']),
         'description'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_rate . '<em>*</em>',
         $lang->newpoints_forumrules_rate_desc,
-        $form->generate_text_box('rate', '1', array('id' => 'rate')),
+        $form->generate_text_box('rate', '1', ['id' => 'rate']),
         'rate'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_minview,
         $lang->newpoints_forumrules_minview_desc,
-        $form->generate_text_box('minview', '0', array('id' => 'minview')),
+        $form->generate_text_box('minview', '0', ['id' => 'minview']),
         'minview'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_minpost,
         $lang->newpoints_forumrules_minpost_desc,
-        $form->generate_text_box('minpost', '0', array('id' => 'minpost')),
+        $form->generate_text_box('minpost', '0', ['id' => 'minpost']),
         'minpost'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_forum . '<em>*</em>',
         $lang->newpoints_forumrules_forum_desc,
-        $form->generate_forum_select('forum', 0, array('id' => 'forum', 'main_option' => $lang->newpoints_select_forum)
+        $form->generate_forum_select('forum', 0, ['id' => 'forum', 'main_option' => $lang->newpoints_select_forum]
         ),
         'forum'
     );
@@ -190,7 +190,7 @@ if (!$mybb->input['action']) // view forumrules
 
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -212,21 +212,21 @@ if (!$mybb->input['action']) // view forumrules
             admin_redirect('index.php?module=newpoints-forumrules');
         }
 
-        $update_query = array(
+        $update_query = [
             'name' => $db->escape_string($mybb->input['name']),
             'description' => $db->escape_string($mybb->input['description']),
             'rate' => floatval($mybb->input['rate']),
             'pointsview' => intval($mybb->input['minview']),
             'pointspost' => intval($mybb->input['minpost']),
             'fid' => intval($mybb->input['forum'])
-        );
+        ];
 
         $update_query = run_hooks('admin_forumrules_edit_update', $update_query);
 
         $db->update_query('newpoints_forumrules', $update_query, 'rid=' . intval($mybb->input['rid']));
 
         // Rebuild rules cache
-        $array = array();
+        $array = [];
         newpoints_rebuild_rules_cache();
 
         flash_message($lang->newpoints_forumrules_edited, 'success');
@@ -249,32 +249,32 @@ if (!$mybb->input['action']) // view forumrules
     $form_container->output_row(
         $lang->newpoints_forumrules_name . '<em>*</em>',
         $lang->newpoints_forumrules_name_desc,
-        $form->generate_text_box('name', htmlspecialchars_uni($rule['name']), array('id' => 'name')),
+        $form->generate_text_box('name', htmlspecialchars_uni($rule['name']), ['id' => 'name']),
         'name'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_desc,
         $lang->newpoints_forumrules_desc_desc,
-        $form->generate_text_box('description', htmlspecialchars_uni($rule['description']), array('id' => 'description')
+        $form->generate_text_box('description', htmlspecialchars_uni($rule['description']), ['id' => 'description']
         ),
         'description'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_rate . '<em>*</em>',
         $lang->newpoints_forumrules_rate_desc,
-        $form->generate_text_box('rate', floatval($rule['rate']), array('id' => 'rate')),
+        $form->generate_text_box('rate', floatval($rule['rate']), ['id' => 'rate']),
         'rate'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_minview,
         $lang->newpoints_forumrules_minview_desc,
-        $form->generate_text_box('minview', intval($rule['pointsview']), array('id' => 'minview')),
+        $form->generate_text_box('minview', intval($rule['pointsview']), ['id' => 'minview']),
         'minview'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_minpost,
         $lang->newpoints_forumrules_minpost_desc,
-        $form->generate_text_box('minpost', intval($rule['pointspost']), array('id' => 'minpost')),
+        $form->generate_text_box('minpost', intval($rule['pointspost']), ['id' => 'minpost']),
         'minpost'
     );
     $form_container->output_row(
@@ -283,7 +283,7 @@ if (!$mybb->input['action']) // view forumrules
         $form->generate_forum_select(
             'forum',
             intval($rule['fid']),
-            array('id' => 'forum', 'main_option' => $lang->newpoints_select_forum)
+            ['id' => 'forum', 'main_option' => $lang->newpoints_select_forum]
         ),
         'forum'
     );
@@ -292,7 +292,7 @@ if (!$mybb->input['action']) // view forumrules
 
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -311,7 +311,7 @@ if (!$mybb->input['action']) // view forumrules
         }
 
         if (!$db->fetch_field(
-            $db->simple_select('newpoints_forumrules', 'name', 'rid=' . intval($mybb->input['rid']), array('limit' => 1)
+            $db->simple_select('newpoints_forumrules', 'name', 'rid=' . intval($mybb->input['rid']), ['limit' => 1]
             ),
             'name'
         )) {
@@ -322,7 +322,7 @@ if (!$mybb->input['action']) // view forumrules
         $db->delete_query('newpoints_forumrules', 'rid=' . intval($mybb->input['rid']));
 
         // Rebuild rules cache
-        $array = array();
+        $array = [];
         newpoints_rebuild_rules_cache();
 
         flash_message($lang->newpoints_forumrules_deleted, 'success');
@@ -338,8 +338,8 @@ if (!$mybb->input['action']) // view forumrules
     echo "<p>{$lang->newpoints_forumrules_deleteconfirm}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();

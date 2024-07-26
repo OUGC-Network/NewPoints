@@ -45,11 +45,11 @@ if (!$mybb->input['action']) // view upgrades
 
     $page->output_header($lang->newpoints_upgrades);
 
-    $sub_tabs['newpoints_upgrades'] = array(
+    $sub_tabs['newpoints_upgrades'] = [
         'title' => $lang->newpoints_upgrades,
         'link' => 'index.php?module=newpoints-upgrades',
         'description' => $lang->newpoints_upgrades_description
-    );
+    ];
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_upgrades');
 
@@ -59,8 +59,8 @@ if (!$mybb->input['action']) // view upgrades
 
     // table
     $table = new Table();
-    $table->construct_header($lang->newpoints_upgrades_name, array('width' => '70%'));
-    $table->construct_header($lang->options, array('width' => '30%', 'class' => 'align_center'));
+    $table->construct_header($lang->newpoints_upgrades_name, ['width' => '70%']);
+    $table->construct_header($lang->options, ['width' => '30%', 'class' => 'align_center']);
 
     if (!empty($upgrades)) {
         foreach ($upgrades as $upgrade) {
@@ -76,13 +76,13 @@ if (!$mybb->input['action']) // view upgrades
             $table->construct_cell($upgradeinfo['name'] . '<br /><small>' . $upgradeinfo['description'] . '</small>');
             $table->construct_cell(
                 "<a href=\"index.php?module=newpoints-upgrades&amp;action=run&amp;upgrade_file=" . $codename . "&amp;my_post_key={$mybb->post_code}\" target=\"_self\">{$lang->newpoints_run}</a>",
-                array('class' => 'align_center')
+                ['class' => 'align_center']
             ); // delete button
 
             $table->construct_row();
         }
     } else {
-        $table->construct_cell($lang->newpoints_no_upgrades, array('colspan' => 2));
+        $table->construct_cell($lang->newpoints_no_upgrades, ['colspan' => 2]);
         $table->construct_row();
     }
 
@@ -132,8 +132,8 @@ if (!$mybb->input['action']) // view upgrades
     echo "<p>{$lang->newpoints_upgrades_confirm_run}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
@@ -145,7 +145,7 @@ $page->output_footer();
 
 function newpoints_get_upgrades()
 {
-    $upgrades_list = array();
+    $upgrades_list = [];
 
     // open directory
     $dir = @opendir(constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/');

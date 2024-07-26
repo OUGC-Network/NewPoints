@@ -36,11 +36,11 @@ if (!defined('IN_ADMINCP')) {
 
 function upgrade11_info()
 {
-    return array(
+    return [
         'new_version' => '1.1',
         'name' => 'Upgrade to 1.1',
         'description' => 'Upgrade NewPoints 1.0 to NewPoints 1.1'
-    );
+    ];
 }
 
 // upgrade function

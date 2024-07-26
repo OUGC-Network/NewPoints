@@ -76,15 +76,15 @@ function backupnewpoints_backupdb()
         }
 
         // backup default tables and newpoints field from users table
-        $tables = array(
+        $tables = [
             $db->table_prefix . 'newpoints_log',
             $db->table_prefix . 'newpoints_settings',
             $db->table_prefix . 'newpoints_forumrules',
             $db->table_prefix . 'newpoints_grouprules',
             $db->table_prefix . 'users',
             $db->table_prefix . 'datacache'
-        );
-        $backup_fields = array('newpoints');
+        ];
+        $backup_fields = ['newpoints'];
 
         $backup_fields = run_hooks('task_backup_tables', $backup_fields);
 
@@ -110,25 +110,25 @@ function backupnewpoints_backupdb()
             } elseif ($table == $db->table_prefix . 'datacache') {
                 backupnewpoints_clear_overflow($fp, $contents);
 
-                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_plugins\'', array('limit' => 1));
+                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_plugins\'', ['limit' => 1]);
                 $row = $db->fetch_array($query);
 
                 $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_plugins';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
 
-                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_rules\'', array('limit' => 1));
+                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_rules\'', ['limit' => 1]);
                 $row = $db->fetch_array($query);
 
                 $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_rules';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
 
-                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_settings\'', array('limit' => 1));
+                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_settings\'', ['limit' => 1]);
                 $row = $db->fetch_array($query);
 
                 $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_settings';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
             } else {
-                $field_list = array();
+                $field_list = [];
                 $fields_array = $db->show_fields_from($table);
                 foreach ($fields_array as $field) {
                     $field_list[] = $field['Field'];

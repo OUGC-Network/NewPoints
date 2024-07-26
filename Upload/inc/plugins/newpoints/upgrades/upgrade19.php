@@ -36,11 +36,11 @@ if (!defined('IN_ADMINCP')) {
 
 function upgrade19_info()
 {
-    return array(
+    return [
         'new_version' => '1.9',
         'name' => 'Upgrade to 1.9',
         'description' => 'Upgrade NewPoints 1.8 to NewPoints 1.9.<br />Fields `pointsview` and `pointspost` will be updated.'
-    );
+    ];
 }
 
 // upgrade function

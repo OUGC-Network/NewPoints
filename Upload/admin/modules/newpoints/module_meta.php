@@ -37,39 +37,39 @@ function newpoints_meta()
 {
     global $page, $lang, $plugins;
 
-    $sub_menu = array();
-    $sub_menu['10'] = array(
+    $sub_menu = [];
+    $sub_menu['10'] = [
         'id' => 'plugins',
         'title' => $lang->nav_plugins,
         'link' => 'index.php?module=newpoints-plugins'
-    );
-    $sub_menu['15'] = array(
+    ];
+    $sub_menu['15'] = [
         'id' => 'settings',
         'title' => $lang->nav_settings,
         'link' => 'index.php?module=newpoints-settings'
-    );
-    $sub_menu['20'] = array('id' => 'log', 'title' => $lang->nav_log, 'link' => 'index.php?module=newpoints-log');
-    $sub_menu['25'] = array(
+    ];
+    $sub_menu['20'] = ['id' => 'log', 'title' => $lang->nav_log, 'link' => 'index.php?module=newpoints-log'];
+    $sub_menu['25'] = [
         'id' => 'maintenance',
         'title' => $lang->nav_maintenance,
         'link' => 'index.php?module=newpoints-maintenance'
-    );
-    $sub_menu['30'] = array(
+    ];
+    $sub_menu['30'] = [
         'id' => 'forumrules',
         'title' => $lang->nav_forumrules,
         'link' => 'index.php?module=newpoints-forumrules'
-    );
-    $sub_menu['35'] = array(
+    ];
+    $sub_menu['35'] = [
         'id' => 'grouprules',
         'title' => $lang->nav_grouprules,
         'link' => 'index.php?module=newpoints-grouprules'
-    );
-    $sub_menu['40'] = array('id' => 'stats', 'title' => $lang->nav_stats, 'link' => 'index.php?module=newpoints-stats');
-    $sub_menu['45'] = array(
+    ];
+    $sub_menu['40'] = ['id' => 'stats', 'title' => $lang->nav_stats, 'link' => 'index.php?module=newpoints-stats'];
+    $sub_menu['45'] = [
         'id' => 'upgrades',
         'title' => $lang->nav_upgrades,
         'link' => 'index.php?module=newpoints-upgrades'
-    );
+    ];
 
     $sub_menu = run_hooks('admin_menu', $sub_menu);
 
@@ -86,16 +86,16 @@ function newpoints_action_handler($action)
 
     $page->active_module = 'newpoints';
 
-    $actions = array(
-        'plugins' => array('active' => 'plugins', 'file' => 'plugins.php'),
-        'settings' => array('active' => 'settings', 'file' => 'settings.php'),
-        'log' => array('active' => 'log', 'file' => 'log.php'),
-        'maintenance' => array('active' => 'maintenance', 'file' => 'maintenance.php'),
-        'forumrules' => array('active' => 'forumrules', 'file' => 'forumrules.php'),
-        'grouprules' => array('active' => 'grouprules', 'file' => 'grouprules.php'),
-        'stats' => array('active' => 'stats', 'file' => 'stats.php'),
-        'upgrades' => array('active' => 'upgrades', 'file' => 'upgrades.php'),
-    );
+    $actions = [
+        'plugins' => ['active' => 'plugins', 'file' => 'plugins.php'],
+        'settings' => ['active' => 'settings', 'file' => 'settings.php'],
+        'log' => ['active' => 'log', 'file' => 'log.php'],
+        'maintenance' => ['active' => 'maintenance', 'file' => 'maintenance.php'],
+        'forumrules' => ['active' => 'forumrules', 'file' => 'forumrules.php'],
+        'grouprules' => ['active' => 'grouprules', 'file' => 'grouprules.php'],
+        'stats' => ['active' => 'stats', 'file' => 'stats.php'],
+        'upgrades' => ['active' => 'upgrades', 'file' => 'upgrades.php'],
+    ];
 
     $actions = run_hooks('admin_action_handler', $actions);
 
@@ -112,7 +112,7 @@ function newpoints_admin_permissions()
 {
     global $lang, $plugins;
 
-    $admin_permissions = array(
+    $admin_permissions = [
         'newpoints' => $lang->can_manage_newpoints,
         'plugins' => $lang->can_manage_plugins,
         'settings' => $lang->can_manage_settings,
@@ -122,9 +122,9 @@ function newpoints_admin_permissions()
         'grouprules' => $lang->can_manage_grouprules,
         'stats' => $lang->can_manage_stats,
         'upgrades' => $lang->can_manage_upgrades
-    );
+    ];
 
     $admin_permissions = run_hooks('admin_permissions', $admin_permissions);
 
-    return array('name' => $lang->newpoints, 'permissions' => $admin_permissions, 'disporder' => 60);
+    return ['name' => $lang->newpoints, 'permissions' => $admin_permissions, 'disporder' => 60];
 }

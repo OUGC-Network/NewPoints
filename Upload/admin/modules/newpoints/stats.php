@@ -43,44 +43,44 @@ $page->add_breadcrumb_item($lang->newpoints_stats, 'index.php?module=newpoints-s
 
 $page->output_header($lang->newpoints_stats);
 
-$sub_tabs['newpoints_stats'] = array(
+$sub_tabs['newpoints_stats'] = [
     'title' => $lang->newpoints_stats,
     'link' => 'index.php?module=newpoints-stats',
     'description' => $lang->newpoints_stats_description
-);
+];
 
 $page->output_nav_tabs($sub_tabs, 'newpoints_stats');
 if (!$mybb->input['action']) // view stats
 {
-    $fields = array('uid', 'username', 'newpoints');
+    $fields = ['uid', 'username', 'newpoints'];
 
     run_hooks('admin_stats_noaction_start');
 
     // table
     $table = new Table();
-    $table->construct_header($lang->newpoints_stats_user, array('width' => '50%'));
-    $table->construct_header($lang->newpoints_stats_points, array('width' => '50%', 'class' => 'align_center'));
+    $table->construct_header($lang->newpoints_stats_user, ['width' => '50%']);
+    $table->construct_header($lang->newpoints_stats_points, ['width' => '50%', 'class' => 'align_center']);
 
     $query = $db->simple_select(
         'users',
         implode(',', $fields),
         '',
-        array(
+        [
             'order_by' => 'newpoints',
             'order_dir' => 'DESC',
             'limit' => intval($mybb->settings['newpoints_main_stats_richestusers'])
-        )
+        ]
     );
     while ($user = $db->fetch_array($query)) {
         $link = build_profile_link(htmlspecialchars_uni($user['username']), intval($user['uid']));
         $table->construct_cell($link);
-        $table->construct_cell(newpoints_format_points($user['newpoints']), array('class' => 'align_center'));
+        $table->construct_cell(newpoints_format_points($user['newpoints']), ['class' => 'align_center']);
 
         $table->construct_row();
     }
 
     if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->newpoints_error_gathering, array('colspan' => 4));
+        $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
         $table->construct_row();
     }
 
@@ -90,20 +90,20 @@ if (!$mybb->input['action']) // view stats
 
     // table
     $table = new Table();
-    $table->construct_header($lang->newpoints_stats_to, array('width' => '30%'));
-    $table->construct_header($lang->newpoints_stats_from, array('width' => '30%'));
-    $table->construct_header($lang->newpoints_stats_amount, array('width' => '20%', 'class' => 'align_center'));
-    $table->construct_header($lang->newpoints_stats_date, array('width' => '20%', 'class' => 'align_center'));
+    $table->construct_header($lang->newpoints_stats_to, ['width' => '30%']);
+    $table->construct_header($lang->newpoints_stats_from, ['width' => '30%']);
+    $table->construct_header($lang->newpoints_stats_amount, ['width' => '20%', 'class' => 'align_center']);
+    $table->construct_header($lang->newpoints_stats_date, ['width' => '20%', 'class' => 'align_center']);
 
     $query = $db->simple_select(
         'newpoints_log',
         '*',
         'action=\'donation\'',
-        array(
+        [
             'order_by' => 'date',
             'order_dir' => 'DESC',
             'limit' => intval($mybb->settings['newpoints_main_stats_lastdonations'])
-        )
+        ]
     );
     while ($stats = $db->fetch_array($query)) {
         $data = explode('-', $stats['data']);
@@ -114,20 +114,20 @@ if (!$mybb->input['action']) // view stats
         $link = build_profile_link(htmlspecialchars_uni($stats['username']), intval($stats['uid']));
         $table->construct_cell($link);
 
-        $table->construct_cell(newpoints_format_points($data[2]), array('class' => 'align_center'));
+        $table->construct_cell(newpoints_format_points($data[2]), ['class' => 'align_center']);
         $table->construct_cell(
             my_date($mybb->settings['dateformat'], intval($stats['date']), '', false) . ', ' . my_date(
                 $mybb->settings['timeformat'],
                 intval($stats['date'])
             ),
-            array('class' => 'align_center')
+            ['class' => 'align_center']
         );
 
         $table->construct_row();
     }
 
     if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->newpoints_error_gathering, array('colspan' => 4));
+        $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
         $table->construct_row();
     }
 

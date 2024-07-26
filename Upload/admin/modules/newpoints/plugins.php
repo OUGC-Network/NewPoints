@@ -43,11 +43,11 @@ $page->add_breadcrumb_item($lang->newpoints_plugins, 'index.php?module=newpoints
 
 $page->output_header($lang->newpoints_plugins);
 
-$sub_tabs['newpoints_plugins'] = array(
+$sub_tabs['newpoints_plugins'] = [
     'title' => $lang->newpoints_plugins,
     'link' => 'index.php?module=newpoints-plugins',
     'description' => $lang->newpoints_plugins_description
-);
+];
 
 $page->output_nav_tabs($sub_tabs, 'newpoints_plugins');
 
@@ -65,7 +65,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     }
 
     $codename = $mybb->input['plugin'];
-    $codename = str_replace(array('.', '/', "\\"), '', $codename);
+    $codename = str_replace(['.', '/', "\\"], '', $codename);
     $file = basename($codename . '.php');
 
     // Check if the file exists and throw an error if it doesn't
@@ -142,7 +142,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     }
 
     // Rebuild settings cache
-    $array = array();
+    $array = [];
     newpoints_rebuild_settings_cache($array);
 
     flash_message($message, 'success');
@@ -166,7 +166,7 @@ if (!$mybb->input['action']) // view plugins
     // table
     $table = new Table();
     $table->construct_header($lang->plugin);
-    $table->construct_header($lang->controls, array('colspan' => 2, 'class' => 'align_center', 'width' => 300));
+    $table->construct_header($lang->controls, ['colspan' => 2, 'class' => 'align_center', 'width' => 300]);
 
     if (!empty($plugins_list)) {
         foreach ($plugins_list as $plugin) {
@@ -222,12 +222,12 @@ if (!$mybb->input['action']) // view plugins
             // Plugin is not installed at all
             if ($installed == false) {
                 if ($compatibility_warning) {
-                    $table->construct_cell("{$compatibility_warning}", array('class' => 'align_center', 'colspan' => 2)
+                    $table->construct_cell("{$compatibility_warning}", ['class' => 'align_center', 'colspan' => 2]
                     );
                 } else {
                     $table->construct_cell(
                         "<a href=\"index.php?module=newpoints-plugins&amp;action=activate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->install_and_activate}</a>",
-                        array('class' => 'align_center', 'colspan' => 2)
+                        ['class' => 'align_center', 'colspan' => 2]
                     );
                 }
             } // Plugin is activated and installed
@@ -235,15 +235,15 @@ if (!$mybb->input['action']) // view plugins
                 if (isset($active_plugins[$codename])) {
                     $table->construct_cell(
                         "<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->deactivate}</a>",
-                        array('class' => 'align_center', 'width' => 150)
+                        ['class' => 'align_center', 'width' => 150]
                     );
                     if ($uninstall_button) {
                         $table->construct_cell(
                             "<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->uninstall}</a>",
-                            array('class' => 'align_center', 'width' => 150)
+                            ['class' => 'align_center', 'width' => 150]
                         );
                     } else {
-                        $table->construct_cell('&nbsp;', array('class' => 'align_center', 'width' => 150));
+                        $table->construct_cell('&nbsp;', ['class' => 'align_center', 'width' => 150]);
                     }
                 } // Plugin is installed but not active
                 else {
@@ -251,20 +251,20 @@ if (!$mybb->input['action']) // view plugins
                         if ($compatibility_warning && !$uninstall_button) {
                             $table->construct_cell(
                                 "{$compatibility_warning}",
-                                array('class' => 'align_center', 'colspan' => 2)
+                                ['class' => 'align_center', 'colspan' => 2]
                             );
                         } else {
                             $table->construct_cell(
                                 "<a href=\"index.php?module=newpoints-plugins&amp;action=activate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->activate}</a>",
-                                array('class' => 'align_center', 'width' => 150)
+                                ['class' => 'align_center', 'width' => 150]
                             );
                             if ($uninstall_button) {
                                 $table->construct_cell(
                                     "<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->uninstall}</a>",
-                                    array('class' => 'align_center', 'width' => 150)
+                                    ['class' => 'align_center', 'width' => 150]
                                 );
                             } else {
-                                $table->construct_cell('&nbsp;', array('class' => 'align_center', 'width' => 150));
+                                $table->construct_cell('&nbsp;', ['class' => 'align_center', 'width' => 150]);
                             }
                         }
                     }
@@ -275,7 +275,7 @@ if (!$mybb->input['action']) // view plugins
     }
 
     if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->no_plugins, array('colspan' => 3));
+        $table->construct_cell($lang->no_plugins, ['colspan' => 3]);
         $table->construct_row();
     }
 
@@ -288,7 +288,7 @@ $page->output_footer();
 
 function newpoints_get_plugins()
 {
-    $plugins_list = array();
+    $plugins_list = [];
 
     // open directory
     $dir = @opendir(constant('MYBB_ROOT') . 'inc/plugins/newpoints/');

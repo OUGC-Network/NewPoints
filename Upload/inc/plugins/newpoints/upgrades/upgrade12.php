@@ -36,11 +36,11 @@ if (!defined('IN_ADMINCP')) {
 
 function upgrade12_info()
 {
-    return array(
+    return [
         'new_version' => '1.2',
         'name' => 'Upgrade to 1.2',
         'description' => 'Upgrade NewPoints 1.1 to NewPoints 1.2.<br />Note that all forums and group rules will be deleted.'
-    );
+    ];
 }
 
 // upgrade function

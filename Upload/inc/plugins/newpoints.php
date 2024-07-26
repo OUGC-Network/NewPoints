@@ -1,11 +1,13 @@
 <?php
+
 /***************************************************************************
  *
  *   NewPoints plugin (/inc/plugins/newpoints.php)
- *     Author: Pirata Nervo
- *   Copyright: © 2009-2012 Pirata Nervo
+ *   Author: Pirata Nervo
+ *   Copyright: © 2009 Pirata Nervo
+ *   Copyright: © 2024 Omar Gonzalez
  *
- *   Website: http://www.mybb-plugins.com
+ *   Website: https://ougc.network
  *
  *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
@@ -264,7 +266,7 @@ function newpoints_getallrules($type): array
     return rules_get_all($type);
 }
 
-function newpoints_rebuild_rules_cache(array &$rules = array()): bool
+function newpoints_rebuild_rules_cache(array &$rules = []): bool
 {
     return rules_rebuild_cache($rules);
 }
@@ -319,7 +321,7 @@ function newpoints_load_settings(): bool
     return settings_load();
 }
 
-function newpoints_rebuild_settings_cache(array &$settings = array()): array
+function newpoints_rebuild_settings_cache(array &$settings = []): array
 {
     return settings_rebuild_cache($settings);
 }

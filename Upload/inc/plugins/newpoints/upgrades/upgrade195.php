@@ -36,11 +36,11 @@ if (!defined('IN_ADMINCP')) {
 
 function upgrade195_info()
 {
-    return array(
+    return [
         'new_version' => '1.9.5',
         'name' => 'Upgrade to 1.9.5',
         'description' => 'Upgrade NewPoints 1.9.4 to NewPoints 1.9.5.<br />Cache entries will be created.'
-    );
+    ];
 }
 
 // upgrade function

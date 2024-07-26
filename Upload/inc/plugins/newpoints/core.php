@@ -2,17 +2,18 @@
 
 /***************************************************************************
  *
- *    Newpoints plugin (/inc/plugins/newpoints/core.php)
- *    Author: Pirata Nervo
- *    Copyright: © 2009 Pirata Nervo
- *    Copyright: © 2024 Omar Gonzalez
+ *   Newpoints plugin (/inc/plugins/newpoints/core.php)
+ *   Author: Pirata Nervo
+ *   Copyright: © 2009 Pirata Nervo
+ *   Copyright: © 2024 Omar Gonzalez
  *
- *    Website: https://ougc.network
+ *   Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************
- ****************************************************************************
+ ***************************************************************************/
+
+/****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -110,22 +111,22 @@ function js_special_characters(string $str): string
 {
     // Converts & -> &amp; allowing Unicode
     // Parses out HTML comments as the XHTML validator doesn't seem to like them
-    $string = preg_replace(array('#\<\!--.*?--\>#', '#&(?!\#[0-9]+;)#'), array('', '&amp;'), $str);
+    $string = preg_replace(['#\<\!--.*?--\>#', '#&(?!\#[0-9]+;)#'], ['', '&amp;'], $str);
     return strtr(
         $string,
-        array("\n" => '\n', "\r" => '\r', '\\' => '\\\\', '"' => '\x22', "'" => '\x27', '<' => '&lt;', '>' => '&gt;')
+        ["\n" => '\n', "\r" => '\r', '\\' => '\\\\', '"' => '\x22', "'" => '\x27', '<' => '&lt;', '>' => '&gt;']
     );
 }
 
 function count_characters(string $message): int
 {
     // Attempt to remove any quotes
-    $message = preg_replace(array(
+    $message = preg_replace([
         '#\[quote=([\"\']|&quot;|)(.*?)(?:\\1)(.*?)(?:[\"\']|&quot;)?\](.*?)\[/quote\](\r\n?|\n?)#si',
         '#\[quote\](.*?)\[\/quote\](\r\n?|\n?)#si',
         '#\[quote\]#si',
         '#\[\/quote\]#si'
-    ), '', $message);
+    ], '', $message);
 
     // Attempt to remove any MyCode
     global $parser;
@@ -134,20 +135,20 @@ function count_characters(string $message): int
         $parser = new postParser();
     }
 
-    $message = $parser->parse_message($message, array(
+    $message = $parser->parse_message($message, [
         'allow_html' => 0,
         'allow_mycode' => 1,
         'allow_smilies' => 0,
         'allow_imgcode' => 1,
         'filter_badwords' => 1,
         'nl2br' => 0
-    ));
+    ]);
 
     // before stripping tags, try converting some into spaces
-    $message = preg_replace(array(
+    $message = preg_replace([
         '~\<(?:img|hr).*?/\>~si',
         '~\<li\>(.*?)\</li\>~si'
-    ), array(' ', "\n* $1"), $message);
+    ], [' ', "\n* $1"], $message);
 
     $message = unhtmlentities(strip_tags($message));
 
@@ -157,9 +158,9 @@ function count_characters(string $message): int
 
     // convert \xA0 to spaces (reverse &nbsp;)
     $message = trim(
-        preg_replace(array('~ {2,}~', "~\n{2,}~"),
-            array(' ', "\n"),
-            strtr($message, array("\xA0" => utf8_encode("\xA0"), "\r" => '', "\t" => ' ')))
+        preg_replace(['~ {2,}~', "~\n{2,}~"],
+            [' ', "\n"],
+            strtr($message, ["\xA0" => utf8_encode("\xA0"), "\r" => '', "\t" => ' ']))
     );
 
     // newline fix for browsers which don't support them
@@ -205,11 +206,11 @@ function templates_add(string $name, string $contents, $sid = -1): bool
         return false;
     }
 
-    $templatearray = array(
+    $templatearray = [
         'title' => $db->escape_string($name),
         'template' => $db->escape_string($contents),
         'sid' => intval($sid)
-    );
+    ];
 
     $query = $db->simple_select(
         'templates',
@@ -217,8 +218,8 @@ function templates_add(string $name, string $contents, $sid = -1): bool
         "sid='{$sid}' AND title='{$templatearray['title']}'"
     );
 
-    $templates = array();
-    $duplicates = array();
+    $templates = [];
+    $duplicates = [];
 
     while ($templ = $db->fetch_array($query)) {
         if (isset($templates[$templ['title']])) {
@@ -291,7 +292,7 @@ function templates_rebuild(): bool
     $prefix = 'newpoints';
 
     // Default templates
-    $template_list = array(
+    $template_list = [
         'postbit' => '<br /><span class="smalltext">{$currency}: <a href="{$mybb->settings[\'bburl\']}/newpoints.php">{$points}</a></span>{$donate}',
         'profile' => '<tr>
 	<td class="trow2"><strong>{$currency}:</strong></td>
@@ -510,15 +511,15 @@ if(use_xmlhttprequest == "1")
         'home_income_row' => '<tr><td valign="middle" align="left"><span style="border-bottom: 1px dashed; cursor: help;" title="{$setting[\'description\']}">{$setting[\'title\']}</span></td><td valign="middle" align="right">{$value}</td></tr>',
         'home_income_table' => '<br /><table align="center"><tr><td align="left"><strong>Source</strong></td><td align="right"><strong>Amount Paid</strong></td></tr>{$income_settings}</table>',
         '' => '',
-    );
+    ];
 
     // Get plugin templates
     $template_list = run_hooks('rebuild_templates', $template_list);
 
-    $group = array(
+    $group = [
         'prefix' => $db->escape_string('newpoints'),
         'title' => $db->escape_string('Newpoints')
-    );
+    ];
 
     // Update or create template group:
     $query = $db->simple_select('templategroups', 'prefix', "prefix='{$group['prefix']}'");
@@ -536,8 +537,8 @@ if(use_xmlhttprequest == "1")
         "sid=-2 AND (title='{$group['prefix']}' OR title LIKE '{$group['prefix']}=_%' ESCAPE '=')"
     );
 
-    $templates = array();
-    $duplicates = array();
+    $templates = [];
+    $duplicates = [];
 
     while ($row = $db->fetch_array($query)) {
         $title = $row['title'];
@@ -564,19 +565,19 @@ if(use_xmlhttprequest == "1")
             $name = 'newpoints';
         }
 
-        $template = array(
+        $template = [
             'title' => $db->escape_string($name),
             'template' => $db->escape_string($code),
             'version' => 1,
             'sid' => -2,
             'dateline' => (int)constant('TIME_NOW')
-        );
+        ];
 
         // Update
         if (isset($templates[$name])) {
             if ($templates[$name]['template'] !== $code) {
                 // Update version for custom templates if present
-                $db->update_query('templates', array('version' => 0), "title='{$template['title']}'");
+                $db->update_query('templates', ['version' => 0], "title='{$template['title']}'");
 
                 // Update master template
                 $db->update_query('templates', $template, "tid={$templates[$name]['tid']}");
@@ -634,7 +635,7 @@ function settings_add_group(string $plugin, array $settings): bool
 
     $plugin_escaped = $db->escape_string($plugin);
 
-    $db->update_query('newpoints_settings', array('description' => 'NEWPOINTSDELETESETTING'), "plugin='{}'");
+    $db->update_query('newpoints_settings', ['description' => 'NEWPOINTSDELETESETTING'], "plugin='{}'");
 
     $disporder = 0;
 
@@ -642,24 +643,24 @@ function settings_add_group(string $plugin, array $settings): bool
     foreach ($settings as $key => $setting) {
         $setting = array_intersect_key(
             $setting,
-            array(
+            [
                 'title' => 0,
                 'description' => 0,
                 'type' => 0,
                 'value' => 0
-            )
+            ]
         );
 
-        $setting = array_map(array($db, 'escape_string'), $setting);
+        $setting = array_map([$db, 'escape_string'], $setting);
 
         $setting = array_merge(
-            array(
+            [
                 'title' => '',
                 'description' => '',
                 'type' => 'yesno',
                 'value' => 0,
                 'disporder' => ++$disporder
-            ),
+            ],
             $setting
         );
 
@@ -715,7 +716,7 @@ function settings_add(
         return false;
     }
 
-    $setting = array(
+    $setting = [
         'name' => $db->escape_string($name),
         'plugin' => $db->escape_string($plugin),
         'title' => $db->escape_string($title),
@@ -723,7 +724,7 @@ function settings_add(
         'type' => $db->escape_string($type),
         'value' => $db->escape_string($value),
         'disporder' => intval($disporder)
-    );
+    ];
 
     // Update if setting already exists, insert otherwise.
     $query = $db->simple_select(
@@ -755,7 +756,7 @@ function settings_load(): bool
 
     /* something is wrong so let's rebuild the cache data */
     if (empty($settings) || $settings === false) {
-        $settings = array();
+        $settings = [];
         newpoints_rebuild_settings_cache($settings);
     }
 
@@ -767,16 +768,16 @@ function settings_load(): bool
  *
  * @param array An array which will contain the settings once the function is run.
  */
-function settings_rebuild_cache(array &$settings = array()): array
+function settings_rebuild_cache(array &$settings = []): array
 {
     global $db, $cache, $mybb;
 
-    $settings = array();
+    $settings = [];
 
-    $options = array(
+    $options = [
         'order_by' => 'title',
         'order_dir' => 'ASC'
-    );
+    ];
 
     $query = $db->simple_select('newpoints_settings', 'value, name', '', $options);
     while ($setting = $db->fetch_array($query)) {
@@ -921,7 +922,7 @@ function rules_get(string $type, int $id): array
         return [];
     }
 
-    $rule = array();
+    $rule = [];
 
     $cachedrules = $cache->read('newpoints_rules');
     if ($cachedrules === false) {
@@ -962,7 +963,7 @@ function rules_get_all(string $type): array
         return [];
     }
 
-    $rules = array();
+    $rules = [];
 
     $cachedrules = $cache->read('newpoints_rules');
     if ($cachedrules === false) {
@@ -989,11 +990,11 @@ function rules_get_all(string $type): array
  *
  * @param array An array which will contain the rules once the function is run.
  */
-function rules_rebuild_cache(array &$rules = array()): bool
+function rules_rebuild_cache(array &$rules = []): bool
 {
     global $db, $cache, $mybb;
 
-    $rules = array();
+    $rules = [];
 
     // Query forum rules
     $query = $db->simple_select('newpoints_forumrules');
@@ -1080,10 +1081,10 @@ function find_replace_template_sets(string $title, string $find, string $replace
 
     if (is_array($update)) {
         foreach ($update as $template) {
-            $updatetemp = array(
+            $updatetemp = [
                 'template' => $db->escape_string($template['template']),
                 'dateline' => (int)constant('TIME_NOW')
-            );
+            ];
             $db->update_query('templates', $updatetemp, "tid='" . $template['tid'] . "'");
         }
     }
@@ -1115,13 +1116,13 @@ function log_add(string $action, string $data = '', string $username = '', int $
 
     $db->insert_query(
         'newpoints_log',
-        array(
+        [
             'action' => $db->escape_string($action),
             'data' => $db->escape_string($data),
             'date' => (int)constant('TIME_NOW'),
             'uid' => intval($uid),
             'username' => $db->escape_string($username)
-        )
+        ]
     );
 
     return true;

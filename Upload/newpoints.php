@@ -62,21 +62,21 @@ $mybb->input['action'] = $mybb->get_input('action');
 // build the menu
 
 // default menu options
-$menu = array(
-    array(
+$menu = [
+    [
         'lang_string' => 'newpoints_home',
-    ),
-    array(
+    ],
+    [
         'action' => 'stats',
         'lang_string' => 'newpoints_statistics',
         'setting' => 'newpoints_main_statsvisible',
-    ),
-    array(
+    ],
+    [
         'action' => 'donate',
         'lang_string' => 'newpoints_donate',
         'setting' => 'newpoints_main_donationsenabled',
-    )
-);
+    ]
+];
 
 $menu = run_hooks('default_menu', $menu);
 
@@ -162,7 +162,7 @@ if ($mybb->input['action'] == 'stats') {
     $richest_users = '';
     $bgcolor = alt_trow();
 
-    $fields = array('uid', 'username', 'newpoints', 'usergroup', 'displaygroup');
+    $fields = ['uid', 'username', 'newpoints', 'usergroup', 'displaygroup'];
 
     run_hooks('stats_start');
 
@@ -171,11 +171,11 @@ if ($mybb->input['action'] == 'stats') {
         'users',
         implode(',', $fields),
         '',
-        array(
+        [
             'order_by' => 'newpoints',
             'order_dir' => 'DESC',
             'limit' => intval($mybb->settings['newpoints_main_stats_richestusers'])
-        )
+        ]
     );
     while ($user = $db->fetch_array($query)) {
         $bgcolor = alt_trow();
@@ -336,7 +336,7 @@ if ($mybb->input['action'] == 'stats') {
     if ($mybb->settings['newpoints_main_donationspm'] != 0) {
         if ($mybb->input['reason'] != '') {
             newpoints_send_pm(
-                array(
+                [
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message_reason,
@@ -345,16 +345,16 @@ if ($mybb->input['action'] == 'stats') {
                     ),
                     'receivepms' => 1,
                     'touid' => $touser['uid']
-                )
+                ]
             );
         } else {
             newpoints_send_pm(
-                array(
+                [
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf($lang->newpoints_donate_message, newpoints_format_points($amount)),
                     'receivepms' => 1,
                     'touid' => $touser['uid']
-                )
+                ]
             );
         }
     }

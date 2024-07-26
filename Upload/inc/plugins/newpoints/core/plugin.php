@@ -32,7 +32,7 @@ if (!defined('IN_MYBB')) {
 
 function newpoints_plugin_info()
 {
-    return array(
+    return [
         'name' => 'NewPoints',
         'description' => 'NewPoints is a complex but efficient points system for MyBB.',
         'website' => 'http://www.consoleaddicted.com',
@@ -41,7 +41,7 @@ function newpoints_plugin_info()
         'version' => '3.0',
         'guid' => '152e7f9f32fadb777d58fda000eb7a9e',
         'compatibility' => '18*'
-    );
+    ];
 }
 
 function newpoints_plugin_install()
@@ -122,7 +122,7 @@ function newpoints_plugin_install()
     }
 
     // create task
-    $new_task = array(
+    $new_task = [
         'title' => 'Backup NewPoints',
         'description' => "Creates a backup of NewPoints default tables and users\'s points.",
         'file' => 'backupnewpoints',
@@ -133,7 +133,7 @@ function newpoints_plugin_install()
         'weekday' => '0',
         'enabled' => '0',
         'logging' => '1'
-    );
+    ];
 
     $new_task['nextrun'] = 0; // once the task is enabled, it will generate a nextrun date
     $tid = $db->insert_query('tasks', $new_task);
@@ -185,7 +185,7 @@ function newpoints_plugin_uninstall()
     // Delete all templates
     $query = $db->simple_select('templategroups', 'prefix', "prefix='newpoints'");
 
-    $twhere = array();
+    $twhere = [];
 
     while ($row = $db->fetch_array($query)) {
         $tprefix = $db->escape_string($row['prefix']);

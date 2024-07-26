@@ -1,13 +1,15 @@
 <?php
+
 /***************************************************************************
  *
  *   NewPoints Hello plugin (/inc/plugins/newpoints/newpoints_hello.php)
- *     Author: Pirata Nervo
- *   Copyright: � 2014 Pirata Nervo
+ *   Author: Pirata Nervo
+ *   Copyright: © 2009 Pirata Nervo
+ *   Copyright: © 2024 Omar Gonzalez
  *
- *   Website: http://www.mybb-plugins.com
+ *   Website: https://ougc.network
  *
- *   A hello world plugin for NewPoints.
+ *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
  ***************************************************************************/
 
@@ -48,7 +50,7 @@ function newpoints_hello_info()
      * guid: Unique ID issued by the MyBB Mods site for version checking
      * compatibility: A CSV list of MyBB versions supported. Ex, "121,123", "12*". Wildcards supported.
      */
-    return array(
+    return [
         'name' => 'Hello World!',
         'description' => 'A sample plugin that prints hello world depending on the settings.',
         'website' => 'http://www.consoleworld.net',
@@ -57,7 +59,7 @@ function newpoints_hello_info()
         'version' => '1.0',
         'guid' => '',
         'compatibility' => '*'
-    );
+    ];
 }
 
 /**
@@ -105,7 +107,7 @@ function newpoints_hello_activate()
     global $db, $mybb;
     // add settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-    newpoints_add_setting(
+    \Newpoints\settings_add(
         'newpoints_hello_show',
         'newpoints_hello',
         'Show message',
@@ -114,6 +116,7 @@ function newpoints_hello_activate()
         1,
         1
     );
+
     rebuild_settings();
 }
 
@@ -130,7 +133,8 @@ function newpoints_hello_deactivate()
     global $db, $mybb;
     // delete settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-    newpoints_remove_settings("'newpoints_hello_show'");
+    \Newpoints\settings_remove("'newpoints_hello_show'");
+
     rebuild_settings();
 }
 
@@ -138,13 +142,15 @@ function newpoints_hello_deactivate()
 function newpoints_hello_world($page)
 {
     global $mybb, $lang;
+
     if ($mybb->settings['newpoints_hello_show'] != 1) {
         return;
     }
 
     // load language files
-    newpoints_lang_load('newpoints_hello');
+    \Newpoints\language_load('newpoints_hello');
 
     $page = str_replace('<!-- end: header -->', '<!-- end: header -->' . $lang->newpoints_hello_message, $page);
+
     return $page;
 }

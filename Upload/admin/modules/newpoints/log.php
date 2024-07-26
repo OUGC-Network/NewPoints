@@ -45,11 +45,11 @@ if (!$mybb->input['action']) // view logs
 
     $page->output_header($lang->newpoints_log);
 
-    $sub_tabs['newpoints_log'] = array(
+    $sub_tabs['newpoints_log'] = [
         'title' => $lang->newpoints_log,
         'link' => 'index.php?module=newpoints-log',
         'description' => $lang->newpoints_log_description
-    );
+    ];
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_log');
 
@@ -89,7 +89,7 @@ if (!$mybb->input['action']) // view logs
     }
 
     // Process "fields" search
-    $selected = array();
+    $selected = [];
     if (isset($mybb->input['fields']) && is_array($mybb->input['fields']) && !empty($mybb->input['fields'])) {
         $or = '';
         $close = '';
@@ -143,18 +143,18 @@ if (!$mybb->input['action']) // view logs
 
     // table
     $table = new Table();
-    $table->construct_header($lang->newpoints_log_action, array('width' => '15%'));
-    $table->construct_header($lang->newpoints_log_data, array('width' => '30%'));
-    $table->construct_header($lang->newpoints_log_user, array('width' => '20%'));
-    $table->construct_header($lang->newpoints_log_date, array('width' => '20%', 'class' => 'align_center'));
-    $table->construct_header($lang->newpoints_log_options, array('width' => '15%', 'class' => 'align_center'));
+    $table->construct_header($lang->newpoints_log_action, ['width' => '15%']);
+    $table->construct_header($lang->newpoints_log_data, ['width' => '30%']);
+    $table->construct_header($lang->newpoints_log_user, ['width' => '20%']);
+    $table->construct_header($lang->newpoints_log_date, ['width' => '20%', 'class' => 'align_center']);
+    $table->construct_header($lang->newpoints_log_options, ['width' => '15%', 'class' => 'align_center']);
 
-    $fields = array();
+    $fields = [];
     $query = $db->simple_select(
         'newpoints_log',
         '*',
         $sql,
-        array('order_by' => 'date', 'order_dir' => 'DESC', 'limit' => "{$start}, {$per_page}")
+        ['order_by' => 'date', 'order_dir' => 'DESC', 'limit' => "{$start}, {$per_page}"]
     );
     while ($log = $db->fetch_array($query)) {
         $table->construct_cell(htmlspecialchars_uni($log['action']));
@@ -166,18 +166,18 @@ if (!$mybb->input['action']) // view logs
                 $mybb->settings['timeformat'],
                 intval($log['date'])
             ),
-            array('class' => 'align_center')
+            ['class' => 'align_center']
         );
         $table->construct_cell(
             "<a href=\"index.php?module=newpoints-log&amp;action=delete_log&amp;lid={$log['lid']}&amp;my_post_key={$mybb->post_code}\" target=\"_self\">{$lang->newpoints_delete}</a>",
-            array('class' => 'align_center')
+            ['class' => 'align_center']
         ); // delete button
 
         $table->construct_row();
     }
 
     if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->newpoints_no_log_entries, array('colspan' => 5));
+        $table->construct_cell($lang->newpoints_no_log_entries, ['colspan' => 5]);
         $table->construct_row();
     }
 
@@ -186,7 +186,7 @@ if (!$mybb->input['action']) // view logs
     echo '<br />';
 
     // Get all actions
-    $fields = array();
+    $fields = [];
     $q = $db->query('SELECT action FROM `' . $db->table_prefix . 'newpoints_log` GROUP BY action');
     while ($action = $db->fetch_field($q, 'action')) {
         $fields[htmlspecialchars_uni($action)] = htmlspecialchars_uni($action);
@@ -203,19 +203,19 @@ if (!$mybb->input['action']) // view logs
         $form->generate_text_box(
             'username',
             htmlspecialchars_uni($mybb->get_input('username')),
-            array('id' => 'username')
+            ['id' => 'username']
         ),
         'username'
     );
     $form_container->output_row(
         $lang->newpoints_filter_actions,
         $lang->newpoints_filter_actions_desc,
-        $form->generate_select_box('fields[]', $fields, $selected, array('id' => 'fields', 'multiple' => true)),
+        $form->generate_select_box('fields[]', $fields, $selected, ['id' => 'fields', 'multiple' => true]),
         'fields'
     );
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $form->output_submit_wrapper($buttons);
     $form->end();
@@ -230,12 +230,12 @@ if (!$mybb->input['action']) // view logs
     $form_container->output_row(
         $lang->newpoints_older_than,
         $lang->newpoints_older_than_desc,
-        $form->generate_text_box('days', 30, array('id' => 'days')),
+        $form->generate_text_box('days', 30, ['id' => 'days']),
         'days'
     );
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -254,7 +254,7 @@ if (!$mybb->input['action']) // view logs
         }
 
         if (!$db->fetch_field(
-            $db->simple_select('newpoints_log', 'action', 'lid=' . intval($mybb->input['lid']), array('limit' => 1)),
+            $db->simple_select('newpoints_log', 'action', 'lid=' . intval($mybb->input['lid']), ['limit' => 1]),
             'action'
         )) {
             flash_message($lang->newpoints_log_invalid, 'error');
@@ -279,8 +279,8 @@ if (!$mybb->input['action']) // view logs
     echo "<p>{$lang->newpoints_log_deleteconfirm}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
@@ -318,8 +318,8 @@ if (!$mybb->input['action']) // view logs
     echo "<p>{$lang->newpoints_log_pruneconfirm}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();

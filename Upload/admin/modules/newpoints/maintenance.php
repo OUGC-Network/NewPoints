@@ -43,17 +43,17 @@ $page->add_breadcrumb_item($lang->newpoints_maintenance, 'index.php?module=newpo
 
 $page->output_header($lang->newpoints_maintenance);
 
-$sub_tabs['newpoints_maintenance'] = array(
+$sub_tabs['newpoints_maintenance'] = [
     'title' => $lang->newpoints_maintenance,
     'link' => 'index.php?module=newpoints-maintenance',
     'description' => $lang->newpoints_maintenance_description
-);
+];
 
-$sub_tabs['newpoints_maintenance_edituser'] = array(
+$sub_tabs['newpoints_maintenance_edituser'] = [
     'title' => $lang->newpoints_maintenance_edituser,
     'link' => 'index.php?module=newpoints-maintenance&amp;action=edituser',
     'description' => $lang->newpoints_maintenance_edituser_desc
-);
+];
 
 if (!$mybb->input['action']) // show page with various actions that can be taken
 {
@@ -69,12 +69,12 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form_container->output_row(
         $lang->newpoints_recount_per_page,
         $lang->newpoints_recount_per_page_desc,
-        $form->generate_text_box('per_page', 50, array('id' => 'per_page')),
+        $form->generate_text_box('per_page', 50, ['id' => 'per_page']),
         'per_page'
     );
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -90,18 +90,18 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form_container->output_row(
         $lang->newpoints_reset_per_page,
         $lang->newpoints_reset_per_page_desc,
-        $form->generate_text_box('per_page', 500, array('id' => 'per_page')),
+        $form->generate_text_box('per_page', 500, ['id' => 'per_page']),
         'per_page'
     );
     $form_container->output_row(
         $lang->newpoints_reset_points,
         $lang->newpoints_reset_points_desc,
-        $form->generate_text_box('points', 0, array('id' => 'points')),
+        $form->generate_text_box('points', 0, ['id' => 'points']),
         'points'
     );
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -117,12 +117,12 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form_container->output_row(
         $lang->newpoints_edituser_uid,
         $lang->newpoints_edituser_uid_desc,
-        $form->generate_text_box('uid', 0, array('id' => 'uid')),
+        $form->generate_text_box('uid', 0, ['id' => 'uid']),
         'uid'
     );
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -143,7 +143,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     );
     $form_container->end();
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $form->output_submit_wrapper($buttons);
     $form->end();
@@ -166,7 +166,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             admin_redirect('index.php?module=newpoints-maintenance');
         }
 
-        $updates = array('newpoints' => floatval($mybb->input['points']));
+        $updates = ['newpoints' => floatval($mybb->input['points'])];
 
         run_hooks('admin_maintenance_edituser_commit');
 
@@ -189,7 +189,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
         $form->generate_text_box(
             'points',
             round($user['newpoints'], intval($mybb->settings['newpoints_main_decimal'])),
-            array('id' => 'points')
+            ['id' => 'points']
         ),
         'points'
     );
@@ -197,7 +197,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
 
     run_hooks('admin_maintenance_edituser_form');
 
-    $buttons = array();
+    $buttons = [];
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
@@ -243,7 +243,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             'users',
             'uid,usergroup',
             '',
-            array('order_by' => 'uid', 'order_dir' => 'ASC', 'limit' => "{$start}, {$per_page}")
+            ['order_by' => 'uid', 'order_dir' => 'ASC', 'limit' => "{$start}, {$per_page}"]
         );
         while ($user = $db->fetch_array($query)) {
             // recount points
@@ -260,7 +260,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
                 continue;
             }
 
-            $firstposts = array(0);
+            $firstposts = [0];
 
             // threads and polls
             $totalthreads_query = $db->simple_select(
@@ -370,11 +370,11 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
 
             $db->update_query(
                 'users',
-                array(
+                [
                     'newpoints' => floatval(
                             $mybb->settings['newpoints_income_newreg']
                         ) + $points * $grouprules['rate']
-                ),
+                ],
                 'uid=\'' . $user['uid'] . '\''
             );
         }
@@ -388,7 +388,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             echo "<p>{$lang->newpoints_click_continue}</p>\n";
             echo "<br />\n";
             echo "<p class=\"buttons\">\n";
-            echo $form->generate_submit_button($lang->newpoints_continue_button, array('class' => 'button_yes'));
+            echo $form->generate_submit_button($lang->newpoints_continue_button, ['class' => 'button_yes']);
             echo "</p>\n";
             echo "</div>\n";
 
@@ -414,8 +414,8 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     echo "<p>{$lang->newpoints_recountconfirm}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
@@ -459,11 +459,11 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             'users',
             'uid',
             '',
-            array('order_by' => 'uid', 'order_dir' => 'ASC', 'limit' => "{$start}, {$per_page}")
+            ['order_by' => 'uid', 'order_dir' => 'ASC', 'limit' => "{$start}, {$per_page}"]
         );
         while ($user = $db->fetch_array($query)) {
             // reset
-            $db->update_query('users', array('newpoints' => $points), 'uid=\'' . $user['uid'] . '\'');
+            $db->update_query('users', ['newpoints' => $points], 'uid=\'' . $user['uid'] . '\'');
         }
 
         if ($total_users > $start + intval($mybb->input['per_page'])) {
@@ -480,7 +480,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             echo "<p>{$lang->newpoints_click_continue}</p>\n";
             echo "<br />\n";
             echo "<p class=\"buttons\">\n";
-            echo $form->generate_submit_button($lang->newpoints_continue_button, array('class' => 'button_yes'));
+            echo $form->generate_submit_button($lang->newpoints_continue_button, ['class' => 'button_yes']);
             echo "</p>\n";
             echo "</div>\n";
 
@@ -506,8 +506,8 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     echo "<p>{$lang->newpoints_resetconfirm}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
@@ -545,8 +545,8 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     echo "<p>{$lang->newpoints_reconstructconfirm}</p>\n";
     echo "<br />\n";
     echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, array('class' => 'button_yes'));
-    echo $form->generate_submit_button($lang->no, array('name' => 'no', 'class' => 'button_no'));
+    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
+    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
     echo "</p>\n";
     echo "</div>\n";
     $form->end();
