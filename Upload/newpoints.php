@@ -27,7 +27,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-use function Newpoints\Core\get_template;
+use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 
 define('IN_MYBB', 1);
@@ -104,7 +104,7 @@ foreach ($menu as $option) {
 
     run_hooks('menu_build_option');
 
-    $options .= eval(get_template('option'));
+    $options .= eval(templates_get('option'));
 
     $bgcolor = alt_trow();
 }
@@ -188,13 +188,13 @@ if ($mybb->input['action'] == 'stats') {
 
         run_hooks('stats_richest_users');
 
-        $richest_users .= eval(get_template('statistics_richest_user'));
+        $richest_users .= eval(templates_get('statistics_richest_user'));
     }
 
     if ($richest_users == '') {
         $colspan = 2;
         $no_results = $lang->newpoints_noresults;
-        $richest_users = eval(get_template('no_results'));
+        $richest_users = eval(templates_get('no_results'));
     }
 
     run_hooks('stats_middle');
@@ -234,16 +234,16 @@ if ($mybb->input['action'] == 'stats') {
 
         run_hooks('stats_last_donations');
 
-        $last_donations .= eval(get_template('statistics_donation'));
+        $last_donations .= eval(templates_get('statistics_donation'));
     }
 
     if ($last_donations == '') {
         $colspan = 4;
         $no_results = $lang->newpoints_noresults;
-        $last_donations = eval(get_template('no_results'));
+        $last_donations = eval(templates_get('no_results'));
     }
 
-    $page = eval(get_template('statistics'));
+    $page = eval(templates_get('statistics'));
 
     run_hooks('stats_end');
 
@@ -279,7 +279,7 @@ if ($mybb->input['action'] == 'stats') {
         exit;
     }
 
-    $page = eval(get_template('donate'));
+    $page = eval(templates_get('donate'));
 
     run_hooks('donate_end');
 

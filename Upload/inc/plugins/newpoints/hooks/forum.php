@@ -31,7 +31,9 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Forum;
 
-use function Newpoints\Core\get_template;
+use postDatahandler;
+
+use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
@@ -39,6 +41,20 @@ use function Newpoints\Core\run_hooks;
 // todo, fix plugins not being able to use global_start by loading plugins before
 function global_start(): bool
 {
+    if (THIS_SCRIPT == 'showthread.php') {
+        global $templatelist;
+        if (isset($templatelist)) {
+            $templatelist .= ',';
+        }
+        $templatelist .= 'newpoints_postbit,newpoints_donate_inline';
+    } elseif (THIS_SCRIPT == 'member.php') {
+        global $templatelist;
+        if (isset($templatelist)) {
+            $templatelist .= ',';
+        }
+        $templatelist .= 'newpoints_profile,newpoints_donate_inline';
+    }
+
     global $plugins, $mybb, $mypoints;
 
     newpoints_load_plugins();
@@ -151,7 +167,7 @@ function xmlhttp(): bool
 {
     global $plugins;
 
-    \Newpoints\Hooks\Forum\global_intermediate();
+    global_intermediate();
 
     newpoints_load_plugins();
     //newpoints_load_settings();
@@ -200,12 +216,12 @@ function postbit(array &$post): array
     $uid = intval($post['uid']);
 
     if ($mybb->settings['newpoints_main_donationsenabled'] && $post['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
-        $donate = eval(get_template('donate_inline'));
+        $donate = eval(templates_get('donate_inline'));
     } else {
         $donate = '';
     }
 
-    $post['newpoints_postbit'] = eval(get_template('postbit'));
+    $post['newpoints_postbit'] = eval(templates_get('postbit'));
 
     return $post;
 }
@@ -246,17 +262,17 @@ function member_profile_end(): bool
     $uid = intval($memprofile['uid']);
 
     if ($mybb->settings['newpoints_main_donationsenabled'] && $memprofile['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
-        $donate = eval(get_template('donate_inline'));
+        $donate = eval(templates_get('donate_inline'));
     } else {
         $donate = '';
     }
 
-    $newpoints_profile = eval(get_template('profile'));
+    $newpoints_profile = eval(templates_get('profile'));
 
     return true;
 }
 
-function datahandler_post_insert_post(\postDatahandler &$data): \postDatahandler
+function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
 {
     global $db, $mybb, $post, $thread;
 
@@ -337,7 +353,7 @@ function datahandler_post_insert_post(\postDatahandler &$data): \postDatahandler
     return $data;
 }
 
-function datahandler_post_update(\postDatahandler &$newpost): \postDatahandler
+function datahandler_post_update(postDatahandler &$newpost): postDatahandler
 {
     global $db, $mybb, $thread;
 
@@ -1046,7 +1062,7 @@ function class_moderation_unapprove_posts(array $pids): array
     return $pids;
 }
 
-function datahandler_post_insert_thread(\postDatahandler &$that): \postDatahandler
+function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
 {
     global $db, $mybb, $fid, $thread;
 
