@@ -27,6 +27,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use function Newpoints\Core\get_template;
+use function Newpoints\Core\run_hooks;
+
 define('IN_MYBB', 1);
 define('THIS_SCRIPT', 'newpoints.php');
 define('NP_DISABLE_GUESTS', 0);
@@ -44,7 +47,7 @@ global $mybb, $plugins, $lang, $db, $templates;
 
 $mybb->input['action'] = $mybb->get_input('action');
 
-$plugins->run_hooks('newpoints_begin');
+run_hooks('begin');
 
 // Allow guests here? Some plugins may allow guest access and they may hook to newpoints_start
 if (!$mybb->user['uid'] && NP_DISABLE_GUESTS == 1) {
@@ -75,7 +78,7 @@ $menu = array(
     )
 );
 
-$menu = $plugins->run_hooks('newpoints_default_menu', $menu);
+$menu = run_hooks('default_menu', $menu);
 
 $bgcolor = alt_trow(true);
 $options = '';
@@ -99,14 +102,14 @@ foreach ($menu as $option) {
         $lang_string = $lang->{$option['lang_string']};
     }
 
-    $plugins->run_hooks('newpoints_menu_build_option');
+    run_hooks('menu_build_option');
 
-    eval("\$options .= \"" . $templates->get('newpoints_option') . "\";");
+    $options .= eval(get_template('option'));
 
     $bgcolor = alt_trow();
 }
 
-$plugins->run_hooks('newpoints_start');
+run_hooks('start');
 
 // Block guests here
 if (!$mybb->user['uid']) {
@@ -115,7 +118,7 @@ if (!$mybb->user['uid']) {
 
 // no action = home
 if (!$mybb->input['action']) {
-    $plugins->run_hooks('newpoints_home_start');
+    run_hooks('home_start');
 
     $income_settings = '';
 
@@ -140,7 +143,7 @@ if (!$mybb->input['action']) {
         $income_settings .= eval($templates->render('newpoints_home_income_row'));
     }
 
-    $plugins->run_hooks('newpoints_home_end', $income_settings);
+    run_hooks('home_end', $income_settings);
 
     $income_settings = eval($templates->render('newpoints_home_income_table'));
 
@@ -161,7 +164,7 @@ if ($mybb->input['action'] == 'stats') {
 
     $fields = array('uid', 'username', 'newpoints', 'usergroup', 'displaygroup');
 
-    $plugins->run_hooks('newpoints_stats_start');
+    run_hooks('stats_start');
 
     // get richest users
     $query = $db->simple_select(
@@ -183,18 +186,18 @@ if ($mybb->input['action'] == 'stats') {
         );
         $user['newpoints'] = newpoints_format_points($user['newpoints']);
 
-        $plugins->run_hooks('newpoints_stats_richest_users');
+        run_hooks('stats_richest_users');
 
-        eval("\$richest_users .= \"" . $templates->get('newpoints_statistics_richest_user') . "\";");
+        $richest_users .= eval(get_template('statistics_richest_user'));
     }
 
     if ($richest_users == '') {
         $colspan = 2;
         $no_results = $lang->newpoints_noresults;
-        eval("\$richest_users = \"" . $templates->get('newpoints_no_results') . "\";");
+        $richest_users = eval(get_template('no_results'));
     }
 
-    $plugins->run_hooks('newpoints_stats_middle');
+    run_hooks('stats_middle');
 
     $last_donations = '';
     $bgcolor = alt_trow();
@@ -229,20 +232,20 @@ if ($mybb->input['action'] == 'stats') {
                 false
             ) . ', ' . my_date($mybb->settings['timeformat'], intval($donation['date']));
 
-        $plugins->run_hooks('newpoints_stats_last_donations');
+        run_hooks('stats_last_donations');
 
-        eval("\$last_donations .= \"" . $templates->get('newpoints_statistics_donation') . "\";");
+        $last_donations .= eval(get_template('statistics_donation'));
     }
 
     if ($last_donations == '') {
         $colspan = 4;
         $no_results = $lang->newpoints_noresults;
-        eval("\$last_donations = \"" . $templates->get('newpoints_no_results') . "\";");
+        $last_donations = eval(get_template('no_results'));
     }
 
-    eval("\$page = \"" . $templates->get('newpoints_statistics') . "\";");
+    $page = eval(get_template('statistics'));
 
-    $plugins->run_hooks('newpoints_stats_end');
+    run_hooks('stats_end');
 
     output_page($page);
 } elseif ($mybb->input['action'] == 'donate') {
@@ -250,7 +253,7 @@ if ($mybb->input['action'] == 'stats') {
         error($lang->newpoints_donations_disabled);
     }
 
-    $plugins->run_hooks('newpoints_donate_start');
+    run_hooks('donate_start');
 
     // make sure wen're trying to send a donation to ourselves
     $uid = intval($mybb->input['uid']);
@@ -276,9 +279,9 @@ if ($mybb->input['action'] == 'stats') {
         exit;
     }
 
-    eval("\$page = \"" . $templates->get('newpoints_donate') . "\";");
+    $page = eval(get_template('donate'));
 
-    $plugins->run_hooks('newpoints_donate_end');
+    run_hooks('donate_end');
 
     output_page($page);
 } elseif ($mybb->input['action'] == 'do_donate') {
@@ -288,7 +291,7 @@ if ($mybb->input['action'] == 'stats') {
         error($lang->newpoints_donations_disabled);
     }
 
-    $plugins->run_hooks('newpoints_do_donate_start');
+    run_hooks('do_donate_start');
 
     if ($mybb->user['usergroup'] != 4) {
         $q = $db->simple_select(
@@ -362,7 +365,7 @@ if ($mybb->input['action'] == 'stats') {
         $lang->sprintf($lang->newpoints_donate_log, $touser['username'], $touser['uid'], $amount)
     );
 
-    $plugins->run_hooks('newpoints_do_donate_end');
+    run_hooks('do_donate_end');
 
     $link = $mybb->settings['bburl'] . '/newpoints.php';
 
@@ -373,6 +376,6 @@ if ($mybb->input['action'] == 'stats') {
     redirect($link, $lang->sprintf($lang->newpoints_donated, newpoints_format_points($amount)));
 }
 
-$plugins->run_hooks('newpoints_terminate');
+run_hooks('terminate');
 
 exit;

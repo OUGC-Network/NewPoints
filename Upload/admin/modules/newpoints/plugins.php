@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -57,9 +59,9 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     }
 
     if ($mybb->input['action'] == 'activate') {
-        $plugins->run_hooks('newpoints_admin_plugins_activate');
+        run_hooks('admin_plugins_activate');
     } else {
-        $plugins->run_hooks('newpoints_admin_plugins_deactivate');
+        run_hooks('admin_plugins_deactivate');
     }
 
     $codename = $mybb->input['plugin'];
@@ -134,9 +136,9 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     log_admin_action($codename, $install_uninstall);
 
     if ($mybb->input['action'] == 'activate') {
-        $plugins->run_hooks('newpoints_admin_plugins_activate_commit');
+        run_hooks('admin_plugins_activate_commit');
     } else {
-        $plugins->run_hooks('newpoints_admin_plugins_deactivate_commit');
+        run_hooks('admin_plugins_deactivate_commit');
     }
 
     // Rebuild settings cache
@@ -159,7 +161,7 @@ if (!$mybb->input['action']) // view plugins
 
     $plugins_list = newpoints_get_plugins();
 
-    $plugins->run_hooks('newpoints_admin_plugins_start');
+    run_hooks('admin_plugins_start');
 
     // table
     $table = new Table();
@@ -277,7 +279,7 @@ if (!$mybb->input['action']) // view plugins
         $table->construct_row();
     }
 
-    $plugins->run_hooks('newpoints_admin_plugins_end');
+    run_hooks('admin_plugins_end');
 
     $table->output($lang->plugins);
 }

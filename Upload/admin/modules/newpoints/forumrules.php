@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -35,7 +37,7 @@ global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks('newpoints_admin_forumrules_begin');
+run_hooks('admin_forumrules_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_forumrules, 'index.php?module=newpoints-forumrules');
 
@@ -63,7 +65,7 @@ if (!$mybb->input['action']) // view forumrules
 {
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules');
 
-    $plugins->run_hooks('newpoints_admin_forumrules_noaction_start');
+    run_hooks('admin_forumrules_noaction_start');
 
     echo "<p class=\"notice\">{$lang->newpoints_forumrules_notice}</p>";
 
@@ -102,9 +104,9 @@ if (!$mybb->input['action']) // view forumrules
 
     $table->output($lang->newpoints_forumrules_rules);
 
-    $plugins->run_hooks('newpoints_admin_forumrules_noaction_end');
+    run_hooks('admin_forumrules_noaction_end');
 } elseif ($mybb->input['action'] == 'add') {
-    $plugins->run_hooks('newpoints_admin_forumrules_add_start');
+    run_hooks('admin_forumrules_add_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules_add');
 
@@ -129,7 +131,7 @@ if (!$mybb->input['action']) // view forumrules
             'fid' => intval($mybb->input['forum'])
         );
 
-        $insert_query = $plugins->run_hooks('newpoints_admin_forumrules_add_insert', $insert_query);
+        $insert_query = run_hooks('admin_forumrules_add_insert', $insert_query);
 
         $db->insert_query('newpoints_forumrules', $insert_query);
 
@@ -184,7 +186,7 @@ if (!$mybb->input['action']) // view forumrules
         'forum'
     );
 
-    $plugins->run_hooks('newpoints_admin_forumrules_add');
+    run_hooks('admin_forumrules_add');
 
     $form_container->end();
 
@@ -194,7 +196,7 @@ if (!$mybb->input['action']) // view forumrules
     $form->output_submit_wrapper($buttons);
     $form->end();
 } elseif ($mybb->input['action'] == 'edit') {
-    $plugins->run_hooks('newpoints_admin_forumrules_edit_start');
+    run_hooks('admin_forumrules_edit_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules_edit');
 
@@ -219,7 +221,7 @@ if (!$mybb->input['action']) // view forumrules
             'fid' => intval($mybb->input['forum'])
         );
 
-        $update_query = $plugins->run_hooks('newpoints_admin_forumrules_edit_update', $update_query);
+        $update_query = run_hooks('admin_forumrules_edit_update', $update_query);
 
         $db->update_query('newpoints_forumrules', $update_query, 'rid=' . intval($mybb->input['rid']));
 
@@ -286,7 +288,7 @@ if (!$mybb->input['action']) // view forumrules
         'forum'
     );
 
-    $plugins->run_hooks('newpoints_admin_forumrules_edit');
+    run_hooks('admin_forumrules_edit');
 
     $form_container->end();
 
@@ -343,6 +345,6 @@ if (!$mybb->input['action']) // view forumrules
     $form->end();
 }
 
-$plugins->run_hooks('newpoints_admin_forumrules_terminate');
+run_hooks('admin_forumrules_terminate');
 
 $page->output_footer();

@@ -26,6 +26,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use function Newpoints\Core\get_template;
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB') || !defined('NP_HOOKS')) {
     die('This file cannot be accessed directly.');
 }
@@ -47,7 +50,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_load, we must allow them to hook to newpoints_admin_load
-        $plugins->run_hooks('newpoints_admin_load');
+        run_hooks('admin_load');
     }
 
     function newpoints_admin_menu_hook(&$sub_menu)
@@ -59,7 +62,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_newpoints_menu, we must allow them to hook to newpoints_admin_newpoints_menu
-        $sub_menu = $plugins->run_hooks('newpoints_admin_newpoints_menu', $sub_menu);
+        $sub_menu = run_hooks('admin_newpoints_menu', $sub_menu);
     }
 
     function newpoints_admin_action_handler_hook(&$actions)
@@ -71,7 +74,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_newpoints_action_handler, we must allow them to hook to newpoints_newpoints_action_handler
-        $actions = $plugins->run_hooks('newpoints_admin_newpoints_action_handler', $actions);
+        $actions = run_hooks('admin_newpoints_action_handler', $actions);
     }
 
     function newpoints_admin_permissions_hook(&$admin_permissions)
@@ -83,7 +86,7 @@ if (NP_HOOKS == 1) {
         }
 
         // as plugins can't hook to admin_newpoints_permissions, we must allow them to hook to newpoints_newpoints_permissions
-        $admin_permissions = $plugins->run_hooks('newpoints_admin_newpoints_permissions', $admin_permissions);
+        $admin_permissions = run_hooks('admin_newpoints_permissions', $admin_permissions);
     }
 } // outside ACP hooks
 elseif (NP_HOOKS == 2) {
@@ -181,7 +184,7 @@ elseif (NP_HOOKS == 2) {
         //newpoints_load_settings();
 
         // as plugins can't hook to archive_start, we must allow them to hook to newpoints_archive_start
-        $plugins->run_hooks('newpoints_archive_start');
+        run_hooks('archive_start');
     }
 
     // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
@@ -200,7 +203,7 @@ elseif (NP_HOOKS == 2) {
         }
 
         // as plugins can't hook to global_start, we must allow them to hook to global_start
-        $plugins->run_hooks('newpoints_global_start');
+        run_hooks('global_start');
     }
 
     function newpoints_global_intermediate()
@@ -229,7 +232,7 @@ elseif (NP_HOOKS == 2) {
         //newpoints_load_settings();
 
         // as plugins can't hook to xmlhttp, we must allow them to hook to newpoints_xmlhttp
-        $plugins->run_hooks('newpoints_xmlhttp');
+        run_hooks('xmlhttp');
     }
 
     // postbit
@@ -254,12 +257,12 @@ elseif (NP_HOOKS == 2) {
         $uid = intval($post['uid']);
 
         if ($mybb->settings['newpoints_main_donationsenabled'] && $post['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
-            eval("\$donate = \"" . $templates->get('newpoints_donate_inline') . "\";");
+            $donate = eval(get_template('donate_inline'));
         } else {
             $donate = '';
         }
 
-        eval("\$post['newpoints_postbit'] = \"" . $templates->get('newpoints_postbit') . "\";");
+        $post['newpoints_postbit'] = eval(get_template('postbit'));
     }
 
     // member profile
@@ -281,12 +284,12 @@ elseif (NP_HOOKS == 2) {
         $uid = intval($memprofile['uid']);
 
         if ($mybb->settings['newpoints_main_donationsenabled'] && $memprofile['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
-            eval("\$donate = \"" . $templates->get('newpoints_donate_inline') . "\";");
+            $donate = eval(get_template('donate_inline'));
         } else {
             $donate = '';
         }
 
-        eval("\$newpoints_profile = \"" . $templates->get('newpoints_profile') . "\";");
+        $newpoints_profile = eval(get_template('profile'));
     }
 
     // ****************** //

@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -35,7 +37,7 @@ global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks('newpoints_admin_upgrades_begin');
+run_hooks('admin_upgrades_begin');
 
 if (!$mybb->input['action']) // view upgrades
 {
@@ -137,7 +139,7 @@ if (!$mybb->input['action']) // view upgrades
     $form->end();
 }
 
-$plugins->run_hooks('newpoints_admin_upgrades_terminate');
+run_hooks('admin_upgrades_terminate');
 
 $page->output_footer();
 

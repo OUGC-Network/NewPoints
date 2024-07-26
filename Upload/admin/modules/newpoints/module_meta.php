@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -69,7 +71,7 @@ function newpoints_meta()
         'link' => 'index.php?module=newpoints-upgrades'
     );
 
-    $sub_menu = $plugins->run_hooks('admin_newpoints_menu', $sub_menu);
+    $sub_menu = run_hooks('admin_menu', $sub_menu);
 
     $lang->load('newpoints');
 
@@ -95,7 +97,7 @@ function newpoints_action_handler($action)
         'upgrades' => array('active' => 'upgrades', 'file' => 'upgrades.php'),
     );
 
-    $actions = $plugins->run_hooks('admin_newpoints_action_handler', $actions);
+    $actions = run_hooks('admin_action_handler', $actions);
 
     if (!isset($actions[$action])) {
         $page->active_action = 'plugins';
@@ -122,7 +124,7 @@ function newpoints_admin_permissions()
         'upgrades' => $lang->can_manage_upgrades
     );
 
-    $admin_permissions = $plugins->run_hooks('admin_newpoints_permissions', $admin_permissions);
+    $admin_permissions = run_hooks('admin_permissions', $admin_permissions);
 
     return array('name' => $lang->newpoints, 'permissions' => $admin_permissions, 'disporder' => 60);
 }

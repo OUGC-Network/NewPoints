@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -39,7 +41,7 @@ $lang->load('config_settings', false, true);
 
 // Change settings for a specified group.
 if ($mybb->input['action'] == 'change') {
-    $plugins->run_hooks('newpoints_admin_settings_change');
+    run_hooks('admin_settings_change');
 
     if ($mybb->request_method == 'post') {
         if (is_array($mybb->input['upsetting'])) {
@@ -84,7 +86,7 @@ if ($mybb->input['action'] == 'change') {
         $array = array();
         newpoints_rebuild_settings_cache($array);
 
-        $plugins->run_hooks('newpoints_admin_settings_change_commit');
+        run_hooks('admin_settings_change_commit');
 
         // Log admin action
         log_admin_action();
@@ -448,7 +450,7 @@ if ($mybb->input['action'] == 'change') {
 }
 
 if (!$mybb->input['action']) {
-    $plugins->run_hooks('newpoints_admin_settings_start');
+    run_hooks('admin_settings_start');
 
     $page->add_breadcrumb_item($lang->newpoints_settings, 'index.php?module=newpoints-settings');
 

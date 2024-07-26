@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -35,7 +37,7 @@ global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks('newpoints_admin_stats_begin');
+run_hooks('admin_stats_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_stats, 'index.php?module=newpoints-stats');
 
@@ -52,7 +54,7 @@ if (!$mybb->input['action']) // view stats
 {
     $fields = array('uid', 'username', 'newpoints');
 
-    $plugins->run_hooks('newpoints_admin_stats_noaction_start');
+    run_hooks('admin_stats_noaction_start');
 
     // table
     $table = new Table();
@@ -131,9 +133,9 @@ if (!$mybb->input['action']) // view stats
 
     $table->output($lang->newpoints_stats_lastdonations);
 
-    $plugins->run_hooks('newpoints_admin_stats_noaction_end');
+    run_hooks('admin_stats_noaction_end');
 }
 
-$plugins->run_hooks('newpoints_admin_stats_terminate');
+run_hooks('admin_stats_terminate');
 
 $page->output_footer();

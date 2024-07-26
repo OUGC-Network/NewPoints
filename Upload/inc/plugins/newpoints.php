@@ -26,6 +26,43 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use function Newpoints\Core\add_hooks;
+use function Newpoints\Core\run_hooks;
+
+use const Newpoints\ROOT;
+
+defined('IN_MYBB') || die('Direct initialization of this file is not allowed.');
+
+// You can uncomment the lines below to avoid storing some settings in the DB
+define('Newpoints\Core\SETTINGS', [
+    //'key' => '',
+]);
+
+define('Newpoints\Core\DEBUG', false);
+
+define('Newpoints\ROOT', constant('MYBB_ROOT') . 'inc/plugins/newpoints');
+
+defined('PLUGINLIBRARY') || define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
+
+require_once ROOT . '/core.php';
+require_once ROOT . '/classes.php';
+
+if (defined('IN_ADMINCP')) {
+    require_once ROOT . '/admin.php';
+
+    require_once ROOT . '/hooks/admin.php';
+
+    add_hooks('Newpoints\Hooks\Admin');
+} else {
+    require_once ROOT . '/hooks/forum.php';
+
+    add_hooks('Newpoints\Hooks\Forum');
+}
+
+require_once ROOT . '/hooks/shared.php';
+
+add_hooks('Newpoints\Hooks\Shared');
+
 if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');
 }
@@ -511,7 +548,7 @@ if(use_xmlhttprequest == "1")
     );
 
     // Get plugin templates
-    $template_list = $plugins->run_hooks('newpoints_rebuild_templates', $template_list);
+    $template_list = run_hooks('rebuild_templates', $template_list);
 
     $group = array(
         'prefix' => $db->escape_string('newpoints'),
@@ -1125,7 +1162,7 @@ function newpoints_load_plugins()
     $newpoints_plugins = '';
 
     // guests have 0 points
-    if (!$mybb->user['uid']) {
+    if (isset($mybb->user) && !$mybb->user['uid']) {
         $mybb->user['newpoints'] = 0;
     }
 

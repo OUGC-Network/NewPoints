@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -35,7 +37,7 @@ global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks('newpoints_admin_maintenance_begin');
+run_hooks('admin_maintenance_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_maintenance, 'index.php?module=newpoints-maintenance');
 
@@ -55,7 +57,7 @@ $sub_tabs['newpoints_maintenance_edituser'] = array(
 
 if (!$mybb->input['action']) // show page with various actions that can be taken
 {
-    $plugins->run_hooks('newpoints_admin_maintenance_start');
+    run_hooks('admin_maintenance_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_maintenance');
 
@@ -146,9 +148,9 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form->output_submit_wrapper($buttons);
     $form->end();
 
-    $plugins->run_hooks('newpoints_admin_maintenance_end');
+    run_hooks('admin_maintenance_end');
 } elseif ($mybb->input['action'] == 'edituser') {
-    $plugins->run_hooks('newpoints_admin_maintenance_edituser_start');
+    run_hooks('admin_maintenance_edituser_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_maintenance_edituser');
 
@@ -166,7 +168,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
 
         $updates = array('newpoints' => floatval($mybb->input['points']));
 
-        $plugins->run_hooks('newpoints_admin_maintenance_edituser_commit');
+        run_hooks('admin_maintenance_edituser_commit');
 
         $db->update_query('users', $updates, 'uid=\'' . intval($mybb->input['uid']) . '\'');
 
@@ -193,7 +195,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     );
     $form_container->end();
 
-    $plugins->run_hooks('newpoints_admin_maintenance_edituser_form');
+    run_hooks('admin_maintenance_edituser_form');
 
     $buttons = array();
     $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
@@ -202,9 +204,9 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
 
     $form->end();
 
-    $plugins->run_hooks('newpoints_admin_maintenance_edituser_end');
+    run_hooks('admin_maintenance_edituser_end');
 } elseif ($mybb->input['action'] == 'recount') {
-    $plugins->run_hooks('newpoints_admin_maintenance_recount_start');
+    run_hooks('admin_maintenance_recount_start');
 
     if ($mybb->input['no']) // user clicked no
     {
@@ -418,9 +420,9 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     echo "</div>\n";
     $form->end();
 
-    $plugins->run_hooks('newpoints_admin_maintenance_recount_end');
+    run_hooks('admin_maintenance_recount_end');
 } elseif ($mybb->input['action'] == 'reset') {
-    $plugins->run_hooks('newpoints_admin_maintenance_reset_start');
+    run_hooks('admin_maintenance_reset_start');
 
     if ($mybb->input['no']) // user clicked no
     {
@@ -510,9 +512,9 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     echo "</div>\n";
     $form->end();
 
-    $plugins->run_hooks('newpoints_admin_maintenance_reset_start');
+    run_hooks('admin_maintenance_reset_start');
 } elseif ($mybb->input['action'] == 'reconstruct') {
-    $plugins->run_hooks('newpoints_admin_maintenance_reconstruct_start');
+    run_hooks('admin_maintenance_reconstruct_start');
 
     if ($mybb->input['no']) // user clicked no
     {
@@ -549,9 +551,9 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     echo "</div>\n";
     $form->end();
 
-    $plugins->run_hooks('newpoints_admin_maintenance_reconstruct_start');
+    run_hooks('admin_maintenance_reconstruct_start');
 }
 
-$plugins->run_hooks('newpoints_admin_maintenance_terminate');
+run_hooks('admin_maintenance_terminate');
 
 $page->output_footer();

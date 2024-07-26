@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\run_hooks;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -35,7 +37,7 @@ global $lang, $plugins, $page, $db, $mybb;
 
 $lang->load('newpoints');
 
-$plugins->run_hooks('newpoints_admin_log_begin');
+run_hooks('admin_log_begin');
 
 if (!$mybb->input['action']) // view logs
 {
@@ -323,6 +325,6 @@ if (!$mybb->input['action']) // view logs
     $form->end();
 }
 
-$plugins->run_hooks('newpoints_admin_log_terminate');
+run_hooks('admin_log_terminate');
 
 $page->output_footer();

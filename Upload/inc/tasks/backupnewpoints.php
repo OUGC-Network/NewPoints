@@ -11,6 +11,8 @@
  *
  ***************************************************************************/
 
+use function Newpoints\Core\run_hooks;
+
 /****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +34,7 @@ function task_backupnewpoints($task)
 
     $lang->load('newpoints');
 
-    $plugins->run_hooks('newpoints_task_backup');
+    run_hooks('task_backup');
 
     backupnewpoints_backupdb();
 
@@ -84,13 +86,13 @@ function backupnewpoints_backupdb()
         );
         $backup_fields = array('newpoints');
 
-        $backup_fields = $plugins->run_hooks('newpoints_task_backup_tables', $backup_fields);
+        $backup_fields = run_hooks('task_backup_tables', $backup_fields);
 
         $time = date('dS F Y \a\t H:i', constant('TIME_NOW'));
         $header = "-- MyBB Database Backup\n-- Generated: {$time}\n-- -------------------------------------\n\n";
         $contents = $header;
         foreach ($tables as $table) {
-            $plugins->run_hooks('newpoints_task_backup_table');
+            run_hooks('task_backup_table');
             if ($table == $db->table_prefix . 'users') {
                 backupnewpoints_clear_overflow($fp, $contents);
 
