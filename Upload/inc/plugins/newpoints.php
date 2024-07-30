@@ -30,8 +30,15 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Admin\plugin_activation;
+use function Newpoints\Admin\pluginDeactivation;
+use function Newpoints\Admin\plugin_information;
+use function Newpoints\Admin\pluginInstallation;
+use function Newpoints\Admin\pluginIsInstalled;
+use function Newpoints\Admin\pluginUninstallation;
 use function Newpoints\Core\add_hooks;
 use function Newpoints\Core\check_permissions;
+use function Newpoints\Core\count_characters;
 use function Newpoints\Core\find_replace_template_sets;
 use function Newpoints\Core\get_group;
 use function Newpoints\Core\js_special_characters;
@@ -49,6 +56,7 @@ use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\settings_add;
 use function Newpoints\Core\settings_add_group;
 use function Newpoints\Core\settings_load;
+use function Newpoints\Core\settings_load_init;
 use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\settings_remove;
 use function Newpoints\Core\templates_add;
@@ -95,85 +103,45 @@ if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');
 }
 
-// Load NewPoints' settings whenever NewPoints plugin is executed
-// Adds one additional query per page
-// TODO: Perhaps use Plugin Library to modify the init.php file to load settings from both tables (MyBB's and NewPoints')
-// OR: Go back to the old method and put the settings in the settings table but keep a copy in NewPoints' settings table
-// but also add a page on ACP to run the check and fix any missing settings or perhaps do the check via task.
-if (defined('IN_ADMINCP')) {
-    global $mybb;
+settings_load_init();
 
-    // Plugins get "require_once" on Plugins List and Plugins Check and we do not want to load our settings when our file is required by those
-    if ($mybb->get_input('module') != 'config-plugins' && $GLOBALS['db']->table_exists('newpoints_settings')) {
-        newpoints_load_settings();
-    }
-} else {
-    newpoints_load_settings();
-}
+const NEWPOINTS_VERSION = '3.0.0';
 
-define('NEWPOINTS_VERSION', '2.1.2');
-define('NEWPOINTS_VERSION_CODE', '212');
-define('MAX_DONATIONS_CONTROL', '5'); // Maximum donations someone can send each 15 minutes
+const NEWPOINTS_VERSION_CODE = 3000;
 
-// load plugins and do other stuff
-if (defined('IN_ADMINCP')) {
-    define('NP_HOOKS', 1); // 1 means Admin
-} else {
-    define('NP_HOOKS', 2); // 2 means outside ACP
-}
+const MAX_DONATIONS_CONTROL = 5; // Maximum donations someone can send each 15 minutes
 
-// load hooks
-require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/hooks.php';
+const NP_HOOKS = 0;
 
 if (defined('IN_ADMINCP')) {
-    global $db, $mybb;
-
-    function newpoints_info()
+    function newpoints_info(): array
     {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        return newpoints_plugin_info();
+        return plugin_information();
     }
 
-    function newpoints_install()
+    function newpoints_install(): bool
     {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        newpoints_plugin_install();
+        return pluginInstallation();
     }
 
-    function newpoints_is_installed()
+    function newpoints_is_installed(): bool
     {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        return newpoints_plugin_is_installed();
+        return pluginIsInstalled();
     }
 
-    function newpoints_uninstall()
+    function newpoints_uninstall(): bool
     {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        newpoints_plugin_uninstall();
+        return pluginUninstallation();
     }
 
-    function newpoints_do_template_edits()
+    function newpoints_activate(): bool
     {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        newpoints_plugin_do_template_edits();
+        return plugin_activation();
     }
 
-    function newpoints_undo_template_edits()
+    function newpoints_deactivate(): bool
     {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        newpoints_plugin_undo_template_edits();
-    }
-
-    function newpoints_activate()
-    {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        newpoints_plugin_activate();
-    }
-
-    function newpoints_deactivate()
-    {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/core/plugin.php';
-        newpoints_plugin_deactivate();
+        return pluginDeactivation();
     }
 }
 
@@ -183,7 +151,7 @@ if (defined('IN_ADMINCP')) {
 
 function newpoints_count_characters(string $message): int
 {
-    return \Newpoints\Core\count_characters($message);
+    return count_characters($message);
 }
 
 function newpoints_jsspecialchars(string $str): string
@@ -228,18 +196,6 @@ function newpoints_add_settings(string $plugin, array $settings): bool
     return settings_add_group($plugin, $settings);
 }
 
-/**
- * Adds/Subtracts points to a user
- *
- * @param int the id of the user
- * @param float the number of points to add or subtract (if a negative value)
- * @param int the forum income rate
- * @param int the user group income rate
- * @param bool if the uid is a string in case we don't have the uid we can update the points field by searching for the user name
- * @param bool true if you want to run the query immediatly. Default is false which means the query will be run on shut down. Note that if the previous paremeter is set to true, the query is run immediatly
- * Note: some pages (by other plugins) do not run queries on shutdown so adding this to shutdown may not be good if you're not sure if it will run.
- *
- */
 function newpoints_addpoints(
     int $uid,
     float $points,

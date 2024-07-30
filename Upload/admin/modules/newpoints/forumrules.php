@@ -27,6 +27,7 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {
@@ -137,7 +138,7 @@ if (!$mybb->input['action']) // view forumrules
 
         // Rebuild rules cache
         $array = [];
-        newpoints_rebuild_rules_cache($array);
+        rules_rebuild_cache($array);
 
         flash_message($lang->newpoints_forumrules_added, 'success');
         admin_redirect('index.php?module=newpoints-forumrules');
@@ -227,7 +228,7 @@ if (!$mybb->input['action']) // view forumrules
 
         // Rebuild rules cache
         $array = [];
-        newpoints_rebuild_rules_cache();
+        rules_rebuild_cache();
 
         flash_message($lang->newpoints_forumrules_edited, 'success');
         admin_redirect('index.php?module=newpoints-forumrules');
@@ -323,7 +324,7 @@ if (!$mybb->input['action']) // view forumrules
 
         // Rebuild rules cache
         $array = [];
-        newpoints_rebuild_rules_cache();
+        rules_rebuild_cache();
 
         flash_message($lang->newpoints_forumrules_deleted, 'success');
         admin_redirect('index.php?module=newpoints-forumrules');

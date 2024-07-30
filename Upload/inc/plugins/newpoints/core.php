@@ -32,6 +32,7 @@ declare(strict_types=1);
 
 namespace Newpoints\Core;
 
+use DirectoryIterator;
 use pluginSystem;
 
 use function send_pm;
@@ -287,314 +288,43 @@ function templates_get(string $template_name = '', bool $enable_html_comments = 
  */
 function templates_rebuild(): bool
 {
-    global $db, $plugins;
+    global $PL;
 
-    $prefix = 'newpoints';
+    $template_directories = [ROOT . '/templates'];
 
-    // Default templates
-    $template_list = [
-        'postbit' => '<br /><span class="smalltext">{$currency}: <a href="{$mybb->settings[\'bburl\']}/newpoints.php">{$points}</a></span>{$donate}',
-        'profile' => '<tr>
-	<td class="trow2"><strong>{$currency}:</strong></td>
-	<td class="trow2"><a href="{$mybb->settings[\'bburl\']}/newpoints.php">{$points}</a>{$donate}</td>
-</tr>',
-        'donate_inline' => ' <span class="smalltext">[<a href="javascript: void(0);" onclick="MyBB.popupWindow(\'{$mybb->settings[\'bburl\']}/newpoints.php?action=donate&amp;uid={$uid}&amp;pid={$post[\'pid\']}&amp;modal=1\', null, true); return false;">{$lang->newpoints_donate}</a>]</span>',
-        'donate_form' => '<form action="{$mybb->settings[\'bburl\']}/newpoints.php" method="POST">
-<input type="hidden" name="postcode" value="{$mybb->post_code}" />
-<input type="hidden" name="action" value="do_donate" />
-<input type="hidden" name="pid" value="{$pid}" />
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead" colspan="2"><strong>{$lang->newpoints_donate}</strong></td>
-</tr>
-<tr>
-<td class="trow1" width="50%"><strong>{$lang->newpoints_user}:</strong><br /><span class="smalltext">{$lang->newpoints_user_desc}</span></td>
-<td class="trow1" width="50%"><input type="text" name="username" value="{$user[\'username\']}" class="textbox" id="username" size="20" /></td>
-</tr>
-<tr>
-<td class="trow2" width="50%"><strong>{$lang->newpoints_amount}:</strong><br /><span class="smalltext">{$lang->newpoints_amount_desc}</span></td>
-<td class="trow2" width="50%"><input type="text" name="amount" value="" class="textbox" size="20" /></td>
-</tr>
-<tr>
-<td class="trow1" width="50%"><strong>{$lang->newpoints_reason}:</strong><br /><span class="smalltext">{$lang->newpoints_reason_desc}</span></td>
-<td class="trow1" width="50%"><input type="text" name="reason" value="" class="textbox" size="20" /></td>
-</tr>
-<tr>
-<td class="tfoot" width="100%" colspan="2" align="center"><input type="submit" name="submit" value="{$lang->newpoints_submit}" class="button" /></td>
-</tr>
-</table>
-</form>',
-        'modal' => '<div class="modal">
-	<div style="overflow-y: auto; max-height: 400px;">
-		{$code}
-	</div>
-</div>',
-        'donate' => '<html>
-<head>
-<title>{$mybb->settings[\'bbname\']} - {$lang->newpoints} - {$lang->newpoints_donate}</title>
-{$headerinclude}
-</head>
-<body>
-{$header}
-<table width="100%" border="0" align="center">
-<tr>
-<td valign="top" width="180">
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead"><strong>{$lang->newpoints_menu}</strong></td>
-</tr>
-{$options}
-</table>
-</td>
-<td valign="top">
-{$form}
-</td>
-</tr>
-</table>
-{$footer}
-<link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css">
-<script type="text/javascript" src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1804"></script>
-<script type="text/javascript">
-<!--
-if(use_xmlhttprequest == "1")
-{
-	MyBB.select2();
-	$("#username").select2({
-		placeholder: "{$lang->newpoints_search_user}",
-		minimumInputLength: 3,
-		maximumSelectionSize: 3,
-		multiple: false,
-		width: 150,
-		ajax: { // instead of writing the function to execute the request we use Select2\'s convenient helper
-			url: "xmlhttp.php?action=get_users",
-			dataType: \'json\',
-			data: function (term, page) {
-				return {
-					query: term, // search term
-				};
-			},
-			results: function (data, page) { // parse the results into the format expected by Select2.
-				// since we are using custom formatting functions we do not need to alter remote JSON data
-				return {results: data};
-			}
-		},
-		initSelection: function(element, callback) {
-			var value = $(element).val();
-			if (value !== "") {
-				callback({
-					id: value,
-					text: value
-				});
-			}
-		},
-       // Allow the user entered text to be selected as well
-       createSearchChoice:function(term, data) {
-			if ( $(data).filter( function() {
-				return this.text.localeCompare(term)===0;
-			}).length===0) {
-				return {id:term, text:term};
-			}
-		},
-	});
+    $templates_list = [];
 
-  	$(\'[for=username]\').click(function(){
-		$("#username").select2(\'open\');
-		return false;
-	});
-}
-// -->
-</script>
-</body>
-</html>',
-        'statistics' => '<html>
-<head>
-<title>{$mybb->settings[\'bbname\']} - {$lang->newpoints} - {$lang->newpoints_statistics}</title>
-{$headerinclude}
-</head>
-<body>
-{$header}
-<table width="100%" border="0" align="center">
-    <tr>
-        <td valign="top" width="180">
-            <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-                <tr>
-                <td class="thead"><strong>{$lang->newpoints_menu}</strong></td>
-                </tr>
-                {$options}
-            </table>
-        </td>
-        <td valign="top">
-            <table width="100%" border="0" align="center">
-                <tr>
-                    <td valign="top" width="40%">
-                        <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-                            <tr>
-                                <td class="thead" colspan="2"><strong>{$lang->newpoints_richest_users}</strong></td>
-                            </tr>
-                            <tr>
-                                <td class="tcat" width="50%"><strong>{$lang->newpoints_user}</strong></td>
-                                <td class="tcat" width="50%" align="center"><strong>{$lang->newpoints_amount}</strong></td>
-                            </tr>
-                            {$richest_users}
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </td>
-        <td valign="top" width="60%">
-            <table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-                <tr>
-                    <td class="thead" colspan="4"><strong>{$lang->newpoints_last_donations}</strong></td>
-                </tr>
-                <tr>
-                    <td class="tcat" width="30%"><strong>{$lang->newpoints_from}</strong></td>
-                    <td class="tcat" width="30%"><strong>{$lang->newpoints_to}</strong></td>
-                    <td class="tcat" width="20%" align="center"><strong>{$lang->newpoints_amount}</strong></td>
-                    <td class="tcat" width="20%" align="center"><strong>{$lang->newpoints_date}</strong></td>
-                </tr>
-                {$last_donations}
-            </table>
-        </td>
-    </tr>
-</table>
-{$footer}
-</body>
-</html>',
-        'statistics_richest_user' => '<tr>
-<td class="{$bgcolor}" width="50%">{$user[\'username\']}</td>
-<td class="{$bgcolor}" width="50%" align="center">{$user[\'newpoints\']}</td>
-</tr>',
-        'statistics_donation' => '<tr>
-<td class="{$bgcolor}" width="30%">{$donation[\'from\']}</td>
-<td class="{$bgcolor}" width="30%">{$donation[\'to\']}</td>
-<td class="{$bgcolor}" width="20%" align="center">{$donation[\'amount\']}</td>
-<td class="{$bgcolor}" width="20%" align="center">{$donation[\'date\']}</td>
-</tr>',
-        'no_results' => '<tr>
-<td class="{$bgcolor}" width="100%" colspan="{$colspan}">{$no_results}</td>
-</tr>',
-        'option' => '<tr>
-<td class="{$bgcolor}" width="100%">{$raquo}<a href="{$mybb->settings[\'bburl\']}/newpoints.php{$action}">{$lang_string}</a></td>
-</tr>',
-        'home' => '<html>
-<head>
-<title>{$mybb->settings[\'bbname\']} - {$lang->newpoints}</title>
-{$headerinclude}
-</head>
-<body>
-{$header}
-<table width="100%" border="0" align="center">
-<tr>
-<td valign="top" width="180">
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead"><strong>{$lang->newpoints_menu}</strong></td>
-</tr>
-{$options}
-</table>
-</td>
-<td valign="top">
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead"><strong>{$lang->newpoints}</strong></td>
-</tr>
-<tr>
-<td class="trow1">{$lang->newpoints_home_desc}</td>
-</tr>
-</table>
-</td>
-</tr>
-</table>
-{$footer}
-</body>
-</html>',
-        'home_income_row' => '<tr><td valign="middle" align="left"><span style="border-bottom: 1px dashed; cursor: help;" title="{$setting[\'description\']}">{$setting[\'title\']}</span></td><td valign="middle" align="right">{$value}</td></tr>',
-        'home_income_table' => '<br /><table align="center"><tr><td align="left"><strong>Source</strong></td><td align="right"><strong>Amount Paid</strong></td></tr>{$income_settings}</table>',
-        '' => '',
+    $hook_arguments = [
+        'template_directories' => &$template_directories,
+        'templates_list' => &$templates_list,
     ];
 
-    // Get plugin templates
-    $template_list = run_hooks('rebuild_templates', $template_list);
+    $hook_arguments = run_hooks('templates_rebuild_start', $hook_arguments);
 
-    $group = [
-        'prefix' => $db->escape_string('newpoints'),
-        'title' => $db->escape_string('Newpoints')
-    ];
+    foreach ($template_directories as $template_directory) {
+        if (file_exists($template_directory)) {
+            $templates_directory_iterator = new DirectoryIterator($template_directory);
 
-    // Update or create template group:
-    $query = $db->simple_select('templategroups', 'prefix', "prefix='{$group['prefix']}'");
+            foreach ($templates_directory_iterator as $template_file) {
+                if (!$template_file->isFile()) {
+                    continue;
+                }
 
-    if ($db->fetch_array($query)) {
-        $db->update_query('templategroups', $group, "prefix='{$group['prefix']}'");
-    } else {
-        $db->insert_query('templategroups', $group);
-    }
+                $path_name = $template_file->getPathname();
 
-    // Query already existing templates.
-    $query = $db->simple_select(
-        'templates',
-        'tid,title,template',
-        "sid=-2 AND (title='{$group['prefix']}' OR title LIKE '{$group['prefix']}=_%' ESCAPE '=')"
-    );
+                $path_info = pathinfo($path_name);
 
-    $templates = [];
-    $duplicates = [];
-
-    while ($row = $db->fetch_array($query)) {
-        $title = $row['title'];
-
-        if (isset($templates[$title])) {
-            // PluginLibrary had a bug that caused duplicated templates.
-            $duplicates[] = $row['tid'];
-            $templates[$title]['template'] = false; // force update later
-        } else {
-            $templates[$title] = $row;
-        }
-    }
-
-    // Delete duplicated master templates, if they exist.
-    if ($duplicates) {
-        $db->delete_query('templates', 'tid IN (' . implode(',', $duplicates) . ')');
-    }
-
-    // Update or create templates.
-    foreach ($template_list as $name => $code) {
-        if (strlen($name)) {
-            $name = "newpoints_{$name}";
-        } else {
-            $name = 'newpoints';
-        }
-
-        $template = [
-            'title' => $db->escape_string($name),
-            'template' => $db->escape_string($code),
-            'version' => 1,
-            'sid' => -2,
-            'dateline' => (int)constant('TIME_NOW')
-        ];
-
-        // Update
-        if (isset($templates[$name])) {
-            if ($templates[$name]['template'] !== $code) {
-                // Update version for custom templates if present
-                $db->update_query('templates', ['version' => 0], "title='{$template['title']}'");
-
-                // Update master template
-                $db->update_query('templates', $template, "tid={$templates[$name]['tid']}");
+                if ($path_info['extension'] === 'html') {
+                    $templates_list[$path_info['filename']] = file_get_contents($path_name);
+                }
             }
-        } // Create
-        else {
-            $db->insert_query('templates', $template);
         }
-
-        // Remove this template from the earlier queried list.
-        unset($templates[$name]);
     }
 
-    // Remove no longer used templates.
-    foreach ($templates as $name => $row) {
-        $name = $db->escape_string($name);
-        $db->delete_query('templates', "title='{$name}'");
+    $hook_arguments = run_hooks('templates_rebuild_end', $hook_arguments);
+
+    if ($templates_list) {
+        $PL->templates('newpoints', 'Newpoints', $templates_list);
     }
 
     return true;
@@ -637,7 +367,7 @@ function settings_add_group(string $plugin, array $settings): bool
 
     $db->update_query('newpoints_settings', ['description' => 'NEWPOINTSDELETESETTING'], "plugin='{}'");
 
-    $disporder = 0;
+    $display_order = 0;
 
     // Create and/or update settings.
     foreach ($settings as $key => $setting) {
@@ -659,7 +389,7 @@ function settings_add_group(string $plugin, array $settings): bool
                 'description' => '',
                 'type' => 'yesno',
                 'value' => 0,
-                'disporder' => ++$disporder
+                'disporder' => ++$display_order
             ],
             $setting
         );
@@ -683,7 +413,7 @@ function settings_add_group(string $plugin, array $settings): bool
 
     $db->delete_query('newpoints_settings', "plugin='{$plugin_escaped}' AND description='NEWPOINTSDELETESETTING'");
 
-    newpoints_rebuild_settings_cache();
+    settings_rebuild_cache();
 
     return true;
 }
@@ -703,27 +433,27 @@ function settings_add_group(string $plugin, array $settings): bool
  */
 function settings_add(
     string $name,
-    string $plugin,
+    string $group_name,
     string $title,
     string $description,
     string $type,
     string $value = '',
-    int $disporder = 0
+    int $display_order = 0
 ): bool {
     global $db;
 
-    if ($name == '' || $plugin == '' || $title == '' || $description == '' || $type == '') {
+    if ($name == '' || $group_name == '' || $title == '' || $description == '' || $type == '') {
         return false;
     }
 
     $setting = [
         'name' => $db->escape_string($name),
-        'plugin' => $db->escape_string($plugin),
+        'plugin' => $db->escape_string($group_name),
         'title' => $db->escape_string($title),
         'description' => $db->escape_string($description),
         'type' => $db->escape_string($type),
         'value' => $db->escape_string($value),
-        'disporder' => intval($disporder)
+        'disporder' => $display_order
     ];
 
     // Update if setting already exists, insert otherwise.
@@ -745,22 +475,44 @@ function settings_add(
 
 function settings_load(): bool
 {
-    global $mybb, $db, $cache;
+    global $mybb, $cache;
 
     $settings = $cache->read('newpoints_settings');
-    if ($settings !== false && !empty($settings)) {
+    global $mybb;
+
+    if (!empty($settings)) {
         foreach ($settings as $name => $value) {
             $mybb->settings[$name] = $value;
         }
     }
 
     /* something is wrong so let's rebuild the cache data */
-    if (empty($settings) || $settings === false) {
+    if (empty($settings)) {
         $settings = [];
-        newpoints_rebuild_settings_cache($settings);
+
+        settings_rebuild_cache($settings);
     }
 
     return true;
+}
+
+function settings_load_init(): bool
+{
+    // Load NewPoints' settings whenever NewPoints plugin is executed
+    // Adds one additional query per page
+    // TODO: Perhaps use Plugin Library to modify the init.php file to load settings from both tables (MyBB's and NewPoints')
+    // OR: Go back to the old method and put the settings in the settings table but keep a copy in NewPoints' settings table
+    // but also add a page on ACP to run the check and fix any missing settings or perhaps do the check via task.
+    if (defined('IN_ADMINCP')) {
+        global $mybb, $db;
+
+        // Plugins get "require_once" on Plugins List and Plugins Check and we do not want to load our settings when our file is required by those
+        if ($mybb->get_input('module') === 'config-plugins' || !$db->table_exists('newpoints_settings')) {
+            return false;
+        }
+    }
+
+    return settings_load();
 }
 
 /**
@@ -790,6 +542,110 @@ function settings_rebuild_cache(array &$settings = []): array
     $cache->update('newpoints_settings', $settings);
 
     return $settings;
+}
+
+/**
+ * Adds a new set of templates
+ *
+ * @param string the key of the template plugin
+ * @param array the array containing the templates data
+ * @return bool false if something went wrong
+ *
+ */
+function settings_rebuild(): bool
+{
+    global $lang;
+    global $PL;
+
+    language_load();
+
+    $setting_directories = [
+        ROOT . '/settings'
+    ];
+
+    $settings_list = [];
+
+    $hook_arguments = [
+        'setting_directories' => &$setting_directories,
+        'settings_list' => &$settings_list,
+    ];
+
+    $hook_arguments = run_hooks('settings_rebuild_start', $hook_arguments);
+
+    foreach ($setting_directories as $setting_directory) {
+        if (file_exists($setting_directory)) {
+            $settingss_directory_iterator = new DirectoryIterator($setting_directory);
+
+            foreach ($settingss_directory_iterator as $settings_file) {
+                if (!$settings_file->isFile()) {
+                    continue;
+                }
+
+                $path_name = $settings_file->getPathname();
+
+                $path_info = pathinfo($path_name);
+
+                if ($path_info['extension'] !== 'json') {
+                    continue;
+                }
+
+                $setting_group = $path_info['filename'];
+
+                $settings_contents = file_get_contents($path_name);
+
+                $settings_data = json_decode($settings_contents, true);
+
+                foreach ($settings_data as $setting_key => &$setting_data) {
+                    if (empty($lang->{"setting_newpoints_{$setting_group}_{$setting_key}"})) {
+                        continue;
+                    }
+
+                    if (in_array($setting_data['type'], ['select', 'checkbox'])) {
+                        foreach ($setting_data['options'] as $option_key) {
+                            $option_value = $option_key;
+
+                            if (isset($lang->{"setting_newpoints_{$setting_group}_{$setting_key}_{$option_key}"})) {
+                                $option_value = $lang->{"setting_newpoints_{$setting_group}_{$setting_key}_{$option_key}"};
+                            }
+
+                            $setting_data['type'] .= "\n{$option_key}={$option_value}";
+                        }
+                    }
+
+                    $setting_data['title'] = $lang->{"setting_newpoints_{$setting_group}_{$setting_key}"};
+
+                    $setting_data['description'] = $lang->{"setting_newpoints_{$setting_group}_{$setting_key}_desc"};
+                }
+
+                $settings_list[$setting_group] = $settings_data;
+            }
+        }
+    }
+
+    $hook_arguments = run_hooks('settings_rebuild_end', $hook_arguments);
+
+    if ($settings_list) {
+        foreach ($settings_list as $group_name => $settings_data) {
+            if (empty($lang->{"setting_group_newpoints_{$setting_group}"})) {
+                $lang->{"setting_group_newpoints_{$setting_group}"} = $group_name;
+            }
+
+            if (empty($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
+                $lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
+            }
+
+            settings(
+                $group_name,
+                $lang->{"setting_group_newpoints_{$setting_group}"},
+                $lang->{"setting_group_newpoints_{$setting_group}_desc"},
+                $settings_data
+            );
+        }
+    }
+
+    settings_rebuild_cache();
+
+    return true;
 }
 
 /**
@@ -1245,4 +1101,92 @@ function users_get_by_username(string $username, string $fields = '*'): array
     }
 
     return [];
+}
+
+/* --- Setting groups and settings: --- */
+
+/**
+ * Create and/or update setting group and settings. Taken from PluginLibrary
+ *
+ * @param string $name Internal unique group name and setting prefix.
+ * @param string $title Group title that will be shown to the admin.
+ * @param string $description Group description that will show up in the group overview.
+ * @param array $list The list of settings to be added to that group.
+ */
+function settings(string $group_name, string $title, string $description, array $list)
+{
+    global $db;
+
+    /* Setting group: */
+
+    /* Settings: */
+
+    // Deprecate all the old entries.
+    $db->update_query(
+        'newpoints_settings',
+        ['description' => 'NEWPOINTSDELETEMARKER'],
+        "plugin='{$group_name}'"
+    );
+
+    // Create and/or update settings.
+    foreach ($list as $key => $setting) {
+        // Prefix all keys with group name.
+        $key = "newpoints_{$group_name}_{$key}";
+
+        // Filter valid entries.
+        $setting = array_intersect_key(
+            $setting,
+            [
+                'title' => 0,
+                'description' => 0,
+                'type' => 0,
+                'value' => 0,
+            ]
+        );
+
+        // Escape input values.
+        $setting = array_map([$db, 'escape_string'], (array)$setting);
+
+        isset($display_order) || $display_order = 0;
+
+        $setting = array_merge(
+            [
+                'description' => '',
+                'type' => 'yesno',
+                'value' => '0',
+                'disporder' => ++$display_order
+            ],
+            $setting
+        );
+
+        $setting['name'] = $db->escape_string($key);
+
+        $setting['plugin'] = $group_name;
+
+        // Check if the setting already exists.
+        $query = $db->simple_select(
+            'newpoints_settings',
+            'sid',
+            "plugin='{$group_name}' AND name='{$setting['name']}'"
+        );
+
+        if ($row = $db->fetch_array($query)) {
+            // It exists, update it, but keep value intact.
+            unset($setting['value']);
+
+            $db->update_query('newpoints_settings', $setting, "sid='{$row['sid']}'");
+        } else {
+            // It doesn't exist, create it.
+            $db->insert_query('newpoints_settings', $setting);
+        }
+    }
+
+    // Delete deprecated entries.
+    $db->delete_query(
+        'newpoints_settings',
+        "plugin='{$group_name}' AND description='NEWPOINTSDELETEMARKER'"
+    );
+
+    // Rebuild the settings file.
+    settings_rebuild_cache();
 }

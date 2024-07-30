@@ -71,7 +71,9 @@ function newpoints_meta()
         'link' => 'index.php?module=newpoints-upgrades'
     ];
 
-    $sub_menu = run_hooks('admin_menu', $sub_menu);
+    if (function_exists('\\Newpoints\\Core\\run_hooks')) {
+        $sub_menu = run_hooks('admin_menu', $sub_menu);
+    }
 
     $lang->load('newpoints');
 

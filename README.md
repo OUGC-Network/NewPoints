@@ -144,3 +144,33 @@ disabled from the Main settings group)
 ### Support
 
 For support please visit [MyBB-Plugins.com](http://forums.mybb-plugins.com/ "MyBB-Plugins.com")
+
+function newpoints_plugin_do_template_edits()
+{
+// do edits
+require_once constant('MYBB_ROOT') . 'inc/adminfunctions_templates.php';
+find_replace_templatesets(
+'postbit_classic',
+'#' . preg_quote('{$post[\'user_details\']}') . '#',
+'{$post[\'user_details\']}' . '{$post[\'newpoints_postbit\']}'
+);
+find_replace_templatesets(
+'postbit',
+'#' . preg_quote('{$post[\'user_details\']}') . '#',
+'{$post[\'user_details\']}' . '{$post[\'newpoints_postbit\']}'
+);
+find_replace_templatesets(
+'member_profile',
+'#' . preg_quote('{$warning_level}') . '#',
+'{$warning_level}' . '{$newpoints_profile}'
+);
+}
+
+function newpoints_plugin_undo_template_edits()
+{
+// undo edits
+require_once constant('MYBB_ROOT') . 'inc/adminfunctions_templates.php';
+find_replace_templatesets('postbit_classic', '#' . preg_quote('{$post[\'newpoints_postbit\']}') . '#', '', 0);
+find_replace_templatesets('postbit', '#' . preg_quote('{$post[\'newpoints_postbit\']}') . '#', '', 0);
+find_replace_templatesets('member_profile', '#' . preg_quote('{$newpoints_profile}') . '#', '', 0);
+}

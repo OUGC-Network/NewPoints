@@ -1,0 +1,42 @@
+{
+  "enabled": {
+    "type": "yesno",
+    "value": 1
+  },
+  "curname": {
+    "type": "text",
+    "value": "Points"
+  },
+  "curprefix": {
+    "type": "text",
+    "value": ""
+  },
+  "cursuffix": {
+    "type": "text",
+    "value": "€"
+  },
+  "decimal": {
+    "type": "numeric",
+    "value": 2
+  },
+  "statsvisible": {
+    "type": "yesno",
+    "value": 1
+  },
+  "donationsenabled": {
+    "type": "yesno",
+    "value": 1
+  },
+  "donationspm": {
+    "type": "yesno",
+    "value": 1
+  },
+  "stats_lastdonations": {
+    "type": "numeric",
+    "value": 10
+  },
+  "stats_richestusers": {
+    "type": "numeric",
+    "value": 10
+  }
+}

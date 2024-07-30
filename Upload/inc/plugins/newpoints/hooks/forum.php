@@ -34,6 +34,13 @@ namespace Newpoints\Hooks\Forum;
 
 use postDatahandler;
 
+use function Newpoints\Core\count_characters;
+use function Newpoints\Core\plugins_load;
+use function Newpoints\Core\points_add;
+use function Newpoints\Core\points_format;
+use function Newpoints\Core\rules_get;
+use function Newpoints\Core\rules_get_all;
+use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 
@@ -58,12 +65,12 @@ function global_start(): bool
 
     global $plugins, $mybb, $mypoints;
 
-    newpoints_load_plugins();
+    plugins_load();
 
     //newpoints_load_settings();
 
     if ($mybb->user['uid'] > 0) {
-        $mypoints = newpoints_format_points($mybb->user['newpoints']);
+        $mypoints = points_format((float)$mybb->user['newpoints']);
     } else {
         $mypoints = 0;
     }
@@ -87,13 +94,13 @@ function global_end(): bool
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getallrules('group');
+    $grouprules = rules_get_all('group');
     if (empty($grouprules)) {
         return false;
     }
 
     if ($mybb->settings['newpoints_income_pageview'] != 0) {
-        newpoints_addpoints(
+        points_add(
             $mybb->user['uid'],
             $mybb->settings['newpoints_income_pageview'],
             1,
@@ -103,7 +110,7 @@ function global_end(): bool
 
     if ($mybb->settings['newpoints_income_visit'] != 0) {
         if ((constant('TIME_NOW') - $mybb->user['lastactive']) > 900) {
-            newpoints_addpoints(
+            points_add(
                 $mybb->user['uid'],
                 $mybb->settings['newpoints_income_visit'],
                 1,
@@ -130,7 +137,7 @@ function global_end(): bool
         );
 
         // Re-cache rules (lastpay must be updated)
-        newpoints_rebuild_rules_cache();
+        rules_rebuild_cache();
 
         if ($mybb->user['usergroup'] == $gid) {
             $mybb->user['newpoints'] += $amount;
@@ -156,7 +163,7 @@ function global_intermediate(): bool
         $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
     }
 
-    $newpoints_user_balance_formatted = newpoints_format_points($mybb->user['newpoints']);
+    $newpoints_user_balance_formatted = points_format($mybb->user['newpoints']);
 
     return true;
 }
@@ -170,7 +177,7 @@ function xmlhttp(): bool
 
     global_intermediate();
 
-    newpoints_load_plugins();
+    plugins_load();
     //newpoints_load_settings();
 
     // as plugins can't hook to xmlhttp, we must allow them to hook to newpoints_xmlhttp
@@ -185,7 +192,7 @@ function archive_start()
 {
     global $plugins;
 
-    newpoints_load_plugins();
+    plugins_load();
     //newpoints_load_settings();
 
     // as plugins can't hook to archive_start, we must allow them to hook to newpoints_archive_start
@@ -212,7 +219,7 @@ function postbit(array &$post): array
 
     $currency = $mybb->settings['newpoints_main_curname'];
 
-    $points = $post['newpointsPostUserBalanceFormatted'] = newpoints_format_points($post['newpoints']);
+    $points = $post['newpointsPostUserBalanceFormatted'] = points_format($post['newpoints']);
 
     $uid = intval($post['uid']);
 
@@ -258,7 +265,7 @@ function member_profile_end(): bool
 
     $currency = $mybb->settings['newpoints_main_curname'];
 
-    $points = $newpoints_profile_user_balance_formatted = newpoints_format_points($memprofile['newpoints']);
+    $points = $newpoints_profile_user_balance_formatted = points_format($memprofile['newpoints']);
 
     $uid = intval($memprofile['uid']);
 
@@ -300,7 +307,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     }
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $data->post_insert_data['fid']);
+    $forumrules = rules_get('forum', $data->post_insert_data['fid']);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -311,7 +318,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -323,7 +330,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
 
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
-    if (($charcount = newpoints_count_characters(
+    if (($charcount = count_characters(
             $post['message']
         )) >= $mybb->settings['newpoints_income_minchar']) {
         $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -332,7 +339,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     }
 
     // give points to the poster
-    newpoints_addpoints(
+    points_add(
         $mybb->user['uid'],
         $mybb->settings['newpoints_income_newpost'] + $bonus,
         $forumrules['rate'],
@@ -342,7 +349,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     if ($thread['uid'] != $mybb->user['uid']) {
         // we are not the thread started so give points to him/her
         if ($mybb->settings['newpoints_income_perreply'] != 0) {
-            newpoints_addpoints(
+            points_add(
                 $thread['uid'],
                 $mybb->settings['newpoints_income_perreply'],
                 $forumrules['rate'],
@@ -377,7 +384,7 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
     $fid = intval($newpost->data['fid']);
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -388,7 +395,7 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -400,8 +407,8 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
 
     // get old message
     $post = get_post(intval($newpost->data['pid']));
-    $oldcharcount = newpoints_count_characters($post['message']);
-    $newcharcount = newpoints_count_characters($newpost->data['message']);
+    $oldcharcount = count_characters($post['message']);
+    $newcharcount = count_characters($newpost->data['message']);
 
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
@@ -427,7 +434,7 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
     }
 
     // give points to the poster
-    newpoints_addpoints($mybb->user['uid'], $bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+    points_add($mybb->user['uid'], $bonus, $forumrules['rate'], $grouprules['rate'], false, true);
 
     return $newpost;
 }
@@ -469,7 +476,7 @@ function xmlhttp10(): bool
     $fid = intval($post['fid']);
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -480,7 +487,7 @@ function xmlhttp10(): bool
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -491,7 +498,7 @@ function xmlhttp10(): bool
     }
 
     // get old message
-    $oldcharcount = newpoints_count_characters($post['message']);
+    $oldcharcount = count_characters($post['message']);
 
     $message = strval($_POST['value']);
     if (my_strtolower($charset) != 'utf-8') {
@@ -504,7 +511,7 @@ function xmlhttp10(): bool
         }
     }
 
-    $newcharcount = newpoints_count_characters($message);
+    $newcharcount = count_characters($message);
 
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
@@ -530,7 +537,7 @@ function xmlhttp10(): bool
     }
 
     // give points to the poster
-    newpoints_addpoints($mybb->user['uid'], $bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+    points_add($mybb->user['uid'], $bonus, $forumrules['rate'], $grouprules['rate'], false, true);
 
     return true;
 }
@@ -561,7 +568,7 @@ function class_moderation_delete_post_start(int $pid): int
     $thread = get_thread($post['tid']);
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -572,7 +579,7 @@ function class_moderation_delete_post_start(int $pid): int
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -584,7 +591,7 @@ function class_moderation_delete_post_start(int $pid): int
 
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
-    if (($charcount = newpoints_count_characters(
+    if (($charcount = count_characters(
             $post['message']
         )) >= $mybb->settings['newpoints_income_minchar']) {
         $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -595,7 +602,7 @@ function class_moderation_delete_post_start(int $pid): int
     if ($thread['uid'] != $post['uid']) {
         // we are not the thread started so remove points from him/her
         if ($mybb->settings['newpoints_income_perreply'] != 0) {
-            newpoints_addpoints(
+            points_add(
                 $thread['uid'],
                 -$mybb->settings['newpoints_income_perreply'],
                 $forumrules['rate'],
@@ -605,7 +612,7 @@ function class_moderation_delete_post_start(int $pid): int
     }
 
     // remove points from the poster
-    newpoints_addpoints(
+    points_add(
         $post['uid'],
         -$mybb->settings['newpoints_income_newpost'] - $bonus,
         $forumrules['rate'],
@@ -637,7 +644,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             $thread = get_thread($post['tid']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -648,7 +655,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -660,7 +667,7 @@ function class_moderation_soft_delete_posts(array $pids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -672,7 +679,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from him/her
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                    newpoints_addpoints(
+                    points_add(
                         $thread['uid'],
                         -$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
@@ -682,7 +689,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             }
 
             // remove points from the poster
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 -$mybb->settings['newpoints_income_newpost'] - $bonus,
                 $forumrules['rate'],
@@ -716,7 +723,7 @@ function class_moderation_restore_posts($pids): array
             $thread = get_thread($post['tid']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -727,7 +734,7 @@ function class_moderation_restore_posts($pids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -739,7 +746,7 @@ function class_moderation_restore_posts($pids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -751,7 +758,7 @@ function class_moderation_restore_posts($pids): array
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                    newpoints_addpoints(
+                    points_add(
                         $thread['uid'],
                         $mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
@@ -761,7 +768,7 @@ function class_moderation_restore_posts($pids): array
             }
 
             // give points to the author of the post
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 $mybb->settings['newpoints_income_newpost'] + $bonus,
                 $forumrules['rate'],
@@ -795,7 +802,7 @@ function class_moderation_approve_threads(array $tids): array
             $post = get_post((int)$thread['firstpost']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -806,7 +813,7 @@ function class_moderation_approve_threads(array $tids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -818,7 +825,7 @@ function class_moderation_approve_threads(array $tids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -827,7 +834,7 @@ function class_moderation_approve_threads(array $tids): array
             }
 
             // add points to the poster
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 $mybb->settings['newpoints_income_newthread'] + $bonus,
                 $forumrules['rate'],
@@ -861,7 +868,7 @@ function class_moderation_approve_posts(array $pids): array
             $thread = get_thread($post['tid']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -872,7 +879,7 @@ function class_moderation_approve_posts(array $pids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -884,7 +891,7 @@ function class_moderation_approve_posts(array $pids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -896,7 +903,7 @@ function class_moderation_approve_posts(array $pids): array
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                    newpoints_addpoints(
+                    points_add(
                         $thread['uid'],
                         $mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
@@ -906,7 +913,7 @@ function class_moderation_approve_posts(array $pids): array
             }
 
             // give points to the author of the post
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 $mybb->settings['newpoints_income_newpost'] + $bonus,
                 $forumrules['rate'],
@@ -940,7 +947,7 @@ function class_moderation_unapprove_threads(array $tids): array
             $post = get_post((int)$thread['firstpost']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -951,7 +958,7 @@ function class_moderation_unapprove_threads(array $tids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -963,7 +970,7 @@ function class_moderation_unapprove_threads(array $tids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -972,7 +979,7 @@ function class_moderation_unapprove_threads(array $tids): array
             }
 
             // add points to the poster
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 -$mybb->settings['newpoints_income_newthread'] - $bonus,
                 $forumrules['rate'],
@@ -1006,7 +1013,7 @@ function class_moderation_unapprove_posts(array $pids): array
             $thread = get_thread($post['tid']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -1017,7 +1024,7 @@ function class_moderation_unapprove_posts(array $pids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -1029,7 +1036,7 @@ function class_moderation_unapprove_posts(array $pids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -1041,7 +1048,7 @@ function class_moderation_unapprove_posts(array $pids): array
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from them
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                    newpoints_addpoints(
+                    points_add(
                         $thread['uid'],
                         -$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
@@ -1051,7 +1058,7 @@ function class_moderation_unapprove_posts(array $pids): array
             }
 
             // give points to the author of the post
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 -$mybb->settings['newpoints_income_newpost'] - $bonus,
                 $forumrules['rate'],
@@ -1089,7 +1096,7 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
     }
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1100,7 +1107,7 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1112,7 +1119,7 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
 
     // calculate points per character bonus
     // let's see if the number of characters in the thread is greater than the minimum characters
-    if (($charcount = newpoints_count_characters(
+    if (($charcount = count_characters(
             $mybb->input['message']
         )) >= $mybb->settings['newpoints_income_minchar']) {
         $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -1121,7 +1128,7 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
     }
 
     // give points to the author of the new thread
-    newpoints_addpoints(
+    points_add(
         $mybb->user['uid'],
         $mybb->settings['newpoints_income_newthread'] + $bonus,
         $forumrules['rate'],
@@ -1158,7 +1165,7 @@ function class_moderation_delete_thread(int $tid): int
     }
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1169,7 +1176,7 @@ function class_moderation_delete_thread(int $tid): int
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1184,7 +1191,7 @@ function class_moderation_delete_thread(int $tid): int
 
     // calculate points per character bonus
     // let's see if the number of characters in the thread is greater than the minimum characters
-    if (($charcount = newpoints_count_characters(
+    if (($charcount = count_characters(
             $post['message']
         )) >= $mybb->settings['newpoints_income_minchar']) {
         $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -1194,7 +1201,7 @@ function class_moderation_delete_thread(int $tid): int
 
     if ($thread['poll'] != 0) {
         // if this thread has a poll, remove points from the author of the thread
-        newpoints_addpoints(
+        points_add(
             $thread['uid'],
             -$mybb->settings['newpoints_income_newpoll'],
             $forumrules['rate'],
@@ -1208,7 +1215,7 @@ function class_moderation_delete_thread(int $tid): int
         'uid!=' . (int)$thread['uid'] . ' AND tid=' . (int)$thread['tid']
     );
     $thread['replies'] = (int)$db->fetch_field($q, 'total_replies');
-    newpoints_addpoints(
+    points_add(
         $thread['uid'],
         -($thread['replies'] * $mybb->settings['newpoints_income_perreply']),
         $forumrules['rate'],
@@ -1216,7 +1223,7 @@ function class_moderation_delete_thread(int $tid): int
     );
 
     // take out points from the author of the thread
-    newpoints_addpoints(
+    points_add(
         $thread['uid'],
         -$mybb->settings['newpoints_income_newthread'] - $bonus,
         $forumrules['rate'],
@@ -1248,7 +1255,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             $post = get_post((int)$thread['firstpost']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -1259,7 +1266,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -1271,7 +1278,7 @@ function class_moderation_soft_delete_threads(array $tids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -1283,7 +1290,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from him/her
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                    newpoints_addpoints(
+                    points_add(
                         $thread['uid'],
                         -$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
@@ -1293,7 +1300,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             }
 
             // remove points from the poster
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 -$mybb->settings['newpoints_income_newthread'] - $bonus,
                 $forumrules['rate'],
@@ -1327,7 +1334,7 @@ function class_moderation_restore_threads(array $tids): array
             $post = get_post((int)$thread['firstpost']);
 
             // check forum rules
-            $forumrules = newpoints_getrules('forum', $fid);
+            $forumrules = rules_get('forum', $fid);
             if (!$forumrules) {
                 $forumrules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -1338,7 +1345,7 @@ function class_moderation_restore_threads(array $tids): array
             }
 
             // check group rules - primary group check
-            $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+            $grouprules = rules_get('group', $mybb->user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -1350,7 +1357,7 @@ function class_moderation_restore_threads(array $tids): array
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
-            if (($charcount = newpoints_count_characters(
+            if (($charcount = count_characters(
                     $post['message']
                 )) >= $mybb->settings['newpoints_income_minchar']) {
                 $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
@@ -1362,7 +1369,7 @@ function class_moderation_restore_threads(array $tids): array
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                    newpoints_addpoints(
+                    points_add(
                         $thread['uid'],
                         $mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
@@ -1372,7 +1379,7 @@ function class_moderation_restore_threads(array $tids): array
             }
 
             // give points to the author of the post
-            newpoints_addpoints(
+            points_add(
                 $post['uid'],
                 $mybb->settings['newpoints_income_newthread'] + $bonus,
                 $forumrules['rate'],
@@ -1401,7 +1408,7 @@ function polls_do_newpoll_process(): bool
     }
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1412,7 +1419,7 @@ function polls_do_newpoll_process(): bool
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1423,7 +1430,7 @@ function polls_do_newpoll_process(): bool
     }
 
     // give points to the author of the new poll
-    newpoints_addpoints(
+    points_add(
         $mybb->user['uid'],
         $mybb->settings['newpoints_income_newpoll'],
         $forumrules['rate'],
@@ -1455,7 +1462,7 @@ function class_moderation_delete_poll(int $pid): int
     $fid = $poll['fid'];
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1466,7 +1473,7 @@ function class_moderation_delete_poll(int $pid): int
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1477,7 +1484,7 @@ function class_moderation_delete_poll(int $pid): int
     }
 
     // remove points from the author by deleting the poll
-    newpoints_addpoints(
+    points_add(
         $poll['uid'],
         -$mybb->settings['newpoints_income_newpoll'],
         $forumrules['rate'],
@@ -1493,7 +1500,13 @@ function member_do_register_end(): bool
 
     // give points to our new user
     if ($mybb->settings['newpoints_income_newreg'] != 0) {
-        newpoints_addpoints(trim($mybb->input['username']), $mybb->settings['newpoints_income_newreg'], 1, 1, true);
+        points_add(
+            trim($mybb->input['username']),
+            $mybb->settings['newpoints_income_newreg'],
+            1,
+            1,
+            true
+        );
     }
 
     if ($mybb->settings['newpoints_income_referral'] != 0) {
@@ -1509,7 +1522,7 @@ function member_do_register_end(): bool
         }
 
         // check group rules - primary group check
-        $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+        $grouprules = rules_get('group', $mybb->user['usergroup']);
         if (!$grouprules) {
             $grouprules['rate'] = 1;
         } // no rule set so default income rate is 1
@@ -1519,7 +1532,7 @@ function member_do_register_end(): bool
             return false;
         }
 
-        newpoints_addpoints($user['uid'], $mybb->settings['newpoints_income_referral'], 1, $grouprules['rate']);
+        points_add($user['uid'], $mybb->settings['newpoints_income_referral'], 1, $grouprules['rate']);
     }
 
     return true;
@@ -1542,7 +1555,7 @@ function polls_vote_process(): bool
     }
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1553,7 +1566,7 @@ function polls_vote_process(): bool
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1564,7 +1577,7 @@ function polls_vote_process(): bool
     }
 
     // give points to us as we're voting in a poll
-    newpoints_addpoints(
+    points_add(
         $mybb->user['uid'],
         $mybb->settings['newpoints_income_pervote'],
         $forumrules['rate'],
@@ -1599,7 +1612,7 @@ function private_do_send_end(): bool
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1610,7 +1623,7 @@ function private_do_send_end(): bool
     }
 
     // give points to the author of the PM
-    newpoints_addpoints($mybb->user['uid'], $mybb->settings['newpoints_income_pmsent'], 1, $grouprules['rate']);
+    points_add($mybb->user['uid'], $mybb->settings['newpoints_income_pmsent'], 1, $grouprules['rate']);
 
     return true;
 }
@@ -1632,7 +1645,7 @@ function ratethread_process(): bool
     }
 
     // check forum rules
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if (!$forumrules) {
         $forumrules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1643,7 +1656,7 @@ function ratethread_process(): bool
     }
 
     // check group rules - primary group check
-    $grouprules = newpoints_getrules('group', $mybb->user['usergroup']);
+    $grouprules = rules_get('group', $mybb->user['usergroup']);
     if (!$grouprules) {
         $grouprules['rate'] = 1;
     } // no rule set so default income rate is 1
@@ -1654,7 +1667,7 @@ function ratethread_process(): bool
     }
 
     // give points us, as we're rating a thread
-    newpoints_addpoints(
+    points_add(
         $mybb->user['uid'],
         $mybb->settings['newpoints_income_perrate'],
         $forumrules['rate'],
@@ -1676,11 +1689,11 @@ function forumdisplay_end(): bool
         $fid = intval($mybb->input['fid']);
     }
 
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
         $lang->load('newpoints');
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
         );
     }
 
@@ -1708,11 +1721,11 @@ function editpost_start(): bool
 
     $fid = $post['fid'];
 
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
         $lang->load('newpoints');
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
         );
     }
 
@@ -1727,11 +1740,11 @@ function sendthread_do_sendtofriend_start(): bool
         return false;
     }
 
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
         $lang->load('newpoints');
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
         );
     }
 
@@ -1753,11 +1766,11 @@ function archive_forum_start(): bool
 
     $fid = intval($forum['fid']);
 
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
         $lang->load('newpoints');
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
         );
     }
 
@@ -1777,11 +1790,11 @@ function printthread_end(): bool
         return false;
     }
 
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
         $lang->load('newpoints');
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
         );
     }
 
@@ -1796,11 +1809,11 @@ function newreply_start(): bool
         return false;
     }
 
-    $forumrules = newpoints_getrules('forum', $fid);
+    $forumrules = rules_get('forum', $fid);
     if ($forumrules['pointspost'] > $mybb->user['newpoints']) {
         $lang->load('newpoints');
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, newpoints_format_points($forumrules['pointspost']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointspost']))
         );
     }
 

@@ -27,6 +27,7 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\points_format;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {
@@ -71,10 +72,11 @@ if (!$mybb->input['action']) // view stats
             'limit' => intval($mybb->settings['newpoints_main_stats_richestusers'])
         ]
     );
+
     while ($user = $db->fetch_array($query)) {
         $link = build_profile_link(htmlspecialchars_uni($user['username']), intval($user['uid']));
         $table->construct_cell($link);
-        $table->construct_cell(newpoints_format_points($user['newpoints']), ['class' => 'align_center']);
+        $table->construct_cell(points_format($user['newpoints']), ['class' => 'align_center']);
 
         $table->construct_row();
     }
@@ -114,7 +116,7 @@ if (!$mybb->input['action']) // view stats
         $link = build_profile_link(htmlspecialchars_uni($stats['username']), intval($stats['uid']));
         $table->construct_cell($link);
 
-        $table->construct_cell(newpoints_format_points($data[2]), ['class' => 'align_center']);
+        $table->construct_cell(points_format($data[2]), ['class' => 'align_center']);
         $table->construct_cell(
             my_date($mybb->settings['dateformat'], intval($stats['date']), '', false) . ', ' . my_date(
                 $mybb->settings['timeformat'],

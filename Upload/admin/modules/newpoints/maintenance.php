@@ -27,6 +27,9 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\points_add;
+use function Newpoints\Core\rules_get;
+use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {

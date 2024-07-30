@@ -27,19 +27,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use function Newpoints\Core\log_add;
+use function Newpoints\Core\points_add;
+use function Newpoints\Core\points_format;
+use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\users_get_by_username;
 
-define('IN_MYBB', 1);
-define('THIS_SCRIPT', 'newpoints.php');
-define('NP_DISABLE_GUESTS', 0);
+const IN_MYBB = 1;
+
+const THIS_SCRIPT = 'newpoints.php';
+
+const NP_DISABLE_GUESTS = 0;
 
 // Templates used by NewPoints
 $templatelist = 'newpoints_home,newpoints_donate,newpoints_statistics,newpoints_statistics_richest_user,newpoints_statistics_donation,newpoints_no_results,newpoints_option,newpoints_home_income_row,newpoints_home_income_table';
 
 require_once './global.php';
 
-if (!function_exists('newpoints_load_settings')) {
+if (!function_exists('\\Newpoints\\Core\\language_load')) {
     error_no_permission();
 }
 
@@ -137,7 +144,7 @@ if (!$mybb->input['action']) {
         if ($setting['name'] == 'newpoints_income_minchar') {
             $value = $setting['value'] . ' ' . $lang->newpoints_chars;
         } else {
-            $value = newpoints_format_points($setting['value']);
+            $value = points_format($setting['value']);
         }
 
         $income_settings .= eval($templates->render('newpoints_home_income_row'));
@@ -184,7 +191,7 @@ if ($mybb->input['action'] == 'stats') {
             format_name(htmlspecialchars_uni($user['username']), $user['usergroup'], $user['displaygroup']),
             intval($user['uid'])
         );
-        $user['newpoints'] = newpoints_format_points($user['newpoints']);
+        $user['newpoints'] = points_format($user['newpoints']);
 
         run_hooks('stats_richest_users');
 
@@ -224,7 +231,7 @@ if ($mybb->input['action'] == 'stats') {
             intval($donation['uid'])
         );
 
-        $donation['amount'] = newpoints_format_points($data[2]);
+        $donation['amount'] = points_format($data[2]);
         $donation['date'] = my_date(
                 $mybb->settings['dateformat'],
                 intval($donation['date']),
@@ -321,26 +328,26 @@ if ($mybb->input['action'] == 'stats') {
     }
 
     // make sure we're sending points to a valid user
-    $touser = newpoints_getuser_byname($username, 'uid,username');
+    $touser = users_get_by_username($username, 'uid,username');
     if (!$touser) {
         error($lang->newpoints_invalid_user);
     }
 
     // remove points from us
-    newpoints_addpoints($mybb->user['uid'], -($amount));
+    points_add($mybb->user['uid'], -($amount));
 
     // give points to user
-    newpoints_addpoints($username, $amount, 1, 1, true);
+    points_add($username, $amount, 1, 1, true);
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if ($mybb->settings['newpoints_main_donationspm'] != 0) {
         if ($mybb->input['reason'] != '') {
-            newpoints_send_pm(
+            private_message_send(
                 [
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message_reason,
-                        newpoints_format_points($amount),
+                        points_format($amount),
                         htmlspecialchars_uni($mybb->input['reason'])
                     ),
                     'receivepms' => 1,
@@ -348,10 +355,13 @@ if ($mybb->input['action'] == 'stats') {
                 ]
             );
         } else {
-            newpoints_send_pm(
+            private_message_send(
                 [
                     'subject' => $lang->newpoints_donate_subject,
-                    'message' => $lang->sprintf($lang->newpoints_donate_message, newpoints_format_points($amount)),
+                    'message' => $lang->sprintf(
+                        $lang->newpoints_donate_message,
+                        points_format($amount)
+                    ),
                     'receivepms' => 1,
                     'touid' => $touser['uid']
                 ]
@@ -360,7 +370,7 @@ if ($mybb->input['action'] == 'stats') {
     }
 
     // log donation
-    newpoints_log(
+    log_add(
         'donation',
         $lang->sprintf($lang->newpoints_donate_log, $touser['username'], $touser['uid'], $amount)
     );
@@ -373,7 +383,7 @@ if ($mybb->input['action'] == 'stats') {
         $link = get_post_link($post['pid'], $post['tid']) . '#pid' . $post['pid'];
     }
 
-    redirect($link, $lang->sprintf($lang->newpoints_donated, newpoints_format_points($amount)));
+    redirect($link, $lang->sprintf($lang->newpoints_donated, points_format($amount)));
 }
 
 run_hooks('terminate');

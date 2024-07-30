@@ -28,6 +28,7 @@
 
 // Disallow direct access to this file for security reasons
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\settings_rebuild_cache;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -84,7 +85,7 @@ if ($mybb->input['action'] == 'change') {
         rebuild_settings();
 
         $array = [];
-        newpoints_rebuild_settings_cache($array);
+        settings_rebuild_cache($array);
 
         run_hooks('admin_settings_change_commit');
 
@@ -529,14 +530,14 @@ if (!$mybb->input['action']) {
             } // skip setting group is we have no settings
 
             $group_lang_var = "setting_group_{$group['name']}";
-            if ($lang->$group_lang_var) {
+            if (!empty($lang->$group_lang_var)) {
                 $group_title = htmlspecialchars_uni($lang->$group_lang_var);
             } else {
                 $group_title = htmlspecialchars_uni($group['title']);
             }
 
             $group_desc_lang_var = "setting_group_{$group['name']}_desc";
-            if ($lang->$group_desc_lang_var) {
+            if (!empty($lang->$group_desc_lang_var)) {
                 $group_desc = htmlspecialchars_uni($lang->$group_desc_lang_var);
             } else {
                 $group_desc = htmlspecialchars_uni($group['description']);

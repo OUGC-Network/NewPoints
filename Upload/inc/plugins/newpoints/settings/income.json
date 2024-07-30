@@ -1,0 +1,54 @@
+{
+  "newpost": {
+    "type": "text",
+    "value": 10
+  },
+  "newthread": {
+    "type": "text",
+    "value": 20
+  },
+  "newpoll": {
+    "type": "text",
+    "value": 15
+  },
+  "perchar": {
+    "type": "text",
+    "value": "0.01"
+  },
+  "minchar": {
+    "type": "text",
+    "value": 15
+  },
+  "newreg": {
+    "type": "text",
+    "value": 50
+  },
+  "pervote": {
+    "type": "text",
+    "value": 5
+  },
+  "perreply": {
+    "type": "text",
+    "value": 2
+  },
+  "pmsent": {
+    "type": "text",
+    "value": 1
+  },
+  "perrate": {
+    "type": "text",
+    "value": "0.05"
+  },
+  "pageview": {
+    "type": "text",
+    "value": 0
+  },
+  "visit": {
+    "type": "text",
+    "value": "0.1"
+  },
+  "referral": {
+    "type": "text",
+    "value": 5
+  }
+}

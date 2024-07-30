@@ -27,6 +27,8 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\get_group;
+use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {
@@ -83,7 +85,7 @@ if (!$mybb->input['action']) // view grouprules
             ) . '</small>'
         );
 
-        $group = newpoints_get_usergroup($rule['gid']);
+        $group = get_group($rule['gid']);
 
         $table->construct_cell(htmlspecialchars_uni($group['title']));
         $table->construct_cell(
@@ -134,7 +136,7 @@ if (!$mybb->input['action']) // view grouprules
 
         // Rebuild rules cache
         $array = [];
-        newpoints_rebuild_rules_cache($array);
+        rules_rebuild_cache($array);
 
         flash_message($lang->newpoints_grouprules_added, 'success');
         admin_redirect('index.php?module=newpoints-grouprules');
@@ -229,7 +231,7 @@ if (!$mybb->input['action']) // view grouprules
 
         // Rebuild rules cache
         $array = [];
-        newpoints_rebuild_rules_cache();
+        rules_rebuild_cache();
 
         flash_message($lang->newpoints_grouprules_edited, 'success');
         admin_redirect('index.php?module=newpoints-grouprules');
@@ -327,7 +329,7 @@ if (!$mybb->input['action']) // view grouprules
 
         // Rebuild rules cache
         $array = [];
-        newpoints_rebuild_rules_cache();
+        rules_rebuild_cache();
 
         flash_message($lang->newpoints_grouprules_deleted, 'success');
         admin_redirect('index.php?module=newpoints-grouprules');

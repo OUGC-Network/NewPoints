@@ -26,6 +26,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use function Newpoints\Core\settings_add;
+use function Newpoints\Core\templates_add;
+use function Newpoints\Core\templates_remove;
+
 if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');
 }
@@ -46,7 +50,7 @@ function upgrade11_info()
 // upgrade function
 function upgrade11_run()
 {
-    newpoints_add_setting(
+    settings_add(
         'newpoints_income_referral',
         'income',
         'Per Referral',
@@ -55,11 +59,12 @@ function upgrade11_run()
         '5',
         12
     );
+
     change_admin_permission('newpoints', 'upgrades', 1);
 
-    newpoints_remove_templates("'newpoints_donate'");
+    templates_remove("'newpoints_donate'");
 
-    newpoints_add_template(
+    templates_add(
         'newpoints_donate',
         '
 <html>

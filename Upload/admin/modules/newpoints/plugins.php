@@ -28,6 +28,7 @@
 
 // Disallow direct access to this file for security reasons
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\settings_rebuild_cache;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -143,7 +144,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
 
     // Rebuild settings cache
     $array = [];
-    newpoints_rebuild_settings_cache($array);
+    settings_rebuild_cache($array);
 
     flash_message($message, 'success');
     admin_redirect('index.php?module=newpoints-plugins');

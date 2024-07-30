@@ -28,6 +28,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+declare(strict_types=1);
+
+use function Newpoints\language_load;
+use function Newpoints\settings_add;
+use function Newpoints\settings_remove;
+
 // Disallow direct access to this file for security reasons
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -107,13 +113,13 @@ function newpoints_hello_activate()
     global $db, $mybb;
     // add settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-    \Newpoints\settings_add(
+    \Newpoints\Core\settings_add(
         'newpoints_hello_show',
         'newpoints_hello',
         'Show message',
         'Set to yes if you want to show the hello message on every page.',
         'yesno',
-        1,
+        '1',
         1
     );
 
@@ -133,7 +139,7 @@ function newpoints_hello_deactivate()
     global $db, $mybb;
     // delete settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-    \Newpoints\settings_remove("'newpoints_hello_show'");
+    \Newpoints\Core\settings_remove("'newpoints_hello_show'");
 
     rebuild_settings();
 }
@@ -148,7 +154,7 @@ function newpoints_hello_world($page)
     }
 
     // load language files
-    \Newpoints\language_load('newpoints_hello');
+    \Newpoints\Core\language_load('newpoints_hello');
 
     $page = str_replace('<!-- end: header -->', '<!-- end: header -->' . $lang->newpoints_hello_message, $page);
 

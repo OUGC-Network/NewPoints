@@ -27,6 +27,7 @@
  ****************************************************************************/
 
 $l['newpoints'] = 'NewPoints';
+$l['newpoints_description'] = 'NewPoints is a complex but efficient points system for MyBB.';
 $l['newpoints_submit_button'] = 'Submit';
 $l['newpoints_reset_button'] = 'Reset';
 $l['newpoints_error'] = 'An unknown error has occurred.';

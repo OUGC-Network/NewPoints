@@ -26,6 +26,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use function Newpoints\Core\rules_rebuild_cache;
+use function Newpoints\Core\settings_rebuild_cache;
+
 if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');
 }
@@ -46,8 +49,7 @@ function upgrade195_info()
 // upgrade function
 function upgrade195_run()
 {
-    global $db;
+    settings_rebuild_cache();
 
-    newpoints_rebuild_settings_cache();
-    newpoints_rebuild_rules_cache();
+    rules_rebuild_cache();
 }
