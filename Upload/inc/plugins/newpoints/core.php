@@ -132,7 +132,7 @@ function count_characters(string $message): int
     // Attempt to remove any MyCode
     global $parser;
     if (!is_object($parser)) {
-        require_once constant('MYBB_ROOT') . 'inc/class_parser.php';
+        require_once MYBB_ROOT . 'inc/class_parser.php';
         $parser = new postParser();
     }
 
@@ -533,7 +533,7 @@ function settings_rebuild_cache(array &$settings = []): array
 
     $query = $db->simple_select('newpoints_settings', 'value, name', '', $options);
     while ($setting = $db->fetch_array($query)) {
-        //$setting['value'] = str_replace("\"", "\\\"", $setting['value']);
+        //$setting['value']=str_replace("\"", "\\\"", $setting['value']);
         $settings[$setting['name']] = $setting['value'];
         $mybb->settings[$setting['name']] = $setting['value'];
     }
@@ -679,31 +679,29 @@ function points_add(
     }
 
     // might work only for MySQL and MySQLi
-    //$db->update_query("users", array('newpoints' => 'newpoints+('.floatval($points).')'), 'uid=\''.intval($uid).'\'', '', true);
+    //$db->update_query("users", array('newpoints' =>'newpoints+('.floatval($points).')'), 'uid=\''.intval($uid).'\'', '', true);
+
+    $points_rounded = round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']));
 
     if ($isstring) // where username
     {
         $db->write_query(
-            'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . floatval(
-                round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']))
-            ) . "' WHERE username='" . $db->escape_string($uid) . "'"
+            'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . $points_rounded . "' WHERE username='" . $db->escape_string(
+                $uid
+            ) . "'"
         );
-    } else // where uid
-    {
+        // where uid
         // if immediate, run the query now otherwise add it to shutdown to avoid slow down
-        if ($immediate) {
-            $db->write_query(
-                'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . floatval(
-                    round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']))
-                ) . "' WHERE uid='" . intval($uid) . "'"
-            );
-        } else {
-            isset($userpoints) || $userpoints = [];
+    } elseif ($immediate) {
+        $db->write_query(
+            'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . $points_rounded . "' WHERE uid='" . $uid . "'"
+        );
+    } else {
+        isset($userpoints) || $userpoints = [];
 
-            $userpoints[intval($uid)] += floatval(
-                round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']))
-            );
-        }
+        isset($userpoints[$uid]) || $userpoints[$uid] = 0;
+
+        $userpoints[$uid] += $points_rounded;
     }
 
     static $newpoints_shutdown;
@@ -722,13 +720,13 @@ function points_update(): bool
         foreach ($userpoints as $uid => $amount) {
             if ($amount < 0) {
                 $db->write_query(
-                    'UPDATE `' . $db->table_prefix . 'users` SET `newpoints` = `newpoints`-(' . abs(
+                    'UPDATE `' . $db->table_prefix . 'users` SET `newpoints`=`newpoints`-(' . abs(
                         (float)$amount
                     ) . ') WHERE `uid`=\'' . $uid . '\''
                 );
             } else {
                 $db->write_query(
-                    'UPDATE `' . $db->table_prefix . 'users` SET `newpoints` = `newpoints`+(' . (float)$amount . ') WHERE `uid`=\'' . $uid . '\''
+                    'UPDATE `' . $db->table_prefix . 'users` SET `newpoints`=`newpoints`+(' . (float)$amount . ') WHERE `uid`=\'' . $uid . '\''
                 );
             }
         }
@@ -939,7 +937,7 @@ function find_replace_template_sets(string $title, string $find, string $replace
         foreach ($update as $template) {
             $updatetemp = [
                 'template' => $db->escape_string($template['template']),
-                'dateline' => (int)constant('TIME_NOW')
+                'dateline' => TIME_NOW
             ];
             $db->update_query('templates', $updatetemp, "tid='" . $template['tid'] . "'");
         }
@@ -975,7 +973,7 @@ function log_add(string $action, string $data = '', string $username = '', int $
         [
             'action' => $db->escape_string($action),
             'data' => $db->escape_string($data),
-            'date' => (int)constant('TIME_NOW'),
+            'date' => TIME_NOW,
             'uid' => intval($uid),
             'username' => $db->escape_string($username)
         ]
@@ -1035,27 +1033,43 @@ function check_permissions(string $groups_comma): bool
     }
 }
 
-function plugins_load(): bool
+function load_set_guest_data(): bool
 {
-    global $cache, $plugins, $mybb, $theme, $db, $templates, $newpoints_plugins;
+    global $mybb;
 
-    $newpoints_plugins = '';
-
-    // guests have 0 points
-    if (isset($mybb->user) && !$mybb->user['uid']) {
+    if (empty($mybb->user) || empty($mybb->user['uid'])) {
         $mybb->user['newpoints'] = 0;
     }
 
-    $pluginlist = $cache->read('newpoints_plugins');
+    return true;
+}
 
-    if (!empty($pluginlist) && is_array($pluginlist['active'])) {
-        foreach ($pluginlist['active'] as $plugin) {
-            if ($plugin != '' && file_exists(constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php')) {
-                require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php';
+function plugins_load(): bool
+{
+    global $cache, $newpoints_plugins;
+
+    isset($newpoints_plugins) || $newpoints_plugins = '';
+
+    $plugin_list = $cache->read('newpoints_plugins');
+
+    static $newpoints_plugins_loaded = [];
+
+    if (!empty($plugin_list) && is_array($plugin_list['active'])) {
+        foreach ($plugin_list['active'] as $plugin) {
+            if (isset($newpoints_plugins_loaded[$plugin])) {
+                continue;
+            }
+
+            $newpoints_plugins_loaded[$plugin] = true;
+
+            $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/{$plugin}.php";
+
+            if (!empty($plugin) && file_exists($plugin_file_path)) {
+                require_once $plugin_file_path;
             }
         }
 
-        $newpoints_plugins = $pluginlist;
+        $newpoints_plugins = $plugin_list;
     }
 
     return true;
@@ -1069,7 +1083,7 @@ function users_update(): bool
     if (!empty($userupdates)) {
         foreach ($userupdates as $gid => $amount) {
             $db->write_query(
-                'UPDATE `' . $db->table_prefix . 'users` SET `newpoints` = `newpoints`+' . $amount . ' WHERE `usergroup`=' . $gid
+                'UPDATE `' . $db->table_prefix . 'users` SET `newpoints`=`newpoints`+' . $amount . ' WHERE `usergroup`=' . $gid
             );
         }
         unset($userupdates);

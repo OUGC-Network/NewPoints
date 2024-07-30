@@ -54,7 +54,7 @@ function backupnewpoints_backupdb()
             $config['admin_dir'] = 'admin';
         }
 
-        define('MYBB_ADMIN_DIR', constant('MYBB_ROOT') . $config['admin_dir'] . '/');
+        define('MYBB_ADMIN_DIR', MYBB_ROOT . $config['admin_dir'] . '/');
     }
 
     // Check if folder is writable, before allowing submission
@@ -64,7 +64,7 @@ function backupnewpoints_backupdb()
         $db->set_table_prefix('');
 
         $file = MYBB_ADMIN_DIR . '/backups/backupnewpoints/backup_' . substr(
-                md5($mybb->user['uid'] . constant('TIME_NOW')),
+                md5($mybb->user['uid'] . TIME_NOW),
                 0,
                 10
             ) . random_str(54);
@@ -88,7 +88,7 @@ function backupnewpoints_backupdb()
 
         $backup_fields = run_hooks('task_backup_tables', $backup_fields);
 
-        $time = date('dS F Y \a\t H:i', constant('TIME_NOW'));
+        $time = date('dS F Y \a\t H:i', TIME_NOW);
         $header = "-- MyBB Database Backup\n-- Generated: {$time}\n-- -------------------------------------\n\n";
         $contents = $header;
         foreach ($tables as $table) {
@@ -101,7 +101,7 @@ function backupnewpoints_backupdb()
                     $update = '';
 
                     foreach ($backup_fields as $field) {
-                        $update .= 'UPDATE `' . TABLE_PREFIX . "users` SET `{$field}` = '" . $row[$field] . "' WHERE `uid` = '" . $row['uid'] . "';\n";
+                        $update .= 'UPDATE `' . TABLE_PREFIX . "users` SET `{$field}`='{$row[$field]}' WHERE `uid`='{$row['uid']}';\n";
                     }
 
                     $contents .= $update;
@@ -110,22 +110,22 @@ function backupnewpoints_backupdb()
             } elseif ($table == $db->table_prefix . 'datacache') {
                 backupnewpoints_clear_overflow($fp, $contents);
 
-                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_plugins\'', ['limit' => 1]);
+                $query = $db->simple_select($table, 'cache', "title='newpoints_plugins'", ['limit' => 1]);
                 $row = $db->fetch_array($query);
 
-                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_plugins';\n";
+                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache`='{$row['cache']}' WHERE `title`='newpoints_plugins';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
 
-                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_rules\'', ['limit' => 1]);
+                $query = $db->simple_select($table, 'cache', "title='newpoints_plugins'", ['limit' => 1]);
                 $row = $db->fetch_array($query);
 
-                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_rules';\n";
+                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache`='{$row['cache']}' WHERE `title`='newpoints_rules';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
 
-                $query = $db->simple_select($table, 'cache', 'title=\'newpoints_settings\'', ['limit' => 1]);
+                $query = $db->simple_select($table, 'cache', "title='newpoints_plugins'", ['limit' => 1]);
                 $row = $db->fetch_array($query);
 
-                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache` = '" . $row['cache'] . "' WHERE `title` = 'newpoints_settings';\n";
+                $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache`='{$row['cache']}' WHERE `title`='newpoints_settings';\n";
                 backupnewpoints_clear_overflow($fp, $contents);
             } else {
                 $field_list = [];
@@ -136,7 +136,7 @@ function backupnewpoints_backupdb()
 
                 $fields = implode(',', $field_list);
 
-                /*$structure = $db->show_create_table($table).";\n";
+                /*$structure=$db->show_create_table($table).";\n";
                 $contents .= $structure;*/
                 backupnewpoints_clear_overflow($fp, $contents);
 

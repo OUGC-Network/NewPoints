@@ -51,7 +51,7 @@ $sub_tabs['newpoints_stats'] = [
 ];
 
 $page->output_nav_tabs($sub_tabs, 'newpoints_stats');
-if (!$mybb->input['action']) // view stats
+if (!$mybb->get_input('action')) // view stats
 {
     $fields = ['uid', 'username', 'newpoints'];
 

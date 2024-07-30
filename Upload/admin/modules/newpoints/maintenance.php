@@ -58,7 +58,7 @@ $sub_tabs['newpoints_maintenance_edituser'] = [
     'description' => $lang->newpoints_maintenance_edituser_desc
 ];
 
-if (!$mybb->input['action']) // show page with various actions that can be taken
+if (!$mybb->get_input('action')) // show page with various actions that can be taken
 {
     run_hooks('admin_maintenance_start');
 
@@ -131,49 +131,29 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form->output_submit_wrapper($buttons);
     $form->end();
 
-    echo '<br />';
-
-    $form = new Form('index.php?module=newpoints-maintenance&amp;action=reconstruct', 'post', 'newpoints');
-
-    echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
-
-    $form_container = new FormContainer($lang->newpoints_reconstruct);
-    $form_container->output_row(
-        $lang->newpoints_reconstruct_title,
-        $lang->newpoints_reconstruct_desc,
-        '',
-        'reconstruct'
-    );
-    $form_container->end();
-
-    $buttons = [];
-    $buttons[] = $form->generate_submit_button($lang->newpoints_submit_button);
-    $form->output_submit_wrapper($buttons);
-    $form->end();
-
     run_hooks('admin_maintenance_end');
-} elseif ($mybb->input['action'] == 'edituser') {
+} elseif ($mybb->get_input('action') == 'edituser') {
     run_hooks('admin_maintenance_edituser_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_maintenance_edituser');
 
-    if (!intval($mybb->input['uid']) || !($user = get_user(intval($mybb->input['uid'])))) {
+    if (!$mybb->get_input('uid', MyBB::INPUT_INT) || !($user = get_user($mybb->get_input('uid', MyBB::INPUT_INT)))) {
         flash_message($lang->newpoints_invalid_user, 'error');
         admin_redirect('index.php?module=newpoints-maintenance');
     }
 
-    if ($mybb->request_method == 'post' && isset($mybb->input['do_change'])) {
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
+    if ($mybb->request_method == 'post' && $mybb->get_input('do_change')) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-maintenance');
         }
 
-        $updates = ['newpoints' => floatval($mybb->input['points'])];
+        $updates = ['newpoints' => $mybb->get_input('points', MyBB::INPUT_FLOAT)];
 
         run_hooks('admin_maintenance_edituser_commit');
 
-        $db->update_query('users', $updates, 'uid=\'' . intval($mybb->input['uid']) . '\'');
+        $db->update_query('users', $updates, 'uid=\'' . $mybb->get_input('uid', MyBB::INPUT_INT) . '\'');
 
         flash_message($lang->newpoints_user_edited, 'success');
         admin_redirect('index.php?module=newpoints-maintenance');
@@ -181,7 +161,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
 
     $form = new Form('index.php?module=newpoints-maintenance&amp;action=edituser', 'post', 'newpoints');
 
-    echo $form->generate_hidden_field('uid', intval($mybb->input['uid']));
+    echo $form->generate_hidden_field('uid', $mybb->get_input('uid', MyBB::INPUT_INT));
     echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
     echo $form->generate_hidden_field('do_change', 1);
 
@@ -208,31 +188,31 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form->end();
 
     run_hooks('admin_maintenance_edituser_end');
-} elseif ($mybb->input['action'] == 'recount') {
+} elseif ($mybb->get_input('action') == 'recount') {
     run_hooks('admin_maintenance_recount_start');
 
-    if ($mybb->input['no']) // user clicked no
+    if ($mybb->get_input('no')) // user clicked no
     {
         admin_redirect('index.php?module=newpoints-maintenance');
     }
 
     if ($mybb->request_method == 'post') {
-        $mybb->input['per_page'] = intval($mybb->input['per_page']);
-
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key'] || !$mybb->input['per_page']) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input(
+                'my_post_key'
+            ) || !$mybb->get_input('per_page', MyBB::INPUT_INT)) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-maintenance');
         }
 
-        if (intval($mybb->input['start']) > 0) {
-            $start = intval($mybb->input['start']);
+        if ($mybb->get_input('start', MyBB::INPUT_INT) > 0) {
+            $start = $mybb->get_input('start', MyBB::INPUT_INT);
         } else {
             $start = 0;
         }
 
-        if (intval($mybb->input['per_page']) > 0) {
-            $per_page = intval($mybb->input['per_page']);
+        if ($mybb->get_input('per_page', MyBB::INPUT_INT) > 0) {
+            $per_page = $mybb->get_input('per_page', MyBB::INPUT_INT);
         } else {
             $per_page = 50;
         }
@@ -240,7 +220,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
         $query = $db->simple_select('users', 'COUNT(*) as users');
         $total_users = $db->fetch_field($query, 'users');
 
-        $allforumrules = newpoints_getallrules('forum');
+        $allforumrules = rules_get_all('forum');
 
         $query = $db->simple_select(
             'users',
@@ -253,7 +233,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             $points = 0;
 
             // group rules
-            $grouprules = newpoints_getrules('group', $user['usergroup']);
+            $grouprules = rules_get('group', $user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1
@@ -287,7 +267,9 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
 
                 // calculate points ber character bonus
                 // let's see if the number of characters in the thread is greater than the minimum characters
-                if (($charcount = my_strlen($mybb->input['message'])) >= $mybb->settings['newpoints_income_minchar']) {
+                if (($charcount = my_strlen(
+                        $mybb->get_input('message')
+                    )) >= $mybb->settings['newpoints_income_minchar']) {
                     $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
                 } else {
                     $bonus = 0;
@@ -339,7 +321,7 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
                 if ($thread['uid'] != $user['uid']) {
                     // we are not the thread started so give points to him/her
                     if ($mybb->settings['newpoints_income_perreply'] != 0) {
-                        newpoints_addpoints(
+                        points_add(
                             $thread['uid'],
                             $mybb->settings['newpoints_income_perreply'],
                             $allforumrules[$post['fid']]['rate'],
@@ -382,11 +364,11 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
             );
         }
 
-        if ($total_users > $start + intval($mybb->input['per_page'])) {
+        if ($total_users > $start + $mybb->get_input('per_page', MyBB::INPUT_INT)) {
             $form = new Form('index.php?module=newpoints-maintenance&amp;action=recount', 'post', 'newpoints');
             echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
-            echo $form->generate_hidden_field('start', $start + intval($mybb->input['per_page']));
-            echo $form->generate_hidden_field('per_page', intval($mybb->input['per_page']));
+            echo $form->generate_hidden_field('start', $start + $mybb->get_input('per_page', MyBB::INPUT_INT));
+            echo $form->generate_hidden_field('per_page', $mybb->get_input('per_page', MyBB::INPUT_INT));
             echo "<div class=\"confirm_action\">\n";
             echo "<p>{$lang->newpoints_click_continue}</p>\n";
             echo "<br />\n";
@@ -408,9 +390,8 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
         admin_redirect('index.php?module=newpoints-maintenance');
     }
 
-    $mybb->input['per_page'] = intval($mybb->input['per_page']);
     $form = new Form(
-        "index.php?module=newpoints-maintenance&amp;action=recount&amp;per_page={$mybb->input['per_page']}&amp;my_post_key={$mybb->post_code}",
+        "index.php?module=newpoints-maintenance&amp;action=recount&amp;per_page={$mybb->get_input('per_page', MyBB::INPUT_INT)}&amp;my_post_key={$mybb->post_code}",
         'post'
     );
     echo "<div class=\"confirm_action\">\n";
@@ -424,33 +405,33 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form->end();
 
     run_hooks('admin_maintenance_recount_end');
-} elseif ($mybb->input['action'] == 'reset') {
+} elseif ($mybb->get_input('action') == 'reset') {
     run_hooks('admin_maintenance_reset_start');
 
-    if ($mybb->input['no']) // user clicked no
+    if ($mybb->get_input('no')) // user clicked no
     {
         admin_redirect('index.php?module=newpoints-maintenance');
     }
 
     if ($mybb->request_method == 'post') {
-        $mybb->input['per_page'] = intval($mybb->input['per_page']);
-
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key'] || !$mybb->input['per_page']) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input(
+                'my_post_key'
+            ) || !$mybb->get_input('per_page', MyBB::INPUT_INT)) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-maintenance');
         }
 
-        $points = floatval($mybb->input['points']);
+        $points = $mybb->get_input('points', MyBB::INPUT_FLOAT);
 
-        if (intval($mybb->input['start']) > 0) {
-            $start = intval($mybb->input['start']);
+        if ($mybb->get_input('start', MyBB::INPUT_INT) > 0) {
+            $start = $mybb->get_input('start', MyBB::INPUT_INT);
         } else {
             $start = 0;
         }
 
-        if (intval($mybb->input['per_page']) > 0) {
-            $per_page = intval($mybb->input['per_page']);
+        if ($mybb->get_input('per_page', MyBB::INPUT_INT) > 0) {
+            $per_page = $mybb->get_input('per_page', MyBB::INPUT_INT);
         } else {
             $per_page = 500;
         }
@@ -466,19 +447,19 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
         );
         while ($user = $db->fetch_array($query)) {
             // reset
-            $db->update_query('users', ['newpoints' => $points], 'uid=\'' . $user['uid'] . '\'');
+            $db->update_query('users', ['newpoints' => $points], 'uid = \'' . $user['uid'] . '\'');
         }
 
-        if ($total_users > $start + intval($mybb->input['per_page'])) {
+        if ($total_users > $start + $mybb->get_input('per_page', MyBB::INPUT_INT)) {
             $form = new Form(
                 "index.php?module=newpoints-maintenance&amp;action=reset&amp;my_post_key={$mybb->post_code}",
                 'post',
                 'newpoints'
             );
             echo $form->generate_hidden_field('my_post_key', $mybb->post_code);
-            echo $form->generate_hidden_field('start', $start + intval($mybb->input['per_page']));
-            echo $form->generate_hidden_field('per_page', intval($mybb->input['per_page']));
-            echo $form->generate_hidden_field('points', floatval($mybb->input['points']));
+            echo $form->generate_hidden_field('start', $start + $mybb->get_input('per_page', MyBB::INPUT_INT));
+            echo $form->generate_hidden_field('per_page', $mybb->get_input('per_page', MyBB::INPUT_INT));
+            echo $form->generate_hidden_field('points', $mybb->get_input('points', MyBB::INPUT_FLOAT));
             echo "<div class=\"confirm_action\">\n";
             echo "<p>{$lang->newpoints_click_continue}</p>\n";
             echo "<br />\n";
@@ -500,9 +481,8 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
         admin_redirect('index.php?module=newpoints-maintenance');
     }
 
-    $mybb->input['per_page'] = intval($mybb->input['per_page']);
     $form = new Form(
-        "index.php?module=newpoints-maintenance&amp;action=recount&amp;per_page={$mybb->input['per_page']}&amp;my_post_key={$mybb->post_code}",
+        "index.php?module=newpoints-maintenance&amp;action=recount&amp;per_page={$mybb->get_input('per_page', MyBB::INPUT_INT)}&amp;my_post_key={$mybb->post_code}",
         'post'
     );
     echo "<div class=\"confirm_action\">\n";
@@ -516,45 +496,6 @@ if (!$mybb->input['action']) // show page with various actions that can be taken
     $form->end();
 
     run_hooks('admin_maintenance_reset_start');
-} elseif ($mybb->input['action'] == 'reconstruct') {
-    run_hooks('admin_maintenance_reconstruct_start');
-
-    if ($mybb->input['no']) // user clicked no
-    {
-        admin_redirect('index.php?module=newpoints-maintenance');
-    }
-
-    if ($mybb->request_method == 'post') {
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
-            $mybb->request_method = 'get';
-            flash_message($lang->newpoints_error, 'error');
-            admin_redirect('index.php?module=newpoints-maintenance');
-        }
-
-        newpoints_undo_template_edits();
-        newpoints_do_template_edits();
-
-        log_admin_action($lang->newpoints_reconstruct_done);
-
-        flash_message($lang->newpoints_reconstructed, 'success');
-        admin_redirect('index.php?module=newpoints-maintenance');
-    }
-
-    $mybb->input['per_page'] = intval($mybb->input['per_page']);
-    $form = new Form(
-        "index.php?module=newpoints-maintenance&amp;action=reconstruct&amp;my_post_key={$mybb->post_code}", 'post'
-    );
-    echo "<div class=\"confirm_action\">\n";
-    echo "<p>{$lang->newpoints_reconstructconfirm}</p>\n";
-    echo "<br />\n";
-    echo "<p class=\"buttons\">\n";
-    echo $form->generate_submit_button($lang->yes, ['class' => 'button_yes']);
-    echo $form->generate_submit_button($lang->no, ['name' => 'no', 'class' => 'button_no']);
-    echo "</p>\n";
-    echo "</div>\n";
-    $form->end();
-
-    run_hooks('admin_maintenance_reconstruct_start');
 }
 
 run_hooks('admin_maintenance_terminate');

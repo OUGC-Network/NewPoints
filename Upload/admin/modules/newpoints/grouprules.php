@@ -63,7 +63,7 @@ $sub_tabs['newpoints_grouprules_edit'] = [
     'description' => $lang->newpoints_grouprules_edit_description
 ];
 
-if (!$mybb->input['action']) // view grouprules
+if (!$mybb->get_input('action')) // view grouprules
 {
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules');
 
@@ -104,30 +104,30 @@ if (!$mybb->input['action']) // view grouprules
     $table->output($lang->newpoints_grouprules_rules);
 
     run_hooks('admin_grouprules_noaction_end');
-} elseif ($mybb->input['action'] == 'add') {
+} elseif ($mybb->get_input('action') == 'add') {
     run_hooks('admin_grouprules_add_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules_add');
 
     if ($mybb->request_method == 'post') {
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
-        if (!$mybb->input['name'] || !$mybb->input['group']) {
+        if (!$mybb->get_input('name') || !$mybb->get_input('group')) {
             flash_message($lang->newpoints_missing_fields, 'error');
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         $insert_query = [
-            'name' => $db->escape_string($mybb->input['name']),
-            'description' => $db->escape_string($mybb->input['description']),
-            'rate' => floatval($mybb->input['rate']),
-            'gid' => intval($mybb->input['group']),
-            'pointsearn' => floatval($mybb->input['pointsearn']),
-            'period' => intval($mybb->input['period'])
+            'name' => $db->escape_string($mybb->get_input('name')),
+            'description' => $db->escape_string($mybb->get_input('description')),
+            'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
+            'gid' => $mybb->get_input('group', MyBB::INPUT_INT),
+            'pointsearn' => $mybb->get_input('pointsearn', MyBB::INPUT_FLOAT),
+            'period' => $mybb->get_input('period', MyBB::INPUT_INT)
         ];
 
         $insert_query = run_hooks('admin_grouprules_add_insert', $insert_query);
@@ -199,35 +199,35 @@ if (!$mybb->input['action']) // view grouprules
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
     $form->end();
-} elseif ($mybb->input['action'] == 'edit') {
+} elseif ($mybb->get_input('action') == 'edit') {
     run_hooks('admin_grouprules_edit_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules_edit');
 
     if ($mybb->request_method == 'post') {
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
-        if (!$mybb->input['name'] || !$mybb->input['group']) {
+        if (!$mybb->get_input('name') || !$mybb->get_input('group')) {
             flash_message($lang->newpoints_missing_fields, 'error');
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         $update_query = [
-            'name' => $db->escape_string($mybb->input['name']),
-            'description' => $db->escape_string($mybb->input['description']),
-            'rate' => floatval($mybb->input['rate']),
-            'gid' => intval($mybb->input['group']),
-            'pointsearn' => floatval($mybb->input['pointsearn']),
-            'period' => intval($mybb->input['period'])
+            'name' => $db->escape_string($mybb->get_input('name')),
+            'description' => $db->escape_string($mybb->get_input('description')),
+            'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
+            'gid' => $mybb->get_input('group', MyBB::INPUT_INT),
+            'pointsearn' => $mybb->get_input('pointsearn', MyBB::INPUT_FLOAT),
+            'period' => $mybb->get_input('period', MyBB::INPUT_INT)
         ];
 
         $update_query = run_hooks('admin_grouprules_edit_update', $update_query);
 
-        $db->update_query('newpoints_grouprules', $update_query, 'rid=' . intval($mybb->input['rid']));
+        $db->update_query('newpoints_grouprules', $update_query, "rid='{$mybb->get_input('rid', MyBB::INPUT_INT)}'");
 
         // Rebuild rules cache
         $array = [];
@@ -237,7 +237,11 @@ if (!$mybb->input['action']) // view grouprules
         admin_redirect('index.php?module=newpoints-grouprules');
     }
 
-    $query = $db->simple_select('newpoints_grouprules', '*', 'rid=\'' . intval($mybb->input['rid']) . '\'');
+    $query = $db->simple_select(
+        'newpoints_grouprules',
+        '*',
+        "rid='{$mybb->get_input('rid', MyBB::INPUT_INT)}'"
+    );
     $rule = $db->fetch_array($query);
     if (!$rule) {
         flash_message($lang->newpoints_grouprules_invalid, 'error');
@@ -303,21 +307,25 @@ if (!$mybb->input['action']) // view grouprules
     $buttons[] = $form->generate_reset_button($lang->newpoints_reset_button);
     $form->output_submit_wrapper($buttons);
     $form->end();
-} elseif ($mybb->input['action'] == 'delete_rule') {
-    if ($mybb->input['no']) // user clicked no
+} elseif ($mybb->get_input('action') == 'delete_rule') {
+    if ($mybb->get_input('no')) // user clicked no
     {
         admin_redirect('index.php?module=newpoints-grouprules');
     }
 
     if ($mybb->request_method == 'post') {
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
         if (!$db->fetch_field(
-            $db->simple_select('newpoints_grouprules', 'name', 'rid=' . intval($mybb->input['rid']), ['limit' => 1]
+            $db->simple_select(
+                'newpoints_grouprules',
+                'name',
+                "rid='{$mybb->get_input('rid', MyBB::INPUT_INT)}'",
+                ['limit' => 1]
             ),
             'name'
         )) {
@@ -325,7 +333,7 @@ if (!$mybb->input['action']) // view grouprules
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
-        $db->delete_query('newpoints_grouprules', 'rid=' . intval($mybb->input['rid']));
+        $db->delete_query('newpoints_grouprules', "rid='{$mybb->get_input('rid', MyBB::INPUT_INT)}'");
 
         // Rebuild rules cache
         $array = [];
@@ -335,9 +343,8 @@ if (!$mybb->input['action']) // view grouprules
         admin_redirect('index.php?module=newpoints-grouprules');
     }
 
-    $mybb->input['rid'] = intval($mybb->input['rid']);
     $form = new Form(
-        "index.php?module=newpoints-grouprules&amp;action=delete_rule&amp;rid={$mybb->input['rid']}&amp;my_post_key={$mybb->post_code}",
+        "index.php?module=newpoints-grouprules&amp;action=delete_rule&amp;rid={$mybb->get_input('rid', MyBB::INPUT_INT)}&amp;my_post_key={$mybb->post_code}",
         'post'
     );
     echo "<div class=\"confirm_action\">\n";

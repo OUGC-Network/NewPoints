@@ -41,29 +41,33 @@ $lang->load('newpoints');
 $lang->load('config_settings', false, true);
 
 // Change settings for a specified group.
-if ($mybb->input['action'] == 'change') {
+if ($mybb->get_input('action') == 'change') {
     run_hooks('admin_settings_change');
 
     if ($mybb->request_method == 'post') {
-        if (is_array($mybb->input['upsetting'])) {
+        $upsetting = $mybb->get_input('upsetting', MyBB::INPUT_ARRAY);
+
+        $select = $mybb->get_input('select', MyBB::INPUT_ARRAY);
+
+        if (!empty($upsetting)) {
             $forum_group_select = [];
-            $query = $db->simple_select('newpoints_settings', 'name', 'type IN (\'forumselect\', \'groupselect\')');
+            $query = $db->simple_select('newpoints_settings', 'name', "type IN('forumselect', 'groupselect')");
             while ($name = $db->fetch_field($query, 'name')) {
                 $forum_group_select[] = $name;
             }
 
-            foreach ($mybb->input['upsetting'] as $name => $value) {
+            foreach ($upsetting as $name => $value) {
                 if (!empty($forum_group_select) && in_array($name, $forum_group_select)) {
                     if ($value == 'all') {
                         $value = -1;
                     } elseif ($value == 'custom') {
-                        if (isset($mybb->input['select'][$name]) && is_array($mybb->input['select'][$name])) {
-                            foreach ($mybb->input['select'][$name] as &$val) {
+                        if (isset($select[$name]) && is_array($select[$name])) {
+                            foreach ($select[$name] as &$val) {
                                 $val = (int)$val;
                             }
                             unset($val);
 
-                            $value = implode(',', (array)$mybb->input['select'][$name]);
+                            $value = implode(',', $select[$name]);
                         } else {
                             $value = '';
                         }
@@ -98,13 +102,14 @@ if ($mybb->input['action'] == 'change') {
 
     // What type of page
     $cache_groups = $cache_settings = [];
-    $mybb->input['plugin'] = trim($mybb->input['plugin']);
-    if ($mybb->input['plugin']) {
+    $mybb->input['plugin'] = trim($mybb->get_input('plugin'));
+
+    if ($mybb->get_input('plugin')) {
         // Cache settings
         $query = $db->simple_select(
             'newpoints_settings',
             '*',
-            "plugin='" . $db->escape_string($mybb->input['plugin']) . "'",
+            "plugin='" . $db->escape_string($mybb->get_input('plugin')) . "'",
             ['order_by' => 'disporder']
         );
         while ($setting = $db->fetch_array($query)) {
@@ -116,10 +121,10 @@ if ($mybb->input['action'] == 'change') {
             admin_redirect('index.php?module=newpoints-settings');
         }
 
-        $groupinfo['plugin'] = $plugin = $mybb->input['plugin'];
+        $groupinfo['plugin'] = $plugin = $mybb->get_input('plugin');
 
-        if ($mybb->input['plugin'] == 'income' || $mybb->input['plugin'] == 'main') {
-            $lang_var = 'newpoints_settings_' . $mybb->input['plugin'];
+        if ($mybb->get_input('plugin') == 'income' || $mybb->get_input('plugin') == 'main') {
+            $lang_var = 'newpoints_settings_' . $mybb->get_input('plugin');
 
             $groupinfo['title'] = $lang->$lang_var;
             $groupinfo['description'] = $lang->$lang_var . '_description';
@@ -210,10 +215,10 @@ if ($mybb->input['action'] == 'change') {
                 ['id' => $element_id . '_off', 'class' => $element_id]
             );
         } elseif ($type[0] == 'cpstyle') {
-            $dir = @opendir(constant('MYBB_ROOT') . $config['admin_dir'] . '/styles');
+            $dir = @opendir(MYBB_ROOT . $config['admin_dir'] . '/styles');
             while ($folder = readdir($dir)) {
                 if ($folder != '.' && $folder != '..' && @file_exists(
-                        constant('MYBB_ROOT') . $config['admin_dir'] . "/styles/$folder/main.css"
+                        MYBB_ROOT . $config['admin_dir'] . "/styles/$folder/main.css"
                     )) {
                     $folders[$folder] = ucfirst($folder);
                 }
@@ -450,7 +455,7 @@ if ($mybb->input['action'] == 'change') {
     $page->output_footer();
 }
 
-if (!$mybb->input['action']) {
+if (!$mybb->get_input('action')) {
     run_hooks('admin_settings_start');
 
     $page->add_breadcrumb_item($lang->newpoints_settings, 'index.php?module=newpoints-settings');
@@ -563,11 +568,11 @@ function newpoints_get_plugininfo($plugin)
     global $mybb, $plugins, $theme, $db, $templates, $cache;
 
     // Ignore potentially missing plugins.
-    if (!file_exists(constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php')) {
+    if (!file_exists(MYBB_ROOT . 'inc / plugins / newpoints / ' . $plugin . '.php')) {
         return false;
     }
 
-    require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php';
+    require_once MYBB_ROOT . 'inc / plugins / newpoints / ' . $plugin . '.php';
 
     $info_func = "{$plugin}_info";
     if (!function_exists($info_func)) {

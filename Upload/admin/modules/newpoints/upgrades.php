@@ -39,7 +39,7 @@ $lang->load('newpoints');
 
 run_hooks('admin_upgrades_begin');
 
-if (!$mybb->input['action']) // view upgrades
+if (!$mybb->get_input('action')) // view upgrades
 {
     $page->add_breadcrumb_item($lang->newpoints_upgrades, 'index.php?module=newpoints-upgrades');
 
@@ -65,7 +65,7 @@ if (!$mybb->input['action']) // view upgrades
     if (!empty($upgrades)) {
         foreach ($upgrades as $upgrade) {
             $codename = str_replace('.php', '', $upgrade);
-            require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/' . $upgrade;
+            require_once MYBB_ROOT . 'inc/plugins/newpoints/upgrades/' . $upgrade;
             $infofunc = $codename . '_info';
             if (!function_exists($infofunc)) {
                 continue;
@@ -73,7 +73,7 @@ if (!$mybb->input['action']) // view upgrades
 
             $upgradeinfo = $infofunc();
 
-            $table->construct_cell($upgradeinfo['name'] . '<br /><small>' . $upgradeinfo['description'] . '</small>');
+            $table->construct_cell("{$upgradeinfo['name']} <br /><small>{$upgradeinfo['description']}</small>");
             $table->construct_cell(
                 "<a href=\"index.php?module=newpoints-upgrades&amp;action=run&amp;upgrade_file=" . $codename . "&amp;my_post_key={$mybb->post_code}\" target=\"_self\">{$lang->newpoints_run}</a>",
                 ['class' => 'align_center']
@@ -87,22 +87,22 @@ if (!$mybb->input['action']) // view upgrades
     }
 
     $table->output($lang->newpoints_upgrades);
-} elseif ($mybb->input['action'] == 'run') {
-    if ($mybb->input['no']) // user clicked no
+} elseif ($mybb->get_input('action') == 'run') {
+    if ($mybb->get_input('no')) // user clicked no
     {
         admin_redirect('index.php?module=newpoints-upgrades');
     }
 
     if ($mybb->request_method == 'post') {
-        if (!isset($mybb->input['my_post_key']) || $mybb->post_code != $mybb->input['my_post_key']) {
+        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
             $mybb->request_method = 'get';
             flash_message($lang->newpoints_error, 'error');
             admin_redirect('index.php?module=newpoints-upgrades');
         }
 
-        $upgrade = $mybb->input['upgrade_file'];
+        $upgrade = $mybb->get_input('upgrade_file');
 
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/' . $upgrade . '.php';
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/upgrades/' . $upgrade . '.php';
         $runfunc = $upgrade . '_run';
         if (!function_exists($runfunc)) {
             $mybb->request_method = 'get';
@@ -120,12 +120,11 @@ if (!$mybb->input['action']) // view upgrades
 
     $page->output_header($lang->newpoints_upgrades);
 
-    $mybb->input['upgrade_file'] = htmlspecialchars($mybb->input['upgrade_file']);
     $form = new Form(
         'index.php?module=newpoints-upgrades&amp;action=run&amp;upgrade_file=' . str_replace(
             '.php',
             '',
-            $mybb->input['upgrade_file']
+            htmlspecialchars($mybb->get_input('upgrade_file'))
         ) . "&amp;my_post_key={$mybb->post_code}", 'post'
     );
     echo "<div class=\"confirm_action\">\n";
@@ -148,7 +147,7 @@ function newpoints_get_upgrades()
     $upgrades_list = [];
 
     // open directory
-    $dir = @opendir(constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/');
+    $dir = @opendir(MYBB_ROOT . 'inc/plugins/newpoints/upgrades/');
 
     // browse upgrades directory
     if ($dir) {
@@ -157,7 +156,7 @@ function newpoints_get_upgrades()
                 continue;
             }
 
-            if (!is_dir(constant('MYBB_ROOT') . 'inc/plugins/newpoints/upgrades/' . $file)) {
+            if (!is_dir(MYBB_ROOT . 'inc/plugins/newpoints/upgrades/' . $file)) {
                 $ext = get_extension($file);
                 if ($ext == 'php') {
                     $upgrades_list[] = $file;

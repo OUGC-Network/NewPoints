@@ -64,8 +64,6 @@ if (!$mybb->user['uid'] && NP_DISABLE_GUESTS == 1) {
 // load language
 $lang->load('newpoints');
 
-$mybb->input['action'] = $mybb->get_input('action');
-
 // build the menu
 
 // default menu options
@@ -123,8 +121,8 @@ if (!$mybb->user['uid']) {
     error_no_permission();
 }
 
-// no action = home
-if (!$mybb->input['action']) {
+// no action=home
+if (!$mybb->get_input('action')) {
     run_hooks('home_start');
 
     $income_settings = '';
@@ -161,7 +159,7 @@ if (!$mybb->input['action']) {
     output_page($page);
 }
 
-if ($mybb->input['action'] == 'stats') {
+if ($mybb->get_input('action') == 'stats') {
     if ($mybb->settings['newpoints_main_statsvisible'] != 1) {
         error($lang->newpoints_stats_disabled);
     }
@@ -211,15 +209,15 @@ if ($mybb->input['action'] == 'stats') {
 
     // get latest donations
     $query = $db->query(
-        '
-		SELECT l.*,u.usergroup,u.displaygroup
-		FROM ' . constant('TABLE_PREFIX') . 'newpoints_log l
-		LEFT JOIN ' . constant('TABLE_PREFIX') . "users u ON (u.uid=l.uid)
+        "
+        SELECT l.*, u.usergroup, u.displaygroup
+		FROM {$db->table_prefix}newpoints_log l
+		LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)
 		WHERE l.action='donation'
 		ORDER BY l.date DESC
-		LIMIT " . intval($mybb->settings['newpoints_main_stats_lastdonations']) . '
-	'
+		LIMIT " . intval($mybb->settings['newpoints_main_stats_lastdonations'])
     );
+
     while ($donation = $db->fetch_array($query)) {
         $bgcolor = alt_trow();
 
@@ -255,7 +253,7 @@ if ($mybb->input['action'] == 'stats') {
     run_hooks('stats_end');
 
     output_page($page);
-} elseif ($mybb->input['action'] == 'donate') {
+} elseif ($mybb->get_input('action') == 'donate') {
     if ($mybb->settings['newpoints_main_donationsenabled'] != 1) {
         error($lang->newpoints_donations_disabled);
     }
@@ -263,7 +261,7 @@ if ($mybb->input['action'] == 'stats') {
     run_hooks('donate_start');
 
     // make sure wen're trying to send a donation to ourselves
-    $uid = intval($mybb->input['uid']);
+    $uid = $mybb->get_input('uid', MyBB::INPUT_INT);
     $user = get_user($uid);
     if ($user['username'] != '') {
         $user['username'] = htmlspecialchars_uni($user['username']);
@@ -291,8 +289,8 @@ if ($mybb->input['action'] == 'stats') {
     run_hooks('donate_end');
 
     output_page($page);
-} elseif ($mybb->input['action'] == 'do_donate') {
-    verify_post_check($mybb->input['postcode']);
+} elseif ($mybb->get_input('action') == 'do_donate') {
+    verify_post_check($mybb->get_input('postcode'));
 
     if ($mybb->settings['newpoints_main_donationsenabled'] != 1) {
         error($lang->newpoints_donations_disabled);
@@ -315,12 +313,12 @@ if ($mybb->input['action'] == 'stats') {
     }
 
     // make sure we're not trying to send a donation to ourselves
-    $username = trim($mybb->input['username']);
+    $username = trim($mybb->get_input('username'));
     if (my_strtolower($username) == my_strtolower($mybb->user['username'])) {
         error($lang->newpoints_cant_donate_self);
     }
 
-    $amount = round(floatval($mybb->input['amount']), (int)$mybb->settings['newpoints_main_decimal']);
+    $amount = round($mybb->get_input('amount', MyBB::INPUT_FLOAT), (int)$mybb->settings['newpoints_main_decimal']);
 
     // do we have enough points?
     if ($amount <= 0 || $amount > $mybb->user['newpoints']) {
@@ -341,14 +339,14 @@ if ($mybb->input['action'] == 'stats') {
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if ($mybb->settings['newpoints_main_donationspm'] != 0) {
-        if ($mybb->input['reason'] != '') {
+        if ($mybb->get_input('reason') != '') {
             private_message_send(
                 [
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message_reason,
                         points_format($amount),
-                        htmlspecialchars_uni($mybb->input['reason'])
+                        htmlspecialchars_uni($mybb->get_input('reason'))
                     ),
                     'receivepms' => 1,
                     'touid' => $touser['uid']

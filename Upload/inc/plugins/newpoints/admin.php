@@ -43,6 +43,7 @@ use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 
 use function Newpoints\Core\settings_add;
+use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\templates_rebuild;
 
@@ -94,7 +95,7 @@ function plugin_activation(): bool
 
     plugin_library_load();
 
-    \Newpoints\Core\settings_rebuild();
+    settings_rebuild();
 
     templates_rebuild();
 
@@ -186,11 +187,11 @@ function pluginUninstallation(): bool
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {
             // Ignore missing plugins
-            if (!file_exists(constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php')) {
+            if (!file_exists(MYBB_ROOT . 'inc/plugins/newpoints/' . $plugin . '.php')) {
                 continue;
             }
 
-            require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin . '.php';
+            require_once MYBB_ROOT . 'inc/plugins/newpoints/' . $plugin . '.php';
 
             if (function_exists("{$plugin}_deactivate")) {
                 call_user_func("{$plugin}_deactivate");
@@ -304,7 +305,7 @@ function task_enable(int $action = TASK_ENABLE): bool
     if ($db->num_rows($db_query)) {
         $db->update_query('tasks', ['enabled' => $action], "file='backupnewpoints'");
     } else {
-        include_once constant('MYBB_ROOT') . 'inc/functions_task.php';
+        include_once MYBB_ROOT . 'inc/functions_task.php';
 
         $new_task_data = [
             'title' => $db->escape_string('Backup NewPoints'),

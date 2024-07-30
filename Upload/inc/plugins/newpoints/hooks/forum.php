@@ -32,10 +32,11 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Forum;
 
+use MyBB;
 use postDatahandler;
 
 use function Newpoints\Core\count_characters;
-use function Newpoints\Core\plugins_load;
+use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\rules_get;
@@ -65,7 +66,7 @@ function global_start(): bool
 
     global $plugins, $mybb, $mypoints;
 
-    plugins_load();
+    load_set_guest_data();
 
     //newpoints_load_settings();
 
@@ -109,7 +110,7 @@ function global_end(): bool
     }
 
     if ($mybb->settings['newpoints_income_visit'] != 0) {
-        if ((constant('TIME_NOW') - $mybb->user['lastactive']) > 900) {
+        if ((TIME_NOW - $mybb->user['lastactive']) > 900) {
             points_add(
                 $mybb->user['uid'],
                 $mybb->settings['newpoints_income_visit'],
@@ -132,7 +133,7 @@ function global_end(): bool
         // update rule with last payment
         $db->update_query(
             'newpoints_grouprules',
-            ['lastpay' => (int)constant('TIME_NOW')],
+            ['lastpay' => TIME_NOW],
             'rid=\'' . (int)$rule['rid'] . '\''
         );
 
@@ -177,7 +178,7 @@ function xmlhttp(): bool
 
     global_intermediate();
 
-    plugins_load();
+    load_set_guest_data();
     //newpoints_load_settings();
 
     // as plugins can't hook to xmlhttp, we must allow them to hook to newpoints_xmlhttp
@@ -192,7 +193,7 @@ function archive_start()
 {
     global $plugins;
 
-    plugins_load();
+    load_set_guest_data();
     //newpoints_load_settings();
 
     // as plugins can't hook to archive_start, we must allow them to hook to newpoints_archive_start
@@ -284,7 +285,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
 {
     global $db, $mybb, $post, $thread;
 
-    if ($mybb->input['action'] != 'do_newreply' || $post['savedraft']) {
+    if ($mybb->get_input('action') != 'do_newreply' || $post['savedraft']) {
         return $data;
     }
 
@@ -377,7 +378,7 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
         return $newpost;
     }
 
-    if ($mybb->input['action'] != 'do_editpost' || $mybb->input['editdraft']) {
+    if ($mybb->get_input('action') != 'do_editpost' || $mybb->get_input('editdraft')) {
         return $newpost;
     }
 
@@ -456,22 +457,22 @@ function xmlhttp10(): bool
         return false;
     }
 
-    if ($mybb->input['action'] != 'edit_post') {
+    if ($mybb->get_input('action') != 'edit_post') {
         return false;
-    } elseif ($mybb->input['action'] == 'edit_post' && $mybb->input['do'] != 'update_post') {
+    } elseif ($mybb->get_input('action') == 'edit_post' && $mybb->get_input('do') != 'update_post') {
         return false;
     }
 
-    if ($mybb->input['editdraft']) {
+    if ($mybb->get_input('editdraft')) {
         return false;
     }
 
     // Verify POST request
-    if (!verify_post_check($mybb->input['my_post_key'], true)) {
+    if (!verify_post_check($mybb->get_input('my_post_key'), true)) {
         xmlhttp_error($lang->invalid_post_code);
     }
 
-    $post = get_post($mybb->input['pid']);
+    $post = get_post($mybb->get_input('pid', MyBB::INPUT_INT));
 
     $fid = intval($post['fid']);
 
@@ -1074,12 +1075,12 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
 {
     global $db, $mybb, $fid, $thread;
 
-    if ($mybb->input['action'] != 'do_newthread' || $mybb->input['savedraft']) {
+    if ($mybb->get_input('action') != 'do_newthread' || $mybb->get_input('savedraft')) {
         return $that;
     }
 
     if ($that->thread_insert_data['visible'] != 1) {
-        // If it's not visible, then we may have moderation (drafts are already considered above so it doesn't matter here)
+        // If it's not visible, then we may have moderation(drafts are already considered above so it doesn't matter here)
         return $that;
     }
 
@@ -1120,7 +1121,7 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
     // calculate points per character bonus
     // let's see if the number of characters in the thread is greater than the minimum characters
     if (($charcount = count_characters(
-            $mybb->input['message']
+            $mybb->get_input('message')
         )) >= $mybb->settings['newpoints_income_minchar']) {
         $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
     } else {
@@ -1456,7 +1457,7 @@ function class_moderation_delete_poll(int $pid): int
         return $pid;
     }
 
-    $query = $db->simple_select('polls', '*', "pid = '{$pid}'");
+    $query = $db->simple_select('polls', '*', "pid='{$pid}'");
     $poll = $db->fetch_array($query);
 
     $fid = $poll['fid'];
@@ -1501,11 +1502,8 @@ function member_do_register_end(): bool
     // give points to our new user
     if ($mybb->settings['newpoints_income_newreg'] != 0) {
         points_add(
-            trim($mybb->input['username']),
-            $mybb->settings['newpoints_income_newreg'],
-            1,
-            1,
-            true
+            (int)$user_info['uid'],
+            $mybb->settings['newpoints_income_newreg']
         );
     }
 
@@ -1514,7 +1512,7 @@ function member_do_register_end(): bool
         $query = $db->simple_select(
             'users',
             'uid,newpoints',
-            'username=\'' . my_strtolower($db->escape_string(trim($mybb->input['referrername']))) . '\''
+            'username=\'' . my_strtolower($db->escape_string(trim($mybb->get_input('referrername')))) . '\''
         );
         $user = $db->fetch_array($query);
         if (empty($user)) {
@@ -1686,7 +1684,7 @@ function forumdisplay_end(): bool
     }
 
     if (THIS_SCRIPT == 'forumdisplay.php') {
-        $fid = intval($mybb->input['fid']);
+        $fid = $mybb->get_input('fid', MyBB::INPUT_INT);
     }
 
     $forumrules = rules_get('forum', $fid);
@@ -1713,7 +1711,7 @@ function editpost_start(): bool
         return false;
     }
 
-    $pid = intval($mybb->input['pid']);
+    $pid = $mybb->get_input('pid', MyBB::INPUT_INT);
     $post = get_post($pid);
     if (!$post) {
         return false;

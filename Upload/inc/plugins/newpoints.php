@@ -76,7 +76,7 @@ define('Newpoints\Core\SETTINGS', [
 
 define('Newpoints\Core\DEBUG', false);
 
-define('Newpoints\ROOT', constant('MYBB_ROOT') . 'inc/plugins/newpoints');
+define('Newpoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
 
 defined('PLUGINLIBRARY') || define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
 
@@ -291,3 +291,5 @@ function newpoints_update_users(): bool
 {
     return users_update();
 }
+
+plugins_load();

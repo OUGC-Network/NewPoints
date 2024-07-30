@@ -188,7 +188,7 @@ const FIELDS_DATA = [
     'users' => [
         'newpoints' => [
             'type' => 'DECIMAL',
-            //'size' => '16,2',
+            'size' => '16,2',
             'unsigned' => true,
             'default' => 0
         ],

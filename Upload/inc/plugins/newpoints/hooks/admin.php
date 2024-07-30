@@ -34,7 +34,7 @@ namespace Newpoints\Hooks\Admin;
 
 use MyBB;
 
-use function Newpoints\Core\plugins_load;
+use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\run_hooks;
 
 function admin_config_plugins_deactivate(): bool
@@ -67,7 +67,7 @@ function admin_load(): bool
     global $plugins, $newpoints_plugins, $mybb;
 
     if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        plugins_load();
+        load_set_guest_data();
     }
 
     // as plugins can't hook to admin_load, we must allow them to hook to newpoints_admin_load
@@ -81,7 +81,7 @@ function admin_newpoints_menu(array &$sub_menu): array
     global $plugins, $newpoints_plugins;
 
     if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        plugins_load();
+        //plugins_load();
     }
 
     // as plugins can't hook to admin_newpoints_menu, we must allow them to hook to newpoints_admin_newpoints_menu
@@ -95,7 +95,7 @@ function admin_newpoints_action_handler(array &$actions): array
     global $plugins, $newpoints_plugins;
 
     if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        plugins_load();
+        //plugins_load();
     }
 
     // as plugins can't hook to admin_newpoints_action_handler, we must allow them to hook to newpoints_newpoints_action_handler
@@ -109,7 +109,7 @@ function admin_newpoints_permissions(array &$admin_permissions): array
     global $plugins, $newpoints_plugins;
 
     if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        plugins_load();
+        //plugins_load();
     }
 
     // as plugins can't hook to admin_newpoints_permissions, we must allow them to hook to newpoints_newpoints_permissions

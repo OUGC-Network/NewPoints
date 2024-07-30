@@ -148,7 +148,7 @@ For support please visit [MyBB-Plugins.com](http://forums.mybb-plugins.com/ "MyB
 function newpoints_plugin_do_template_edits()
 {
 // do edits
-require_once constant('MYBB_ROOT') . 'inc/adminfunctions_templates.php';
+require_once MYBB_ROOT . 'inc/adminfunctions_templates.php';
 find_replace_templatesets(
 'postbit_classic',
 '#' . preg_quote('{$post[\'user_details\']}') . '#',
@@ -169,7 +169,7 @@ find_replace_templatesets(
 function newpoints_plugin_undo_template_edits()
 {
 // undo edits
-require_once constant('MYBB_ROOT') . 'inc/adminfunctions_templates.php';
+require_once MYBB_ROOT . 'inc/adminfunctions_templates.php';
 find_replace_templatesets('postbit_classic', '#' . preg_quote('{$post[\'newpoints_postbit\']}') . '#', '', 0);
 find_replace_templatesets('postbit', '#' . preg_quote('{$post[\'newpoints_postbit\']}') . '#', '', 0);
 find_replace_templatesets('member_profile', '#' . preg_quote('{$newpoints_profile}') . '#', '', 0);

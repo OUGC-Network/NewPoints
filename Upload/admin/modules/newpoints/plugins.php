@@ -53,24 +53,24 @@ $sub_tabs['newpoints_plugins'] = [
 $page->output_nav_tabs($sub_tabs, 'newpoints_plugins');
 
 // Activates or deactivates a specific plugin
-if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivate') {
-    if (!verify_post_check($mybb->input['my_post_key'])) {
+if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'deactivate') {
+    if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->invalid_post_verify_key2, 'error');
         admin_redirect('index.php?module=newpoints-plugins');
     }
 
-    if ($mybb->input['action'] == 'activate') {
+    if ($mybb->get_input('action') == 'activate') {
         run_hooks('admin_plugins_activate');
     } else {
         run_hooks('admin_plugins_deactivate');
     }
 
-    $codename = $mybb->input['plugin'];
+    $codename = $mybb->get_input('plugin');
     $codename = str_replace(['.', '/', "\\"], '', $codename);
     $file = basename($codename . '.php');
 
     // Check if the file exists and throw an error if it doesn't
-    if (!file_exists(constant('MYBB_ROOT') . "inc/plugins/newpoints/$file")) {
+    if (!file_exists(MYBB_ROOT . "inc/plugins/newpoints/$file")) {
         flash_message($lang->error_invalid_plugin, 'error');
         admin_redirect('index.php?module=newpoints-plugins');
     }
@@ -78,7 +78,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     $plugins_cache = $cache->read('newpoints_plugins');
     $active_plugins = $plugins_cache['active'];
 
-    require_once constant('MYBB_ROOT') . "inc/plugins/newpoints/$file";
+    require_once MYBB_ROOT . "inc/plugins/newpoints/$file";
 
     $installed_func = "{$codename}_is_installed";
     $installed = true;
@@ -88,7 +88,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
 
     $install_uninstall = false;
 
-    if ($mybb->input['action'] == 'activate') {
+    if ($mybb->get_input('action') == 'activate') {
         $message = $lang->success_plugin_activated;
 
         // Plugin is compatible with this version?
@@ -111,22 +111,20 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
 
         $active_plugins[$codename] = $codename;
         $executed[] = 'activate';
-    } else {
-        if ($mybb->input['action'] == 'deactivate') {
-            $message = $lang->success_plugin_deactivated;
+    } elseif ($mybb->get_input('action') == 'deactivate') {
+        $message = $lang->success_plugin_deactivated;
 
-            if (function_exists("{$codename}_deactivate")) {
-                call_user_func("{$codename}_deactivate");
-            }
-
-            if ($mybb->input['uninstall'] == 1 && function_exists("{$codename}_uninstall")) {
-                call_user_func("{$codename}_uninstall");
-                $message = $lang->success_plugin_uninstalled;
-                $install_uninstall = true;
-            }
-
-            unset($active_plugins[$codename]);
+        if (function_exists("{$codename}_deactivate")) {
+            call_user_func("{$codename}_deactivate");
         }
+
+        if ($mybb->get_input('uninstall') == 1 && function_exists("{$codename}_uninstall")) {
+            call_user_func("{$codename}_uninstall");
+            $message = $lang->success_plugin_uninstalled;
+            $install_uninstall = true;
+        }
+
+        unset($active_plugins[$codename]);
     }
 
     // Update plugin cache
@@ -136,7 +134,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     // Log admin action
     log_admin_action($codename, $install_uninstall);
 
-    if ($mybb->input['action'] == 'activate') {
+    if ($mybb->get_input('action') == 'activate') {
         run_hooks('admin_plugins_activate_commit');
     } else {
         run_hooks('admin_plugins_deactivate_commit');
@@ -150,7 +148,7 @@ if ($mybb->input['action'] == 'activate' || $mybb->input['action'] == 'deactivat
     admin_redirect('index.php?module=newpoints-plugins');
 }
 
-if (!$mybb->input['action']) // view plugins
+if (!$mybb->get_input('action')) // view plugins
 {
     $plugins_cache = $cache->read('newpoints_plugins');
 
@@ -171,7 +169,7 @@ if (!$mybb->input['action']) // view plugins
 
     if (!empty($plugins_list)) {
         foreach ($plugins_list as $plugin) {
-            require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugin;
+            require_once MYBB_ROOT . 'inc/plugins/newpoints/' . $plugin;
             $codename = str_replace('.php', '', $plugin);
             $infofunc = $codename . '_info';
             if (!function_exists($infofunc)) {
@@ -292,7 +290,7 @@ function newpoints_get_plugins()
     $plugins_list = [];
 
     // open directory
-    $dir = @opendir(constant('MYBB_ROOT') . 'inc/plugins/newpoints/');
+    $dir = @opendir(MYBB_ROOT . 'inc/plugins/newpoints/');
 
     // browse plugins directory
     if ($dir) {
@@ -301,7 +299,7 @@ function newpoints_get_plugins()
                 continue;
             }
 
-            if (!is_dir(constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $file)) {
+            if (!is_dir(MYBB_ROOT . 'inc/plugins/newpoints/' . $file)) {
                 $ext = get_extension($file);
                 if ($ext == 'php') {
                     $plugins_list[] = $file;
@@ -318,7 +316,7 @@ function newpoints_get_plugins()
 function newpoints_iscompatible($plugininfo)
 {
     if (!is_array($plugininfo)) {
-        require_once constant('MYBB_ROOT') . 'inc/plugins/newpoints/' . $plugininfo . '.php';
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/' . $plugininfo . '.php';
         $infofunc = $plugininfo . '_info';
         if (!function_exists($infofunc)) {
             return false;
@@ -327,7 +325,7 @@ function newpoints_iscompatible($plugininfo)
         $plugininfo = $infofunc();
     }
 
-    // No compatibility set or compatibility = * - assume compatible
+    // No compatibility set or compatibility=* - assume compatible
     if (!$plugininfo['compatibility'] || $plugininfo['compatibility'] == '*') {
         return true;
     }
