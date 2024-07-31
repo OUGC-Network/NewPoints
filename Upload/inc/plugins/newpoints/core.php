@@ -1062,7 +1062,7 @@ function plugins_load(): bool
 
             $newpoints_plugins_loaded[$plugin] = true;
 
-            $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/{$plugin}.php";
+            $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/plugins/{$plugin}.php";
 
             if (!empty($plugin) && file_exists($plugin_file_path)) {
                 require_once $plugin_file_path;

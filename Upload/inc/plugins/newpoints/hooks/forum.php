@@ -266,7 +266,7 @@ function member_profile_end(): bool
 
     $currency = $mybb->settings['newpoints_main_curname'];
 
-    $points = $newpoints_profile_user_balance_formatted = points_format($memprofile['newpoints']);
+    $points = $newpoints_profile_user_balance_formatted = points_format((float)$memprofile['newpoints']);
 
     $uid = intval($memprofile['uid']);
 

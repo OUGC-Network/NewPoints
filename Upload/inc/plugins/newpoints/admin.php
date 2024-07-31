@@ -87,7 +87,7 @@ function plugin_information(): array
 
 function plugin_activation(): bool
 {
-    global $PL, $cache, $lang;
+    global $cache;
 
     language_load();
 
@@ -118,6 +118,8 @@ function plugin_activation(): bool
 
     permissions_update();
 
+    rules_rebuild_cache();
+
     /*~*~* RUN UPDATES START *~*~*/
 
     /*~*~* RUN UPDATES END *~*~*/
@@ -140,7 +142,11 @@ function pluginDeactivation(): bool
 
 function pluginInstallation(): bool
 {
-    global $cache;
+    plugin_library_load();
+
+    settings_rebuild();
+
+    templates_rebuild();
 
     db_verify_tables();
 
@@ -187,11 +193,13 @@ function pluginUninstallation(): bool
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {
             // Ignore missing plugins
-            if (!file_exists(MYBB_ROOT . 'inc/plugins/newpoints/' . $plugin . '.php')) {
+            if (!file_exists(MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugin . '.php')) {
                 continue;
             }
 
-            require_once MYBB_ROOT . 'inc/plugins/newpoints/' . $plugin . '.php';
+            $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/plugins/{$plugin}.php";
+
+            require_once $plugin_file_path;
 
             if (function_exists("{$plugin}_deactivate")) {
                 call_user_func("{$plugin}_deactivate");

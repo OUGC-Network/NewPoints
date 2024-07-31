@@ -27,8 +27,15 @@
  ****************************************************************************/
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Admin\db_verify_columns;
+use function Newpoints\Admin\db_verify_tables;
+use function Newpoints\Admin\plugin_library_load;
+use function Newpoints\Admin\task_enable;
+use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\settings_rebuild_cache;
+use function Newpoints\Core\templates_rebuild;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -67,10 +74,12 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
     $codename = $mybb->get_input('plugin');
     $codename = str_replace(['.', '/', "\\"], '', $codename);
-    $file = basename($codename . '.php');
+    $file = basename($codename);
+
+    $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/plugins/{$file}.php";
 
     // Check if the file exists and throw an error if it doesn't
-    if (!file_exists(MYBB_ROOT . "inc/plugins/newpoints/$file")) {
+    if (!file_exists($plugin_file_path)) {
         flash_message($lang->error_invalid_plugin, 'error');
         admin_redirect('index.php?module=newpoints-plugins');
     }
@@ -78,11 +87,13 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
     $plugins_cache = $cache->read('newpoints_plugins');
     $active_plugins = $plugins_cache['active'];
 
-    require_once MYBB_ROOT . "inc/plugins/newpoints/$file";
+    require_once $plugin_file_path;
 
     $installed_func = "{$codename}_is_installed";
+
     $installed = true;
-    if (function_exists($installed_func) && $installed_func() != true) {
+
+    if (function_exists($installed_func) && !$installed_func()) {
         $installed = false;
     }
 
@@ -127,6 +138,18 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
         unset($active_plugins[$codename]);
     }
 
+    plugin_library_load();
+
+    settings_rebuild();
+
+    templates_rebuild();
+
+    db_verify_tables();
+
+    db_verify_columns();
+
+    rules_rebuild_cache();
+
     // Update plugin cache
     $plugins_cache['active'] = $active_plugins;
     $cache->update('newpoints_plugins', $plugins_cache);
@@ -169,7 +192,7 @@ if (!$mybb->get_input('action')) // view plugins
 
     if (!empty($plugins_list)) {
         foreach ($plugins_list as $plugin) {
-            require_once MYBB_ROOT . 'inc/plugins/newpoints/' . $plugin;
+            require_once MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugin;
             $codename = str_replace('.php', '', $plugin);
             $infofunc = $codename . '_info';
             if (!function_exists($infofunc)) {
@@ -285,38 +308,44 @@ if (!$mybb->get_input('action')) // view plugins
 
 $page->output_footer();
 
-function newpoints_get_plugins()
+function newpoints_get_plugins(): array
 {
     $plugins_list = [];
 
     // open directory
-    $dir = @opendir(MYBB_ROOT . 'inc/plugins/newpoints/');
+    $dir = @opendir(MYBB_ROOT . 'inc/plugins/newpoints/plugins/');
 
     // browse plugins directory
     if ($dir) {
         while ($file = readdir($dir)) {
-            if ($file == '.' || $file == '..') {
+            if (
+                $file == '.' ||
+                $file == '..' ||
+                !str_starts_with($file, 'newpoints_') ||
+                is_dir(MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $file)
+            ) {
                 continue;
             }
 
-            if (!is_dir(MYBB_ROOT . 'inc/plugins/newpoints/' . $file)) {
-                $ext = get_extension($file);
-                if ($ext == 'php') {
-                    $plugins_list[] = $file;
-                }
+            $ext = get_extension($file);
+
+            if ($ext === 'php') {
+                $plugins_list[] = $file;
             }
         }
+
         @sort($plugins_list);
+
         @closedir($dir);
     }
 
     return $plugins_list;
 }
 
-function newpoints_iscompatible($plugininfo)
+function newpoints_iscompatible($plugininfo): bool
 {
     if (!is_array($plugininfo)) {
-        require_once MYBB_ROOT . 'inc/plugins/newpoints/' . $plugininfo . '.php';
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugininfo . '.php';
         $infofunc = $plugininfo . '_info';
         if (!function_exists($infofunc)) {
             return false;
