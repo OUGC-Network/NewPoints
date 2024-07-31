@@ -1,17 +1,18 @@
 <?php
+
 /***************************************************************************
  *
- *   NewPoints plugin (/inc/plugins/upgrades/upgrade19.php)
- *     Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *    NewPoints plugin (/inc/plugins/upgrades/upgrade19.php)
+ *    Author: Pirata Nervo
+ *    Copyright: © 2009 Pirata Nervo
+ *    Copyright: © 2024 Omar Gonzalez
  *
- *   Website: http://www.mybb-plugins.com
+ *    Website: https://ougc.network
  *
- *   Upgrade file to upgrade NewPoints 1.8 to NewPoints 1.8
+ *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************/
-
-/****************************************************************************
+ ***************************************************************************
+ ****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -25,6 +26,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
+
+declare(strict_types=1);
 
 if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');

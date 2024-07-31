@@ -1,17 +1,18 @@
 <?php
+
 /***************************************************************************
  *
- *   NewPoints plugin (/inc/languages/english/admin/newpoints_module_meta.lang.php)
- *     Author: Pirata Nervo
- *   Copyright: © 2014 Pirata Nervo
+ *    NewPoints plugin (/inc/languages/english/admin/newpoints_module_meta.lang.php)
+ *    Author: Pirata Nervo
+ *    Copyright: © 2009 Pirata Nervo
+ *    Copyright: © 2024 Omar Gonzalez
  *
- *   Website: http://www.mybb-plugins.com
+ *    Website: https://ougc.network
  *
- *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************/
-
-/****************************************************************************
+ ***************************************************************************
+ ****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or

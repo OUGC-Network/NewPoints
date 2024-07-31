@@ -2,18 +2,17 @@
 
 /***************************************************************************
  *
- *   Newpoints plugin (/inc/plugins/newpoints/admin.php)
- *   Author: Pirata Nervo
- *   Copyright: © 2009 Pirata Nervo
- *   Copyright: © 2024 Omar Gonzalez
+ *    NewPoints plugin (/inc/plugins/newpoints/admin.php)
+ *    Author: Pirata Nervo
+ *    Copyright: © 2009 Pirata Nervo
+ *    Copyright: © 2024 Omar Gonzalez
  *
- *   Website: https://ougc.network
+ *    Website: https://ougc.network
  *
- *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************/
-
-/****************************************************************************
+ ***************************************************************************
+ ****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -131,7 +130,7 @@ function plugin_activation(): bool
     return true;
 }
 
-function pluginDeactivation(): bool
+function plugin_deactivation(): bool
 {
     task_disable();
 
@@ -140,7 +139,7 @@ function pluginDeactivation(): bool
     return true;
 }
 
-function pluginInstallation(): bool
+function plugin_installation(): bool
 {
     plugin_library_load();
 
@@ -159,7 +158,7 @@ function pluginInstallation(): bool
     return true;
 }
 
-function pluginIsInstalled(): bool
+function plugin_is_installed(): bool
 {
     static $isInstalled = null;
 
@@ -180,7 +179,7 @@ function pluginIsInstalled(): bool
     return $isInstalled;
 }
 
-function pluginUninstallation(): bool
+function plugin_uninstallation(): bool
 {
     global $db, $PL, $cache;
 
@@ -238,7 +237,7 @@ function pluginUninstallation(): bool
 
     //rebuild_settings();
 
-    $db->delete_query('tasks', 'file=\'backupnewpoints\'');
+    $db->delete_query('tasks', "file='backupnewpoints'");
 
 
     foreach (TABLES_DATA as $table_name => $table_data) {
@@ -350,11 +349,11 @@ function task_delete(): bool
     return true;
 }
 
-function db_tables(): array
+function db_tables(array $tables_objects = TABLES_DATA): array
 {
     $tables_data = [];
 
-    foreach (TABLES_DATA as $table_name => $table_columns) {
+    foreach ($tables_objects as $table_name => $table_columns) {
         foreach ($table_columns as $field_name => $field_data) {
             if (!isset($field_data['type'])) {
                 continue;
@@ -376,13 +375,13 @@ function db_tables(): array
     return $tables_data;
 }
 
-function db_verify_tables(): bool
+function db_verify_tables(array $tables_objects = TABLES_DATA): bool
 {
     global $db;
 
     $collation = $db->build_create_table_collation();
 
-    foreach (db_tables() as $table_name => $table_data) {
+    foreach (db_tables($tables_objects) as $table_name => $table_data) {
         if ($db->table_exists($table_name)) {
             foreach ($table_data as $field_name => $field_data) {
                 if ($field_name == 'primary_key' || $field_name == 'unique_key') {
@@ -412,16 +411,16 @@ function db_verify_tables(): bool
         }
     }
 
-    db_verify_indexes();
+    db_verify_indexes($tables_objects);
 
     return true;
 }
 
-function db_verify_indexes(): bool
+function db_verify_indexes(array $tables_objects = TABLES_DATA): bool
 {
     global $db;
 
-    foreach (db_tables() as $table_name => $table_data) {
+    foreach (db_tables($tables_objects) as $table_name => $table_data) {
         if (!$db->table_exists($table_name)) {
             continue;
         }
@@ -477,11 +476,11 @@ function db_build_field_definition(array $field_data): string
     return $field_definition;
 }
 
-function db_verify_columns(): bool
+function db_verify_columns(array $fields_objects = FIELDS_DATA): bool
 {
     global $db;
 
-    foreach (FIELDS_DATA as $table_name => $table_columns) {
+    foreach ($fields_objects as $table_name => $table_columns) {
         foreach ($table_columns as $field_name => $field_data) {
             if (!isset($field_data['type'])) {
                 continue;

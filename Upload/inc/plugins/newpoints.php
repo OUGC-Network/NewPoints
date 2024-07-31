@@ -2,18 +2,17 @@
 
 /***************************************************************************
  *
- *   NewPoints plugin (/inc/plugins/newpoints.php)
- *   Author: Pirata Nervo
- *   Copyright: © 2009 Pirata Nervo
- *   Copyright: © 2024 Omar Gonzalez
+ *    NewPoints plugin (/inc/plugins/newpoints.php)
+ *    Author: Pirata Nervo
+ *    Copyright: © 2009 Pirata Nervo
+ *    Copyright: © 2024 Omar Gonzalez
  *
- *   Website: https://ougc.network
+ *    Website: https://ougc.network
  *
- *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************/
-
-/****************************************************************************
+ ***************************************************************************
+ ****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -31,11 +30,11 @@
 declare(strict_types=1);
 
 use function Newpoints\Admin\plugin_activation;
-use function Newpoints\Admin\pluginDeactivation;
+use function Newpoints\Admin\plugin_deactivation;
 use function Newpoints\Admin\plugin_information;
-use function Newpoints\Admin\pluginInstallation;
-use function Newpoints\Admin\pluginIsInstalled;
-use function Newpoints\Admin\pluginUninstallation;
+use function Newpoints\Admin\plugin_installation;
+use function Newpoints\Admin\plugin_is_installed;
+use function Newpoints\Admin\plugin_uninstallation;
 use function Newpoints\Core\add_hooks;
 use function Newpoints\Core\check_permissions;
 use function Newpoints\Core\count_characters;
@@ -77,6 +76,8 @@ define('Newpoints\Core\SETTINGS', [
 define('Newpoints\Core\DEBUG', false);
 
 define('Newpoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
+
+define('Newpoints\ROOT_PLUGINS', ROOT . '/plugins');
 
 defined('PLUGINLIBRARY') || define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
 
@@ -121,17 +122,17 @@ if (defined('IN_ADMINCP')) {
 
     function newpoints_install(): bool
     {
-        return pluginInstallation();
+        return plugin_installation();
     }
 
     function newpoints_is_installed(): bool
     {
-        return pluginIsInstalled();
+        return plugin_is_installed();
     }
 
     function newpoints_uninstall(): bool
     {
-        return pluginUninstallation();
+        return plugin_uninstallation();
     }
 
     function newpoints_activate(): bool
@@ -141,7 +142,7 @@ if (defined('IN_ADMINCP')) {
 
     function newpoints_deactivate(): bool
     {
-        return pluginDeactivation();
+        return plugin_deactivation();
     }
 }
 

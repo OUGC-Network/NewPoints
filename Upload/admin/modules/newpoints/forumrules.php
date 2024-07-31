@@ -1,17 +1,18 @@
 <?php
+
 /***************************************************************************
  *
- *   NewPoints plugin (/admin/modules/newpoints/forumrules.php)
- *     Author: Pirata Nervo
- *   Copyright: � 2014 Pirata Nervo
+ *    NewPoints plugin (/admin/modules/newpoints/forumrules.php)
+ *    Author: Pirata Nervo
+ *    Copyright: © 2009 Pirata Nervo
+ *    Copyright: © 2024 Omar Gonzalez
  *
- *   Website: http://www.mybb-plugins.com
+ *    Website: https://ougc.network
  *
- *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************/
-
-/****************************************************************************
+ ***************************************************************************
+ ****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -26,7 +27,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-// Disallow direct access to this file for security reasons
+declare(strict_types=1);
+
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
 

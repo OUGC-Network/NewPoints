@@ -2,18 +2,17 @@
 
 /***************************************************************************
  *
- *   Newpoints plugin (/inc/plugins/newpoints/core.php)
- *   Author: Pirata Nervo
- *   Copyright: © 2009 Pirata Nervo
- *   Copyright: © 2024 Omar Gonzalez
+ *    NewPoints plugin (/inc/plugins/newpoints/core.php)
+ *    Author: Pirata Nervo
+ *    Copyright: © 2009 Pirata Nervo
+ *    Copyright: © 2024 Omar Gonzalez
  *
- *   Website: https://ougc.network
+ *    Website: https://ougc.network
  *
- *   NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
  *
- ***************************************************************************/
-
-/****************************************************************************
+ ***************************************************************************
+ ****************************************************************************
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -47,7 +46,9 @@ function language_load(string $plugin = ''): bool
         isset($lang->newpoints) || $lang->load('newpoints');
     } else {
         $lang->set_path(MYBB_ROOT . 'inc/plugins/newpoints/languages');
-        $lang->load($plugin);
+
+        $lang->load("newpoints_{$plugin}");
+
         $lang->set_path(MYBB_ROOT . 'inc/languages');
     }
 
@@ -179,13 +180,19 @@ function count_characters(string $message): int
  */
 function templates_remove(string $templates): bool
 {
-    global $db;
-
     if (!$templates) {
         return false;
     }
 
-    $db->delete_query('templates', 'title IN (' . $templates . ')');
+    global $db;
+
+    $templates = explode(',', $templates);
+
+    $templates = array_map([$db, 'escape_string'], $templates);
+
+    $templates = implode("','", $templates);
+
+    $db->delete_query('templates', "title IN ('{$templates}'})");
 
     return true;
 }
@@ -290,18 +297,24 @@ function templates_rebuild(): bool
 {
     global $PL;
 
-    $template_directories = [ROOT . '/templates'];
+    $templates_directories = [ROOT . '/templates'];
 
     $templates_list = [];
 
     $hook_arguments = [
-        'template_directories' => &$template_directories,
+        'templates_directories' => &$templates_directories,
         'templates_list' => &$templates_list,
     ];
 
     $hook_arguments = run_hooks('templates_rebuild_start', $hook_arguments);
 
-    foreach ($template_directories as $template_directory) {
+    foreach ($templates_directories as $plugin_code => $template_directory) {
+        if (is_string($plugin_code) && !empty($plugin_code)) {
+            $plugin_code = "{$plugin_code}_";
+        } else {
+            $plugin_code = '';
+        }
+
         if (file_exists($template_directory)) {
             $templates_directory_iterator = new DirectoryIterator($template_directory);
 
@@ -315,7 +328,7 @@ function templates_rebuild(): bool
                 $path_info = pathinfo($path_name);
 
                 if ($path_info['extension'] === 'html') {
-                    $templates_list[$path_info['filename']] = file_get_contents($path_name);
+                    $templates_list[$plugin_code . $path_info['filename']] = file_get_contents($path_name);
                 }
             }
         }
@@ -339,13 +352,19 @@ function templates_rebuild(): bool
  */
 function settings_remove(string $settings): bool
 {
-    global $db;
-
     if (!$settings) {
         return false;
     }
 
-    $db->delete_query('newpoints_settings', 'name IN (' . $settings . ')');
+    global $db;
+
+    $settings = explode(',', $settings);
+
+    $settings = array_map([$db, 'escape_string'], $settings);
+
+    $settings = implode("','", $settings);
+
+    $db->delete_query('newpoints_settings', "name IN ('{$settings}'})");
     //$db->delete_query('settings', "name IN (".$settings.")");
 
     return true;
@@ -559,24 +578,24 @@ function settings_rebuild(): bool
 
     language_load();
 
-    $setting_directories = [
+    $settings_directories = [
         ROOT . '/settings'
     ];
 
     $settings_list = [];
 
     $hook_arguments = [
-        'setting_directories' => &$setting_directories,
+        'settings_directories' => &$settings_directories,
         'settings_list' => &$settings_list,
     ];
 
     $hook_arguments = run_hooks('settings_rebuild_start', $hook_arguments);
 
-    foreach ($setting_directories as $setting_directory) {
+    foreach ($settings_directories as $setting_directory) {
         if (file_exists($setting_directory)) {
-            $settingss_directory_iterator = new DirectoryIterator($setting_directory);
+            $settings_directory_iterator = new DirectoryIterator($setting_directory);
 
-            foreach ($settingss_directory_iterator as $settings_file) {
+            foreach ($settings_directory_iterator as $settings_file) {
                 if (!$settings_file->isFile()) {
                     continue;
                 }
@@ -1203,4 +1222,98 @@ function settings(string $group_name, string $title, string $description, array 
 
     // Rebuild the settings file.
     settings_rebuild_cache();
+}
+
+function sanitize_array_integers(
+    array|string $items_object,
+    bool $implode = false,
+    string $delimiter = ','
+): array|string {
+    if (!is_array($items_object)) {
+        $items_object = explode($delimiter, $items_object);
+    }
+
+    foreach ($items_object as &$item_value) {
+        $item_value = (int)$item_value;
+    }
+
+    $return_array = array_filter(array_unique($items_object));
+
+    if ($implode) {
+        return implode($delimiter, $return_array);
+    }
+
+    return $return_array;
+}
+
+// control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )
+function control_object(&$obj, $code)
+{
+    static $cnt = 0;
+    $newname = '_objcont_' . (++$cnt);
+    $objserial = serialize($obj);
+    $classname = get_class($obj);
+    $checkstr = 'O:' . strlen($classname) . ':"' . $classname . '":';
+    $checkstr_len = strlen($checkstr);
+    if (substr($objserial, 0, $checkstr_len) == $checkstr) {
+        $vars = array();
+        // grab resources/object etc, stripping scope info from keys
+        foreach ((array)$obj as $k => $v) {
+            if ($p = strrpos($k, "\0")) {
+                $k = substr($k, $p + 1);
+            }
+            $vars[$k] = $v;
+        }
+        if (!empty($vars)) {
+            $code .= '
+					function ___setvars(&$a) {
+						foreach($a as $k => &$v)
+							$this->$k = $v;
+					}
+				';
+        }
+        eval('class ' . $newname . ' extends ' . $classname . ' {' . $code . '}');
+        $obj = unserialize('O:' . strlen($newname) . ':"' . $newname . '":' . substr($objserial, $checkstr_len));
+        if (!empty($vars)) {
+            $obj->___setvars($vars);
+        }
+    }
+    // else not a valid object or PHP serialize has changed
+}
+
+// explicit workaround for PDO, as trying to serialize it causes a fatal error (even though PHP doesn't complain over serializing other resources)
+if ($GLOBALS['db'] instanceof AbstractPdoDbDriver) {
+    $GLOBALS['AbstractPdoDbDriver_lastResult_prop'] = new ReflectionProperty('AbstractPdoDbDriver', 'lastResult');
+    $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setAccessible(true);
+    function control_db($code)
+    {
+        global $db;
+        $linkvars = array(
+            'read_link' => $db->read_link,
+            'write_link' => $db->write_link,
+            'current_link' => $db->current_link,
+        );
+        unset($db->read_link, $db->write_link, $db->current_link);
+        $lastResult = $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->getValue($db);
+        $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setValue($db, null); // don't let this block serialization
+        control_object($db, $code);
+        foreach ($linkvars as $k => $v) {
+            $db->$k = $v;
+        }
+        $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setValue($db, $lastResult);
+    }
+} elseif ($GLOBALS['db'] instanceof DB_SQLite) {
+    function control_db($code)
+    {
+        global $db;
+        $oldLink = $db->db;
+        unset($db->db);
+        control_object($db, $code);
+        $db->db = $oldLink;
+    }
+} else {
+    function control_db($code)
+    {
+        control_object($GLOBALS['db'], $code);
+    }
 }
