@@ -27,8 +27,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-$l['newpoints'] = 'NewPoints';
-
 $l['nav_plugins'] = 'Plugins';
 $l['nav_settings'] = 'Settings';
 $l['nav_log'] = 'Log';

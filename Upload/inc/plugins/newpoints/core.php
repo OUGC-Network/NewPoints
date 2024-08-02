@@ -44,7 +44,7 @@ function language_load(string $plugin = ''): bool
 
     if ($plugin === '') {
         isset($lang->newpoints) || $lang->load('newpoints');
-    } else {
+    } elseif (!isset($lang->{"newpoints_{$plugin}"})) {
         $lang->set_path(MYBB_ROOT . 'inc/plugins/newpoints/languages');
 
         $lang->load("newpoints_{$plugin}");

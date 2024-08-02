@@ -30,6 +30,7 @@
 declare(strict_types=1);
 
 use function Newpoints\Core\get_group;
+use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
 
@@ -39,7 +40,7 @@ if (!defined('IN_MYBB')) {
 
 global $lang, $plugins, $page, $db, $mybb;
 
-$lang->load('newpoints');
+language_load();
 
 run_hooks('admin_grouprules_begin');
 

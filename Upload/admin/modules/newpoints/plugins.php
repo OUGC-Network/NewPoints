@@ -33,6 +33,7 @@ use function Newpoints\Admin\db_verify_columns;
 use function Newpoints\Admin\db_verify_tables;
 use function Newpoints\Admin\plugin_library_load;
 use function Newpoints\Admin\task_enable;
+use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\settings_rebuild;
@@ -45,7 +46,7 @@ if (!defined('IN_MYBB')) {
 
 global $lang, $plugins, $page, $db, $mybb, $cache;
 
-$lang->load('newpoints');
+language_load();
 
 $lang->load('config_plugins', false, true);
 

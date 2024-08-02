@@ -35,6 +35,7 @@ use MyBB;
 use postDatahandler;
 
 use function Newpoints\Core\count_characters;
+use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\points_format;
@@ -163,7 +164,7 @@ function global_intermediate(): bool
         $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
     }
 
-    $newpoints_user_balance_formatted = points_format($mybb->user['newpoints']);
+    $newpoints_user_balance_formatted = points_format((float)$mybb->user['newpoints']);
 
     return true;
 }
@@ -215,11 +216,11 @@ function postbit(array &$post): array
         return $post;
     }
 
-    $lang->load('newpoints');
+    language_load();
 
     $currency = $mybb->settings['newpoints_main_curname'];
 
-    $points = $post['newpointsPostUserBalanceFormatted'] = points_format($post['newpoints']);
+    $points = $post['newpointsPostUserBalanceFormatted'] = points_format((float)$post['newpoints']);
 
     $uid = intval($post['uid']);
 
@@ -261,7 +262,7 @@ function member_profile_end(): bool
 
     global $newpoints_profile_user_balance_formatted;
 
-    $lang->load('newpoints');
+    language_load();
 
     $currency = $mybb->settings['newpoints_main_curname'];
 
@@ -1687,10 +1688,12 @@ function forumdisplay_end(): bool
     }
 
     $forumrules = rules_get('forum', $fid);
-    if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-        $lang->load('newpoints');
+
+    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
+        language_load();
+
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
         );
     }
 
@@ -1719,10 +1722,12 @@ function editpost_start(): bool
     $fid = $post['fid'];
 
     $forumrules = rules_get('forum', $fid);
-    if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-        $lang->load('newpoints');
+
+    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
+        language_load();
+
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
         );
     }
 
@@ -1738,10 +1743,11 @@ function sendthread_do_sendtofriend_start(): bool
     }
 
     $forumrules = rules_get('forum', $fid);
-    if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-        $lang->load('newpoints');
+    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
+        language_load();
+
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
         );
     }
 
@@ -1764,10 +1770,11 @@ function archive_forum_start(): bool
     $fid = intval($forum['fid']);
 
     $forumrules = rules_get('forum', $fid);
-    if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-        $lang->load('newpoints');
+    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
+        language_load();
+
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
         );
     }
 
@@ -1788,10 +1795,11 @@ function printthread_end(): bool
     }
 
     $forumrules = rules_get('forum', $fid);
-    if ($forumrules['pointsview'] > $mybb->user['newpoints']) {
-        $lang->load('newpoints');
+    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
+        language_load();
+
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointsview']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
         );
     }
 
@@ -1807,10 +1815,10 @@ function newreply_start(): bool
     }
 
     $forumrules = rules_get('forum', $fid);
-    if ($forumrules['pointspost'] > $mybb->user['newpoints']) {
-        $lang->load('newpoints');
+    if (isset($forumrules['pointspost']) && $forumrules['pointspost'] > $mybb->user['newpoints']) {
+        language_load();
         error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format($forumrules['pointspost']))
+            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointspost']))
         );
     }
 

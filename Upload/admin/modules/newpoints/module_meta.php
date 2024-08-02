@@ -29,6 +29,7 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Core\language_load;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {
@@ -77,7 +78,7 @@ function newpoints_meta()
         $sub_menu = run_hooks('admin_menu', $sub_menu);
     }
 
-    $lang->load('newpoints');
+    language_load();
 
     $page->add_menu_item($lang->newpoints, 'newpoints', 'index.php?module=newpoints', 60, $sub_menu);
 
