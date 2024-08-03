@@ -746,8 +746,8 @@ function settings_rebuild(): bool
 function points_add(
     int $uid,
     float $points,
-    int $forumrate = 1,
-    int $grouprate = 1,
+    float $forumrate = 1,
+    float $grouprate = 1,
     bool $isstring = false,
     bool $immediate = false
 ): bool {
@@ -920,6 +920,47 @@ function rules_get_all(string $type): array
     }
 
     return $rules;
+}
+
+function rules_get_group_rate(string $rule_key, array $user = []): float
+{
+    $group_rate = 0;
+
+    if (empty($user)) {
+        global $mybb;
+
+        $user = $mybb->user;
+    }
+
+    $rate_values = [];
+
+    foreach (explode(',', "{$mybb->user['usergroup']},{$mybb->user['usergroup']}") as $group_id) {
+        $groupsrules = newpoints_getrules('group', (int)$group_id);
+
+        if (!empty($groupsrules[$rule_key])) {
+            $rate_values[] = (float)$groupsrules[$rule_key];
+        }
+    }
+
+    if (empty($rate_values)) {
+        return 1;
+    }
+
+    $distance = INF;
+
+    $closest_to_one = false;
+
+    foreach ($rate_values as $rate_value) {
+        $difference = abs(1 - $rate_value);
+
+        if ($difference < $distance) {
+            $distance = $difference;
+
+            $closest_to_one = $rate_value;
+        }
+    }
+
+    return $closest_to_one;
 }
 
 /**
@@ -1185,19 +1226,13 @@ function users_update(): bool
  */
 function users_get_by_username(string $username, string $fields = '*'): array
 {
-    global $db;
+    $user_data = get_user_by_username($username, ['fields' => explode(',', $fields)]);
 
-    if (!$username) {
+    if (empty($user_data)) {
         return [];
     }
 
-    $query = $db->simple_select('users', $fields, 'username=\'' . $db->escape_string(trim($username)) . '\'');
-
-    if ($db->num_rows($query)) {
-        return $db->fetch_array($query);
-    }
-
-    return [];
+    return $user_data;
 }
 
 /* --- Setting groups and settings: --- */

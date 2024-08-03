@@ -200,8 +200,8 @@ function newpoints_add_settings(string $plugin, array $settings): bool
 function newpoints_addpoints(
     int $uid,
     float $points,
-    int $forumrate = 1,
-    int $grouprate = 1,
+    float $forumrate = 1,
+    float $grouprate = 1,
     bool $isstring = false,
     bool $immediate = false
 ): bool {
@@ -291,6 +291,13 @@ function newpoints_lang_load(string $plugin): bool
 function newpoints_update_users(): bool
 {
     return users_update();
+}
+
+function reload_newpoints_settings(): bool
+{
+    settings_rebuild_cache();
+
+    return true;
 }
 
 plugins_load();

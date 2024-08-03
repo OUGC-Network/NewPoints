@@ -203,6 +203,8 @@ if (!$mybb->get_input('action')) // view grouprules
     $form->output_submit_wrapper($buttons);
     $form->end();
 } elseif ($mybb->get_input('action') == 'edit') {
+    global $rule;
+
     run_hooks('admin_grouprules_edit_start');
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_grouprules_edit');

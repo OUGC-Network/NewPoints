@@ -179,7 +179,7 @@ function admin_page_output_tab_control_start(array $tabs): array
     return $module_tabs;
 }
 
-function admin_newpoints_menu(array &$sub_menu): array
+function newpoints_admin_menu(array &$sub_menu): array
 {
     global $plugins, $newpoints_plugins;
 
@@ -193,7 +193,7 @@ function admin_newpoints_menu(array &$sub_menu): array
     return $sub_menu;
 }
 
-function admin_newpoints_action_handler(array &$actions): array
+function newpoints_admin_action_handler(array &$actions): array
 {
     global $plugins, $newpoints_plugins;
 
@@ -207,7 +207,7 @@ function admin_newpoints_action_handler(array &$actions): array
     return $actions;
 }
 
-function admin_newpoints_permissions(array &$admin_permissions): array
+function newpoints_admin_permissions(array &$admin_permissions): array
 {
     global $plugins, $newpoints_plugins;
 

@@ -99,7 +99,7 @@ function global_end(): bool
     if ($mybb->settings['newpoints_income_pageview'] != 0) {
         points_add(
             $mybb->user['uid'],
-            $mybb->settings['newpoints_income_pageview'],
+            (float)$mybb->settings['newpoints_income_pageview'],
             1,
             $grouprules[$mybb->user['usergroup']]['rate']
         );
@@ -109,7 +109,7 @@ function global_end(): bool
         if ((TIME_NOW - $mybb->user['lastactive']) > 900) {
             points_add(
                 $mybb->user['uid'],
-                $mybb->settings['newpoints_income_visit'],
+                (float)$mybb->settings['newpoints_income_visit'],
                 1,
                 $grouprules[$mybb->user['usergroup']]['rate']
             );
@@ -324,7 +324,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     // give points to the poster
     points_add(
         $mybb->user['uid'],
-        $mybb->settings['newpoints_income_newpost'] + $bonus,
+        (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -334,7 +334,7 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
         if ($mybb->settings['newpoints_income_perreply'] != 0) {
             points_add(
                 $thread['uid'],
-                $mybb->settings['newpoints_income_perreply'],
+                (float)$mybb->settings['newpoints_income_perreply'],
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -412,8 +412,10 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
         $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
     }
 
-    // give points to the poster
-    points_add($mybb->user['uid'], $bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+    if (isset($bonus)) // give points to the poster
+    {
+        points_add($mybb->user['uid'], (float)$bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+    }
 
     return $newpost;
 }
@@ -511,8 +513,10 @@ function xmlhttp10(): bool
         $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
     }
 
-    // give points to the poster
-    points_add($mybb->user['uid'], $bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+    if (isset($bonus)) // give points to the poster
+    {
+        points_add($mybb->user['uid'], (float)$bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+    }
 
     return true;
 }
@@ -575,7 +579,7 @@ function class_moderation_delete_post_start(int $pid): int
         if ($mybb->settings['newpoints_income_perreply'] != 0) {
             points_add(
                 $thread['uid'],
-                -$mybb->settings['newpoints_income_perreply'],
+                -(float)$mybb->settings['newpoints_income_perreply'],
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -585,7 +589,7 @@ function class_moderation_delete_post_start(int $pid): int
     // remove points from the poster
     points_add(
         $post['uid'],
-        -$mybb->settings['newpoints_income_newpost'] - $bonus,
+        -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -648,7 +652,7 @@ function class_moderation_soft_delete_posts(array $pids): array
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
                     points_add(
                         $thread['uid'],
-                        -$mybb->settings['newpoints_income_perreply'],
+                        -(float)$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
                         $grouprules['rate']
                     );
@@ -658,7 +662,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             // remove points from the poster
             points_add(
                 $post['uid'],
-                -$mybb->settings['newpoints_income_newpost'] - $bonus,
+                -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -723,7 +727,7 @@ function class_moderation_restore_posts($pids): array
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
                     points_add(
                         $thread['uid'],
-                        $mybb->settings['newpoints_income_perreply'],
+                        (float)$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
                         $grouprules['rate']
                     );
@@ -733,7 +737,7 @@ function class_moderation_restore_posts($pids): array
             // give points to the author of the post
             points_add(
                 $post['uid'],
-                $mybb->settings['newpoints_income_newpost'] + $bonus,
+                (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -795,7 +799,7 @@ function class_moderation_approve_threads(array $tids): array
             // add points to the poster
             points_add(
                 $post['uid'],
-                $mybb->settings['newpoints_income_newthread'] + $bonus,
+                (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -860,7 +864,7 @@ function class_moderation_approve_posts(array $pids): array
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
                     points_add(
                         $thread['uid'],
-                        $mybb->settings['newpoints_income_perreply'],
+                        (float)$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
                         $grouprules['rate']
                     );
@@ -870,7 +874,7 @@ function class_moderation_approve_posts(array $pids): array
             // give points to the author of the post
             points_add(
                 $post['uid'],
-                $mybb->settings['newpoints_income_newpost'] + $bonus,
+                (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -932,7 +936,7 @@ function class_moderation_unapprove_threads(array $tids): array
             // add points to the poster
             points_add(
                 $post['uid'],
-                -$mybb->settings['newpoints_income_newthread'] - $bonus,
+                -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -997,7 +1001,7 @@ function class_moderation_unapprove_posts(array $pids): array
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
                     points_add(
                         $thread['uid'],
-                        -$mybb->settings['newpoints_income_perreply'],
+                        -(float)$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
                         $grouprules['rate']
                     );
@@ -1007,7 +1011,7 @@ function class_moderation_unapprove_posts(array $pids): array
             // give points to the author of the post
             points_add(
                 $post['uid'],
-                -$mybb->settings['newpoints_income_newpost'] - $bonus,
+                -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -1073,7 +1077,7 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
     // give points to the author of the new thread
     points_add(
         $mybb->user['uid'],
-        $mybb->settings['newpoints_income_newthread'] + $bonus,
+        (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -1142,7 +1146,7 @@ function class_moderation_delete_thread(int $tid): int
         // if this thread has a poll, remove points from the author of the thread
         points_add(
             $thread['uid'],
-            -$mybb->settings['newpoints_income_newpoll'],
+            -(float)$mybb->settings['newpoints_income_newpoll'],
             $forumrules['rate'],
             $grouprules['rate']
         );
@@ -1156,7 +1160,7 @@ function class_moderation_delete_thread(int $tid): int
     $thread['replies'] = (int)$db->fetch_field($q, 'total_replies');
     points_add(
         $thread['uid'],
-        -($thread['replies'] * $mybb->settings['newpoints_income_perreply']),
+        -(float)($thread['replies'] * $mybb->settings['newpoints_income_perreply']),
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -1164,7 +1168,7 @@ function class_moderation_delete_thread(int $tid): int
     // take out points from the author of the thread
     points_add(
         $thread['uid'],
-        -$mybb->settings['newpoints_income_newthread'] - $bonus,
+        -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -1227,7 +1231,7 @@ function class_moderation_soft_delete_threads(array $tids): array
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
                     points_add(
                         $thread['uid'],
-                        -$mybb->settings['newpoints_income_perreply'],
+                        -(float)$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
                         $grouprules['rate']
                     );
@@ -1237,7 +1241,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             // remove points from the poster
             points_add(
                 $post['uid'],
-                -$mybb->settings['newpoints_income_newthread'] - $bonus,
+                -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -1302,7 +1306,7 @@ function class_moderation_restore_threads(array $tids): array
                 if ($mybb->settings['newpoints_income_perreply'] != 0) {
                     points_add(
                         $thread['uid'],
-                        $mybb->settings['newpoints_income_perreply'],
+                        (float)$mybb->settings['newpoints_income_perreply'],
                         $forumrules['rate'],
                         $grouprules['rate']
                     );
@@ -1312,7 +1316,7 @@ function class_moderation_restore_threads(array $tids): array
             // give points to the author of the post
             points_add(
                 $post['uid'],
-                $mybb->settings['newpoints_income_newthread'] + $bonus,
+                (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
                 $forumrules['rate'],
                 $grouprules['rate']
             );
@@ -1359,7 +1363,7 @@ function polls_do_newpoll_process(): bool
     // give points to the author of the new poll
     points_add(
         $mybb->user['uid'],
-        $mybb->settings['newpoints_income_newpoll'],
+        (float)$mybb->settings['newpoints_income_newpoll'],
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -1409,7 +1413,7 @@ function class_moderation_delete_poll(int $pid): int
     // remove points from the author by deleting the poll
     points_add(
         $poll['uid'],
-        -$mybb->settings['newpoints_income_newpoll'],
+        -(float)$mybb->settings['newpoints_income_newpoll'],
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -1425,7 +1429,7 @@ function member_do_register_end(): bool
     if ($mybb->settings['newpoints_income_newreg'] != 0) {
         points_add(
             (int)$user_info['uid'],
-            $mybb->settings['newpoints_income_newreg']
+            (float)$mybb->settings['newpoints_income_newreg']
         );
     }
 
@@ -1452,7 +1456,7 @@ function member_do_register_end(): bool
             return false;
         }
 
-        points_add($user['uid'], $mybb->settings['newpoints_income_referral'], 1, $grouprules['rate']);
+        points_add($user['uid'], (float)$mybb->settings['newpoints_income_referral'], 1, $grouprules['rate']);
     }
 
     return true;
@@ -1495,7 +1499,7 @@ function polls_vote_process(): bool
     // give points to us as we're voting in a poll
     points_add(
         $mybb->user['uid'],
-        $mybb->settings['newpoints_income_pervote'],
+        (float)$mybb->settings['newpoints_income_pervote'],
         $forumrules['rate'],
         $grouprules['rate']
     );
@@ -1535,7 +1539,7 @@ function private_do_send_end(): bool
     }
 
     // give points to the author of the PM
-    points_add($mybb->user['uid'], $mybb->settings['newpoints_income_pmsent'], 1, $grouprules['rate']);
+    points_add($mybb->user['uid'], (float)$mybb->settings['newpoints_income_pmsent'], 1, $grouprules['rate']);
 
     return true;
 }
@@ -1577,7 +1581,7 @@ function ratethread_process(): bool
     // give points us, as we're rating a thread
     points_add(
         $mybb->user['uid'],
-        $mybb->settings['newpoints_income_perrate'],
+        (float)$mybb->settings['newpoints_income_perrate'],
         $forumrules['rate'],
         $grouprules['rate']
     );

@@ -29,6 +29,7 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_add;
 use function Newpoints\Core\points_add;
@@ -36,6 +37,7 @@ use function Newpoints\Core\points_format;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\users_get_by_username;
 
 const IN_MYBB = 1;
@@ -76,44 +78,49 @@ $menu = [
     [
         'action' => 'stats',
         'lang_string' => 'newpoints_statistics',
-        'setting' => 'newpoints_main_statsvisible',
+        'setting' => 'main_statsvisible',
     ],
     [
         'action' => 'donate',
         'lang_string' => 'newpoints_donate',
-        'setting' => 'newpoints_main_donationsenabled',
+        'setting' => 'main_donationsenabled',
     ]
 ];
 
 $menu = run_hooks('default_menu', $menu);
 
-$bgcolor = alt_trow(true);
+$alternative_background = alt_trow(true);
+
 $options = '';
 
 foreach ($menu as $option) {
-    if (isset($option['setting']) && !$mybb->settings[$option['setting']]) {
+    if (isset($option['setting']) && !get_setting($option['setting'])) {
         continue;
     }
 
-    $action = $raquo = $lang_string = '';
+    $action_url = $item_selected = $option_name = '';
 
     if (isset($option['action'])) {
-        $action = '?action=' . $option['action'];
+        $action_url = url_handler_build(['action' => $option['action']]);
 
         if ($mybb->get_input('action') === (string)$option['action']) {
-            $raquo = '&raquo; ';
+            $item_selected = eval(templates_get('option_selected'));
         }
+    } else {
+        $action_url = url_handler_build();
     }
 
     if (isset($option['lang_string']) && isset($lang->{$option['lang_string']})) {
-        $lang_string = $lang->{$option['lang_string']};
+        $option_name = $lang->{$option['lang_string']};
+    } else {
+        $option_name = ucwords($option['action']);
     }
 
-    run_hooks('menu_build_option');
+    $option = run_hooks('menu_build_option', $option);
 
     $options .= eval(templates_get('option'));
 
-    $bgcolor = alt_trow();
+    $alternative_background = alt_trow();
 }
 
 run_hooks('start');
@@ -144,7 +151,7 @@ if (!$mybb->get_input('action')) {
         if ($setting['name'] == 'newpoints_income_minchar') {
             $value = $setting['value'] . ' ' . $lang->newpoints_chars;
         } else {
-            $value = points_format($setting['value']);
+            $value = points_format((float)$setting['value']);
         }
 
         $income_settings .= eval($templates->render('newpoints_home_income_row'));
@@ -191,7 +198,7 @@ if ($mybb->get_input('action') == 'stats') {
             format_name(htmlspecialchars_uni($user['username']), $user['usergroup'], $user['displaygroup']),
             intval($user['uid'])
         );
-        $user['newpoints'] = points_format($user['newpoints']);
+        $user['newpoints'] = points_format((float)$user['newpoints']);
 
         run_hooks('stats_richest_users');
 
@@ -231,7 +238,7 @@ if ($mybb->get_input('action') == 'stats') {
             intval($donation['uid'])
         );
 
-        $donation['amount'] = points_format($data[2]);
+        $donation['amount'] = points_format((float)$data[2]);
         $donation['date'] = my_date(
                 $mybb->settings['dateformat'],
                 intval($donation['date']),
@@ -314,12 +321,6 @@ if ($mybb->get_input('action') == 'stats') {
         }
     }
 
-    // make sure we're not trying to send a donation to ourselves
-    $username = trim($mybb->get_input('username'));
-    if (my_strtolower($username) == my_strtolower($mybb->user['username'])) {
-        error($lang->newpoints_cant_donate_self);
-    }
-
     $amount = round($mybb->get_input('amount', MyBB::INPUT_FLOAT), (int)$mybb->settings['newpoints_main_decimal']);
 
     // do we have enough points?
@@ -328,16 +329,22 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     // make sure we're sending points to a valid user
-    $touser = users_get_by_username($username, 'uid,username');
+    $touser = users_get_by_username($mybb->get_input('username'), 'uid,username');
+
     if (!$touser) {
         error($lang->newpoints_invalid_user);
+    }
+
+    // make sure we're not trying to send a donation to ourselves
+    if ($mybb->user['uid'] == $touser['uid']) {
+        error($lang->newpoints_cant_donate_self);
     }
 
     // remove points from us
     points_add($mybb->user['uid'], -($amount));
 
     // give points to user
-    points_add($username, $amount, 1, 1, true);
+    points_add($touser['uid'], $amount);
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if ($mybb->settings['newpoints_main_donationspm'] != 0) {
@@ -347,7 +354,7 @@ if ($mybb->get_input('action') == 'stats') {
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message_reason,
-                        points_format($amount),
+                        points_format((float)$amount),
                         htmlspecialchars_uni($mybb->get_input('reason'))
                     ),
                     'receivepms' => 1,
@@ -360,7 +367,7 @@ if ($mybb->get_input('action') == 'stats') {
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message,
-                        points_format($amount)
+                        points_format((float)$amount)
                     ),
                     'receivepms' => 1,
                     'touid' => $touser['uid']
@@ -383,7 +390,7 @@ if ($mybb->get_input('action') == 'stats') {
         $link = get_post_link($post['pid'], $post['tid']) . '#pid' . $post['pid'];
     }
 
-    redirect($link, $lang->sprintf($lang->newpoints_donated, points_format($amount)));
+    redirect($link, $lang->sprintf($lang->newpoints_donated, points_format((float)$amount)));
 }
 
 run_hooks('terminate');
