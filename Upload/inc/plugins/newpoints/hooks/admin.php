@@ -77,17 +77,15 @@ function admin_load(): bool
 
 function admin_load10(): bool
 {
-    global $modules_dir, $run_module, $action_file;
+    global $run_module, $action_file;
 
     if ($run_module !== 'newpoints') {
         return false;
     }
 
-    $action_file_path = \Newpoints\ROOT . "/admin/{$run_module}/{$action_file}";
+    $action_file_path = \Newpoints\ROOT . "/admin/{$action_file}";
 
-    _DUMP($action_file_path, file_exists($action_file_path));
-
-    require $action_file_path;
+    require_once $action_file_path;
 
     return true;
 }
@@ -112,9 +110,7 @@ function admin_tabs(array $modules): array
     }
 
     if ($has_permission) {
-        $meta_function = 'newpoints_meta';
-
-        $initialized = $meta_function();
+        $initialized = newpoints_meta();
 
         if ($initialized) {
             $modules['newpoints'] = 1;
@@ -124,6 +120,61 @@ function admin_tabs(array $modules): array
     }
 
     return $modules;
+}
+
+function admin_user_admin_permissions_edit(): bool
+{
+    global $permission_modules, $modules;
+    global $newpoints_custom_load;
+
+    $newpoints_custom_load = true;
+    //$modules = [];
+
+    require_once \Newpoints\ROOT . "/admin/module_meta.php";
+
+    $permission_modules['newpoints'] = newpoints_admin_permissions();
+
+    return true;
+}
+
+function admin_page_output_tab_control_start(array $tabs): array
+{
+    global $newpoints_custom_load;
+
+    if (empty($newpoints_custom_load)) {
+        return $tabs;
+    }
+
+    static $already_done = false;
+
+    if ($already_done === true) {
+        return $tabs;
+    }
+
+    $already_done = true;
+
+    global $permission_modules, $modules;
+    global $module_tabs;
+
+    require_once \Newpoints\ROOT . "/admin/module_meta.php";
+
+    $modules[$permission_modules['newpoints']['disporder']][] = 'newpoints';
+
+    ksort($modules);
+
+    $module_tabs = [];
+
+    foreach ($modules as $mod) {
+        if (!is_array($mod)) {
+            continue;
+        }
+
+        foreach ($mod as $module) {
+            $module_tabs[$module] = $permission_modules[$module]['name'];
+        }
+    }
+
+    return $module_tabs;
 }
 
 function admin_newpoints_menu(array &$sub_menu): array
