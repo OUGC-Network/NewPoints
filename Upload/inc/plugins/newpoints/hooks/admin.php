@@ -75,6 +75,8 @@ function admin_load(): bool
     return true;
 }
 
+
+    _DUMP($action_file_path, file_exists($action_file_path));
 function admin_newpoints_menu(array &$sub_menu): array
 {
     global $plugins, $newpoints_plugins;

@@ -215,8 +215,18 @@ function plugin_uninstallation(): bool
     $cache->delete('newpoints_settings');
     $cache->delete('newpoints_plugins');
 
-    if ($db->field_exists('newpoints', 'users')) {
-        $db->write_query('ALTER TABLE `' . $db->table_prefix . 'users` DROP `newpoints`;');
+    foreach (TABLES_DATA as $table_name => $table_columns) {
+        $db->drop_table($table_name);
+    }
+
+    foreach (FIELDS_DATA as $table_name => $table_columns) {
+        if ($db->table_exists($table_name)) {
+            foreach ($table_columns as $field_name => $field_data) {
+                if ($db->field_exists($field_name, $table_name)) {
+                    $db->drop_column($table_name, $field_name);
+                }
+            }
+        }
     }
 
     // Delete all templates
