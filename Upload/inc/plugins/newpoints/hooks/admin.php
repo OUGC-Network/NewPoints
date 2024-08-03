@@ -75,8 +75,57 @@ function admin_load(): bool
     return true;
 }
 
+function admin_load10(): bool
+{
+    global $modules_dir, $run_module, $action_file;
+
+    if ($run_module !== 'newpoints') {
+        return false;
+    }
+
+    $action_file_path = \Newpoints\ROOT . "/admin/{$run_module}/{$action_file}";
 
     _DUMP($action_file_path, file_exists($action_file_path));
+
+    require $action_file_path;
+
+    return true;
+}
+
+function admin_tabs(array $modules): array
+{
+    global $lang;
+    global $is_super_admin;
+
+    require_once \Newpoints\ROOT . "/admin/module_meta.php";
+
+    $lang->load('newpoints_module_meta', false, true);
+
+    $has_permission = false;
+
+    if (function_exists('newpoints_admin_permissions')) {
+        if (isset($mybb->admin['permissions']['newpoints']) || $is_super_admin) {
+            $has_permission = true;
+        }
+    } else {
+        $has_permission = true;
+    }
+
+    if ($has_permission) {
+        $meta_function = 'newpoints_meta';
+
+        $initialized = $meta_function();
+
+        if ($initialized) {
+            $modules['newpoints'] = 1;
+        }
+    } else {
+        $modules['newpoints'] = 0;
+    }
+
+    return $modules;
+}
+
 function admin_newpoints_menu(array &$sub_menu): array
 {
     global $plugins, $newpoints_plugins;
