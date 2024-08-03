@@ -38,6 +38,8 @@ use function send_pm;
 
 use const Newpoints\ROOT;
 
+const URL = 'newpoints.php';
+
 function language_load(string $plugin = ''): bool
 {
     global $lang;
@@ -92,6 +94,45 @@ function run_hooks(string $hook_name = '', mixed &$hook_arguments = ''): mixed
     }
 
     return $hook_arguments;
+}
+
+function url_handler(string $newUrl = ''): string
+{
+    static $setUrl = URL;
+
+    if (($newUrl = trim($newUrl))) {
+        $setUrl = $newUrl;
+    }
+
+    return $setUrl;
+}
+
+function url_handler_set(string $newUrl): string
+{
+    return url_handler($newUrl);
+}
+
+function url_handler_get(): string
+{
+    return url_handler();
+}
+
+function url_handler_build(array $urlAppend = [], bool $fetchImportUrl = false, bool $encode = true): string
+{
+    global $PL;
+
+    if (!is_object($PL)) {
+        $PL or require_once PLUGINLIBRARY;
+    }
+
+    if ($fetchImportUrl === false) {
+        if ($urlAppend && !is_array($urlAppend)) {
+            $urlAppend = explode('=', $urlAppend);
+            $urlAppend = [$urlAppend[0] => $urlAppend[1]];
+        }
+    }
+
+    return $PL->url_append(url_handler_get(), $urlAppend, '&amp;', $encode);
 }
 
 function get_setting(string $setting_key = '')
@@ -261,32 +302,40 @@ function templates_add(string $name, string $contents, $sid = -1): bool
     return true;
 }
 
-function templates_get_name(string $template_name = ''): string
+function templates_get_name(string $template_name = '', string $plugin_prefix = ''): string
 {
     $template_prefix = '';
 
-    if ($template_name) {
+    if ($plugin_prefix && !$template_name) {
+        $plugin_prefix = rtrim($plugin_prefix, '_');
+    }
+
+    if ($template_name || $plugin_prefix) {
         $template_prefix = '_';
     }
 
-    return "newpoints{$template_prefix}{$template_name}";
+    return "newpoints{$template_prefix}{$plugin_prefix}{$template_name}";
 }
 
-function templates_get(string $template_name = '', bool $enable_html_comments = true): string
-{
+function templates_get(
+    string $template_name = '',
+    bool $enable_html_comments = true,
+    string $plugin_path = ROOT,
+    string $plugin_prefix = ''
+): string {
     global $templates;
 
     if (DEBUG) {
-        $file_path = ROOT . "/templates/{$template_name}.html";
+        $file_path = $plugin_path . "/templates/{$template_name}.html";
 
         $template_contents = file_get_contents($file_path);
 
-        $templates->cache[templates_get_name($template_name)] = $template_contents;
+        $templates->cache[templates_get_name($template_name, $plugin_prefix)] = $template_contents;
     } elseif (my_strpos($template_name, '/') !== false) {
         $template_name = substr($template_name, strpos($template_name, '/') + 1);
     }
 
-    return $templates->render(templates_get_name($template_name), true, $enable_html_comments);
+    return $templates->render(templates_get_name($template_name, $plugin_prefix), true, $enable_html_comments);
 }
 
 /**
@@ -332,7 +381,11 @@ function templates_rebuild(): bool
                 $path_info = pathinfo($path_name);
 
                 if ($path_info['extension'] === 'html') {
-                    $templates_list[$plugin_code . $path_info['filename']] = file_get_contents($path_name);
+                    if (empty($path_info['filename'])) {
+                        $templates_list[rtrim($plugin_code, '_')] = file_get_contents($path_name);
+                    } else {
+                        $templates_list[$plugin_code . $path_info['filename']] = file_get_contents($path_name);
+                    }
                 }
             }
         }
