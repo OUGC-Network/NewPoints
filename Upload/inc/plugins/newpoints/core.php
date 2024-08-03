@@ -178,7 +178,7 @@ function count_characters(string $message): int
  * @return bool false if something went wrong
  *
  */
-function templates_remove(string $templates): bool
+function templates_remove(array $templates, string $newpoints_prefix = 'newpoints_'): bool
 {
     if (!$templates) {
         return false;
@@ -186,7 +186,11 @@ function templates_remove(string $templates): bool
 
     global $db;
 
-    $templates = explode(',', $templates);
+    if ($newpoints_prefix) {
+        $templates = array_map(function ($template_name) use ($newpoints_prefix) {
+            return "{$newpoints_prefix}{$template_name}";
+        }, $templates);
+    }
 
     $templates = array_map([$db, 'escape_string'], $templates);
 
@@ -350,7 +354,7 @@ function templates_rebuild(): bool
  * @return bool false if something went wrong
  *
  */
-function settings_remove(string $settings): bool
+function settings_remove(array $settings, string $newpoints_prefix = 'newpoints_'): bool
 {
     if (!$settings) {
         return false;
@@ -358,14 +362,17 @@ function settings_remove(string $settings): bool
 
     global $db;
 
-    $settings = explode(',', $settings);
+    if ($newpoints_prefix) {
+        $settings = array_map(function ($setting_name) use ($newpoints_prefix) {
+            return "{$newpoints_prefix}{$setting_name}";
+        }, $settings);
+    }
 
     $settings = array_map([$db, 'escape_string'], $settings);
 
     $settings = implode("','", $settings);
 
     $db->delete_query('newpoints_settings', "name IN ('{$settings}'})");
-    //$db->delete_query('settings', "name IN (".$settings.")");
 
     return true;
 }
@@ -613,6 +620,10 @@ function settings_rebuild(): bool
                 $settings_contents = file_get_contents($path_name);
 
                 $settings_data = json_decode($settings_contents, true);
+
+                if (empty($settings_data) || !is_array($settings_data) || count($settings_data) < 1) {
+                    continue;
+                }
 
                 foreach ($settings_data as $setting_key => &$setting_data) {
                     if (empty($lang->{"setting_newpoints_{$setting_group}_{$setting_key}"})) {

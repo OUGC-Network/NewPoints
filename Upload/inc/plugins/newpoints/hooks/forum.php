@@ -90,10 +90,6 @@ function global_end(): bool
         return false;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     // check group rules - primary group check
     $grouprules = rules_get_all('group');
     if (empty($grouprules)) {
@@ -204,15 +200,9 @@ function postbit(array &$post): array
 {
     global $mybb, $db, $currency, $points, $templates, $donate, $lang, $uid;
 
-    if ($post['uid'] == 0) {
-        $post['newpoints_postbit'] = '';
+    $post['newpoints_postbit'] = '';
 
-        return $post;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        $post['newpoints_postbit'] = '';
-
+    if (empty($post['uid'])) {
         return $post;
     }
 
@@ -254,11 +244,7 @@ function member_profile_end(): bool
 {
     global $mybb, $db, $currency, $points, $templates, $memprofile, $newpoints_profile, $lang, $uid;
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        $newpoints_profile = '';
-
-        return false;
-    }
+    $newpoints_profile = '';
 
     global $newpoints_profile_user_balance_formatted;
 
@@ -296,10 +282,6 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     }
 
     if (!$mybb->user['uid']) {
-        return $data;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $data;
     }
 
@@ -367,10 +349,6 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
     global $db, $mybb, $thread;
 
     if (!$mybb->user['uid']) {
-        return $newpost;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $newpost;
     }
 
@@ -446,10 +424,6 @@ function xmlhttp10(): bool
     global $db, $mybb, $thread, $lang, $charset;
 
     if (!$mybb->user['uid']) {
-        return false;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return false;
     }
 
@@ -551,10 +525,6 @@ function class_moderation_delete_post_start(int $pid): int
         return $pid;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return $pid;
-    }
-
     if ($mybb->settings['newpoints_income_newpost'] == 0) {
         return $pid;
     }
@@ -628,10 +598,6 @@ function class_moderation_soft_delete_posts(array $pids): array
     global $db, $mybb, $fid;
 
     if (!$mybb->user['uid']) {
-        return $pids;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $pids;
     }
 
@@ -710,10 +676,6 @@ function class_moderation_restore_posts($pids): array
         return $pids;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return $pids;
-    }
-
     if ($mybb->settings['newpoints_income_newpost'] == 0) {
         return $pids;
     }
@@ -789,10 +751,6 @@ function class_moderation_approve_threads(array $tids): array
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return $tids;
-    }
-
     if ($mybb->settings['newpoints_income_newthread'] == 0) {
         return $tids;
     }
@@ -852,10 +810,6 @@ function class_moderation_approve_posts(array $pids): array
     global $db, $mybb, $fid;
 
     if (!$mybb->user['uid']) {
-        return $pids;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $pids;
     }
 
@@ -934,10 +888,6 @@ function class_moderation_unapprove_threads(array $tids): array
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return $tids;
-    }
-
     if ($mybb->settings['newpoints_income_newthread'] == 0) {
         return $tids;
     }
@@ -997,10 +947,6 @@ function class_moderation_unapprove_posts(array $pids): array
     global $db, $mybb, $fid;
 
     if (!$mybb->user['uid']) {
-        return $pids;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $pids;
     }
 
@@ -1088,10 +1034,6 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
         return $that;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return $that;
-    }
-
     if ($mybb->settings['newpoints_income_newthread'] == 0) {
         return $that;
     }
@@ -1144,10 +1086,6 @@ function class_moderation_delete_thread(int $tid): int
     global $db, $mybb;
 
     if (!$mybb->user['uid']) {
-        return $tid;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $tid;
     }
 
@@ -1242,10 +1180,6 @@ function class_moderation_soft_delete_threads(array $tids): array
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return $tids;
-    }
-
     if ($mybb->settings['newpoints_income_newthread'] == 0) {
         return $tids;
     }
@@ -1318,10 +1252,6 @@ function class_moderation_restore_threads(array $tids): array
     global $db, $mybb, $fid;
 
     if (!$mybb->user['uid']) {
-        return $tids;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $tids;
     }
 
@@ -1400,10 +1330,6 @@ function polls_do_newpoll_process(): bool
         return false;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     if ($mybb->settings['newpoints_income_newpoll'] == 0) {
         return false;
     }
@@ -1446,10 +1372,6 @@ function class_moderation_delete_poll(int $pid): int
     global $db, $mybb;
 
     if (!$mybb->user['uid']) {
-        return $pid;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return $pid;
     }
 
@@ -1544,10 +1466,6 @@ function polls_vote_process(): bool
         return false;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     if ($mybb->settings['newpoints_income_pervote'] == 0) {
         return false;
     }
@@ -1593,10 +1511,6 @@ function private_do_send_end(): bool
         return false;
     }
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     if ($mybb->settings['newpoints_income_pmsent'] == 0) {
         return false;
     }
@@ -1631,10 +1545,6 @@ function ratethread_process(): bool
     global $db, $mybb, $fid;
 
     if (!$mybb->user['uid']) {
-        return false;
-    }
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
         return false;
     }
 
@@ -1679,10 +1589,6 @@ function forumdisplay_end(): bool
 {
     global $mybb, $lang, $fid;
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     if (THIS_SCRIPT == 'forumdisplay.php') {
         $fid = $mybb->get_input('fid', MyBB::INPUT_INT);
     }
@@ -1709,10 +1615,6 @@ function editpost_start(): bool
 {
     global $mybb, $lang;
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     $pid = $mybb->get_input('pid', MyBB::INPUT_INT);
     $post = get_post($pid);
     if (!$post) {
@@ -1738,10 +1640,6 @@ function sendthread_do_sendtofriend_start(): bool
 {
     global $mybb, $lang, $fid;
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     $forumrules = rules_get('forum', $fid);
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
@@ -1762,10 +1660,6 @@ function sendthread_start(): bool
 function archive_forum_start(): bool
 {
     global $mybb, $lang, $forum;
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
 
     $fid = intval($forum['fid']);
 
@@ -1790,10 +1684,6 @@ function printthread_end(): bool
 {
     global $mybb, $lang, $fid;
 
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
-
     $forumrules = rules_get('forum', $fid);
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
@@ -1809,10 +1699,6 @@ function printthread_end(): bool
 function newreply_start(): bool
 {
     global $mybb, $lang, $fid;
-
-    if ($mybb->settings['newpoints_main_enabled'] != 1) {
-        return false;
-    }
 
     $forumrules = rules_get('forum', $fid);
     if (isset($forumrules['pointspost']) && $forumrules['pointspost'] > $mybb->user['newpoints']) {

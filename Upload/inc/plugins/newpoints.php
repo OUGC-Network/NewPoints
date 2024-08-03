@@ -73,7 +73,7 @@ define('Newpoints\Core\SETTINGS', [
     //'key' => '',
 ]);
 
-define('Newpoints\Core\DEBUG', false);
+define('Newpoints\Core\DEBUG', true);
 
 define('Newpoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
 
@@ -162,7 +162,7 @@ function newpoints_jsspecialchars(string $str): string
 
 function newpoints_remove_templates($templates): bool
 {
-    return templates_remove($templates);
+    return templates_remove(explode(',', $templates));
 }
 
 function newpoints_add_template(string $name, string $contents, $sid = -1): bool
@@ -177,7 +177,7 @@ function newpoints_rebuild_templates(): bool
 
 function newpoints_remove_settings(string $settings): bool
 {
-    return settings_remove($settings);
+    return settings_remove(explode(',', $settings));
 }
 
 function newpoints_add_setting(

@@ -64,7 +64,6 @@ if (!$mybb->user['uid'] && NP_DISABLE_GUESTS == 1) {
     error_no_permission();
 }
 
-// load language
 language_load();
 
 // build the menu

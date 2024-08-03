@@ -105,28 +105,36 @@ if ($mybb->get_input('action') == 'change') {
 
     // What type of page
     $cache_groups = $cache_settings = [];
+
     $mybb->input['plugin'] = trim($mybb->get_input('plugin'));
 
+    $plugin_short_name = '';
+    
     if ($mybb->get_input('plugin')) {
+        $groupinfo = [];
+
+        $groupinfo['plugin'] = $plugin = $mybb->get_input('plugin');
+
+        $plugin_short_name = str_replace('newpoints_', '', $plugin);
+
         // Cache settings
         $query = $db->simple_select(
             'newpoints_settings',
             '*',
-            "plugin='" . $db->escape_string($mybb->get_input('plugin')) . "'",
+            "plugin='" . $db->escape_string($plugin_short_name) . "'",
             ['order_by' => 'disporder']
         );
-        while ($setting = $db->fetch_array($query)) {
-            $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
-        }
 
         if (!$db->num_rows($query)) {
             flash_message($lang->error_no_settings_found, 'error');
             admin_redirect('index.php?module=newpoints-settings');
         }
 
-        $groupinfo['plugin'] = $plugin = $mybb->get_input('plugin');
+        while ($setting = $db->fetch_array($query)) {
+            $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
+        }
 
-        if ($mybb->get_input('plugin') == 'income' || $mybb->get_input('plugin') == 'main') {
+        if ($plugin == 'income' || $plugin == 'main') {
             $lang_var = 'newpoints_settings_' . $mybb->get_input('plugin');
 
             $groupinfo['title'] = $lang->$lang_var;
@@ -157,8 +165,6 @@ if ($mybb->get_input('action') == 'change') {
         $page->output_nav_tabs($sub_tabs, 'newpoints_settings_change');
 
         $form = new Form('index.php?module=newpoints-settings&amp;action=change', 'post', 'change');
-
-        echo $form->generate_hidden_field('gid', $groupinfo['gid']);
     } else {
         flash_message($lang->newpoints_select_plugin, 'error');
         admin_redirect('index.php?module=newpoints-settings');
@@ -169,8 +175,9 @@ if ($mybb->get_input('action') == 'change') {
 
     $form_container = new FormContainer($groupinfo['title']);
 
-    if (empty($cache_settings[$groupinfo['plugin']])) {
+    if (empty($cache_settings[$plugin_short_name])) {
         $form_container->output_cell($lang->error_no_settings_found);
+
         $form_container->construct_row();
 
         $form_container->end();
@@ -181,7 +188,7 @@ if ($mybb->get_input('action') == 'change') {
         $page->output_footer();
     }
 
-    foreach ($cache_settings[$groupinfo['plugin']] as $setting) {
+    foreach ($cache_settings[$plugin_short_name] as $setting) {
         $options = '';
         $type = explode("\n", $setting['type']);
         $type[0] = trim($type[0]);
@@ -519,21 +526,24 @@ if (!$mybb->get_input('action')) {
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {
             $group = newpoints_get_plugininfo($plugin);
+
             if ($group === false) {
                 continue;
             }
+
+            $plugin_short_name = str_replace('newpoints_', '', $plugin);
 
             $group['title'] = $group['name'];
             $group['settingcount'] = $db->fetch_field(
                 $db->simple_select(
                     'newpoints_settings',
                     'COUNT(sid) as settings',
-                    "plugin='" . $db->escape_string($plugin) . "'"
+                    "plugin='" . $db->escape_string($plugin_short_name) . "'"
                 ),
                 'settings'
             );
 
-            if ($group['settingcount'] == 0) {
+            if (empty($group['settingcount'])) {
                 continue;
             } // skip setting group is we have no settings
 
@@ -559,6 +569,7 @@ if (!$mybb->get_input('action')) {
             $table->construct_row();
         }
     }
+
     $table->output($lang->board_settings);
 
     echo '</div>';
@@ -570,17 +581,21 @@ function newpoints_get_plugininfo($plugin)
 {
     global $mybb, $plugins, $theme, $db, $templates, $cache;
 
+    $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/plugins/{$plugin}.php";
+
     // Ignore potentially missing plugins.
-    if (!file_exists(MYBB_ROOT . 'inc / plugins / newpoints / ' . $plugin . '.php')) {
+    if (!file_exists($plugin_file_path)) {
         return false;
     }
 
-    require_once MYBB_ROOT . 'inc / plugins / newpoints / ' . $plugin . '.php';
+    require_once $plugin_file_path;
 
     $info_func = "{$plugin}_info";
+
     if (!function_exists($info_func)) {
         return false;
     }
+
     $plugin_info = $info_func();
 
     return $plugin_info;
