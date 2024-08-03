@@ -257,3 +257,8 @@ $l['setting_newpoints_income_visit'] = 'Per Visit';
 $l['setting_newpoints_income_visit_desc'] = 'Amount of points received everytime a user visits the forum. ("visits"=new MyBB session (expires after 15 minutes))';
 $l['setting_newpoints_income_referral'] = 'Per Referral';
 $l['setting_newpoints_income_referral_desc'] = 'Amount of points received everytime a user is referred. (the referred user is who receives the points)';
+
+$l['newpoints_confirmation_plugin_activation'] = 'Are you sure you wish to activate this plugin?';
+$l['newpoints_confirmation_plugin_deactivation'] = 'Are you sure you wish to deactivate this plugin?';
+$l['newpoints_confirmation_plugin_installation'] = 'Are you sure you wish to install this plugin?';
+$l['newpoints_confirmation_plugin_uninstallation'] = 'Are you sure you wish to uninstall this plugin?';

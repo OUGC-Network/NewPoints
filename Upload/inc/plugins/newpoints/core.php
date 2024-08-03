@@ -237,7 +237,7 @@ function templates_remove(array $templates, string $newpoints_prefix = 'newpoint
 
     $templates = implode("','", $templates);
 
-    $db->delete_query('templates', "title IN ('{$templates}'})");
+    $db->delete_query('templates', "title IN ('{$templates}')");
 
     return true;
 }
@@ -425,7 +425,7 @@ function settings_remove(array $settings, string $newpoints_prefix = 'newpoints_
 
     $settings = implode("','", $settings);
 
-    $db->delete_query('newpoints_settings', "name IN ('{$settings}'})");
+    $db->delete_query('newpoints_settings', "name IN ('{$settings}')");
 
     return true;
 }

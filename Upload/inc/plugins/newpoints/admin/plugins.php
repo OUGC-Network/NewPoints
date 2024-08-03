@@ -39,6 +39,9 @@ use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\templates_rebuild;
+use function Newpoints\Core\url_handler_build;
+use function Newpoints\Core\url_handler_get;
+use function Newpoints\Core\url_handler_set;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -50,29 +53,46 @@ language_load();
 
 $lang->load('config_plugins', false, true);
 
-$page->add_breadcrumb_item($lang->newpoints_plugins, 'index.php?module=newpoints-plugins');
+url_handler_set('index.php');
 
-$page->output_header($lang->newpoints_plugins);
-
-$sub_tabs['newpoints_plugins'] = [
-    'title' => $lang->newpoints_plugins,
-    'link' => 'index.php?module=newpoints-plugins',
-    'description' => $lang->newpoints_plugins_description
-];
-
-$page->output_nav_tabs($sub_tabs, 'newpoints_plugins');
+url_handler_set(url_handler_build([
+    'module' => 'newpoints-plugins'
+]));
 
 // Activates or deactivates a specific plugin
 if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'deactivate') {
     if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->invalid_post_verify_key2, 'error');
-        admin_redirect('index.php?module=newpoints-plugins');
+        admin_redirect(url_handler_get());
     }
 
     if ($mybb->get_input('action') == 'activate') {
         run_hooks('admin_plugins_activate');
     } else {
         run_hooks('admin_plugins_deactivate');
+    }
+
+    if ($mybb->get_input('no')) {
+        admin_redirect(url_handler_get());
+    }
+
+    if ($mybb->request_method !== 'post') {
+        $process_url = url_handler_build([
+            'action' => $mybb->get_input('action'),
+            'uninstall' => $mybb->get_input('uninstall', MyBB::INPUT_INT),
+            'plugin' => $mybb->get_input('plugin'),
+            'my_post_key' => $mybb->get_input('my_post_key'),
+        ]);
+
+        if ($mybb->get_input('action') == 'activate') {
+            $message = $lang->newpoints_confirmation_plugin_activation;
+        } elseif ($mybb->get_input('uninstall', MyBB::INPUT_INT)) {
+            $message = $lang->newpoints_confirmation_plugin_uninstallation;
+        } else {
+            $message = $lang->newpoints_confirmation_plugin_deactivation;
+        }
+
+        $page->output_confirm_action($process_url, $message);
     }
 
     $codename = $mybb->get_input('plugin');
@@ -84,7 +104,7 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
     // Check if the file exists and throw an error if it doesn't
     if (!file_exists($plugin_file_path)) {
         flash_message($lang->error_invalid_plugin, 'error');
-        admin_redirect('index.php?module=newpoints-plugins');
+        admin_redirect(url_handler_get());
     }
 
     $plugins_cache = $cache->read('newpoints_plugins');
@@ -109,7 +129,7 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
         if (!newpoints_iscompatible($codename)) {
             flash_message($lang->sprintf($lang->newpoints_plugin_incompatible, NEWPOINTS_VERSION), 'error');
-            admin_redirect('index.php?module=newpoints-plugins');
+            admin_redirect(url_handler_get());
         }
 
         // If not installed and there is a custom installation function
@@ -171,11 +191,23 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
     settings_rebuild_cache($array);
 
     flash_message($message, 'success');
-    admin_redirect('index.php?module=newpoints-plugins');
+    admin_redirect(url_handler_get());
 }
 
 if (!$mybb->get_input('action')) // view plugins
 {
+    $page->add_breadcrumb_item($lang->newpoints_plugins, url_handler_get());
+
+    $page->output_header($lang->newpoints_plugins);
+
+    $sub_tabs['newpoints_plugins'] = [
+        'title' => $lang->newpoints_plugins,
+        'link' => url_handler_get(),
+        'description' => $lang->newpoints_plugins_description
+    ];
+
+    $page->output_nav_tabs($sub_tabs, 'newpoints_plugins');
+
     $plugins_cache = $cache->read('newpoints_plugins');
 
     $active_plugins = [];
@@ -245,56 +277,84 @@ if (!$mybb->get_input('action')) // view plugins
             );
 
             // Plugin is not installed at all
-            if ($installed == false) {
-                if ($compatibility_warning) {
-                    $table->construct_cell("{$compatibility_warning}", ['class' => 'align_center', 'colspan' => 2]
-                    );
-                } else {
-                    $table->construct_cell(
-                        "<a href=\"index.php?module=newpoints-plugins&amp;action=activate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->install_and_activate}</a>",
-                        ['class' => 'align_center', 'colspan' => 2]
-                    );
-                }
+            if (!$installed && $compatibility_warning) {
+                $table->construct_cell(
+                    "{$compatibility_warning}", ['class' => 'align_center', 'colspan' => 2]
+                );
+            } elseif (!$installed) {
+                $activate_url = url_handler_build([
+                    'action' => 'activate',
+                    'plugin' => $codename,
+                    'my_post_key' => $mybb->post_code
+                ]);
+
+                $table->construct_cell(
+                    "<a href=\"{$activate_url}\">{$lang->install_and_activate}</a>",
+                    ['class' => 'align_center', 'colspan' => 2]
+                );
             } // Plugin is activated and installed
-            else {
-                if (isset($active_plugins[$codename])) {
+            elseif (isset($active_plugins[$codename])) {
+                $deactivate_url = url_handler_build([
+                    'action' => 'deactivate',
+                    'plugin' => $codename,
+                    'my_post_key' => $mybb->post_code
+                ]);
+
+                $table->construct_cell(
+                    "<a href=\"{$deactivate_url}\">{$lang->deactivate}</a>",
+                    ['class' => 'align_center', 'width' => 150]
+                );
+
+                if ($uninstall_button) {
+                    $uninstall_url = url_handler_build([
+                        'action' => 'deactivate',
+                        'uninstall' => 1,
+                        'plugin' => $codename,
+                        'my_post_key' => $mybb->post_code
+                    ]);
+
                     $table->construct_cell(
-                        "<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->deactivate}</a>",
+                        "<a href=\"{$uninstall_url}\">{$lang->uninstall}</a>",
                         ['class' => 'align_center', 'width' => 150]
                     );
-                    if ($uninstall_button) {
-                        $table->construct_cell(
-                            "<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->uninstall}</a>",
-                            ['class' => 'align_center', 'width' => 150]
-                        );
-                    } else {
-                        $table->construct_cell('&nbsp;', ['class' => 'align_center', 'width' => 150]);
-                    }
-                } // Plugin is installed but not active
-                else {
-                    if ($installed == true) {
-                        if ($compatibility_warning && !$uninstall_button) {
-                            $table->construct_cell(
-                                "{$compatibility_warning}",
-                                ['class' => 'align_center', 'colspan' => 2]
-                            );
-                        } else {
-                            $table->construct_cell(
-                                "<a href=\"index.php?module=newpoints-plugins&amp;action=activate&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->activate}</a>",
-                                ['class' => 'align_center', 'width' => 150]
-                            );
-                            if ($uninstall_button) {
-                                $table->construct_cell(
-                                    "<a href=\"index.php?module=newpoints-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin={$codename}&amp;my_post_key={$mybb->post_code}\">{$lang->uninstall}</a>",
-                                    ['class' => 'align_center', 'width' => 150]
-                                );
-                            } else {
-                                $table->construct_cell('&nbsp;', ['class' => 'align_center', 'width' => 150]);
-                            }
-                        }
-                    }
+                } else {
+                    $table->construct_cell('&nbsp;', ['class' => 'align_center', 'width' => 150]);
+                }
+            } // Plugin is installed but not active
+            elseif (!$uninstall_button && $compatibility_warning) {
+                $table->construct_cell(
+                    "{$compatibility_warning}",
+                    ['class' => 'align_center', 'colspan' => 2]
+                );
+            } else {
+                $activate_url = url_handler_build([
+                    'action' => 'activate',
+                    'plugin' => $codename,
+                    'my_post_key' => $mybb->post_code
+                ]);
+
+                $table->construct_cell(
+                    "<a href=\"{$activate_url}\">{$lang->activate}</a>",
+                    ['class' => 'align_center', 'width' => 150]
+                );
+
+                if ($uninstall_button) {
+                    $uninstall_url = url_handler_build([
+                        'action' => 'deactivate',
+                        'uninstall' => 1,
+                        'plugin' => $codename,
+                        'my_post_key' => $mybb->post_code
+                    ]);
+
+                    $table->construct_cell(
+                        "<a href=\"{$uninstall_url}\">{$lang->uninstall}</a>",
+                        ['class' => 'align_center', 'width' => 150]
+                    );
+                } else {
+                    $table->construct_cell('&nbsp;', ['class' => 'align_center', 'width' => 150]);
                 }
             }
+
             $table->construct_row();
         }
     }
@@ -307,9 +367,9 @@ if (!$mybb->get_input('action')) // view plugins
     run_hooks('admin_plugins_end');
 
     $table->output($lang->plugins);
-}
 
-$page->output_footer();
+    $page->output_footer();
+}
 
 function newpoints_get_plugins(): array
 {

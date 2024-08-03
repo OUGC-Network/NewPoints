@@ -36,6 +36,8 @@ use MyBB;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\run_hooks;
 
+use const Newpoints\ROOT;
+
 function admin_config_plugins_deactivate(): bool
 {
     global $mybb, $page;
@@ -83,7 +85,7 @@ function admin_load10(): bool
         return false;
     }
 
-    $action_file_path = \Newpoints\ROOT . "/admin/{$action_file}";
+    $action_file_path = ROOT . "/admin/{$action_file}";
 
     require_once $action_file_path;
 
@@ -95,7 +97,7 @@ function admin_tabs(array $modules): array
     global $lang;
     global $is_super_admin;
 
-    require_once \Newpoints\ROOT . "/admin/module_meta.php";
+    require_once ROOT . '/admin/module_meta.php';
 
     $lang->load('newpoints_module_meta', false, true);
 
@@ -130,7 +132,7 @@ function admin_user_admin_permissions_edit(): bool
     $newpoints_custom_load = true;
     //$modules = [];
 
-    require_once \Newpoints\ROOT . "/admin/module_meta.php";
+    require_once ROOT . '/admin/module_meta.php';
 
     $permission_modules['newpoints'] = newpoints_admin_permissions();
 
@@ -156,7 +158,7 @@ function admin_page_output_tab_control_start(array $tabs): array
     global $permission_modules, $modules;
     global $module_tabs;
 
-    require_once \Newpoints\ROOT . "/admin/module_meta.php";
+    require_once ROOT . '/admin/module_meta.php';
 
     $modules[$permission_modules['newpoints']['disporder']][] = 'newpoints';
 
