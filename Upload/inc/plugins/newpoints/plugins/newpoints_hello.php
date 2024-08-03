@@ -29,11 +29,12 @@
 
 declare(strict_types=1);
 
-use function Newpoints\language_load;
-use function Newpoints\settings_add;
-use function Newpoints\settings_remove;
-
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\language_load;
+use function Newpoints\Core\settings_add;
+use function Newpoints\Core\settings_rebuild_cache;
+use function Newpoints\Core\settings_remove;
+
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
@@ -42,7 +43,7 @@ global $plugins;
 
 $plugins->add_hook('pre_output_page', 'newpoints_hello_world');
 
-function newpoints_hello_info()
+function newpoints_hello_info(): array
 {
     /**
      * Array of information about the plugin.
@@ -107,12 +108,12 @@ function newpoints_hello_info()
  *    "visible" by adding templates/template changes, language changes etc.
  *
  */
-function newpoints_hello_activate()
+function newpoints_hello_activate(): bool
 {
     global $db, $mybb;
     // add settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-    \Newpoints\Core\settings_add(
+    settings_add(
         'newpoints_hello_show',
         'newpoints_hello',
         'Show message',
@@ -122,7 +123,9 @@ function newpoints_hello_activate()
         1
     );
 
-    rebuild_settings();
+    settings_rebuild_cache();
+
+    return true;
 }
 
 /*
@@ -133,27 +136,29 @@ function newpoints_hello_activate()
  *    uninstalled, this routine will also be called before _uninstall() if the plugin is active.
  *
  */
-function newpoints_hello_deactivate()
+function newpoints_hello_deactivate(): bool
 {
     global $db, $mybb;
     // delete settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
-    \Newpoints\Core\settings_remove("'newpoints_hello_show'");
+    settings_remove(['show'], 'newpoints_hello_');
 
-    rebuild_settings();
+    settings_rebuild_cache();
+
+    return true;
 }
 
 
-function newpoints_hello_world($page)
+function newpoints_hello_world(string &$page): string
 {
     global $mybb, $lang;
 
     if ($mybb->settings['newpoints_hello_show'] != 1) {
-        return;
+        return $page;
     }
 
     // load language files
-    \Newpoints\Core\language_load('newpoints_hello');
+    language_load('newpoints_hello');
 
     $page = str_replace('<!-- end: header -->', '<!-- end: header -->' . $lang->newpoints_hello_message, $page);
 
