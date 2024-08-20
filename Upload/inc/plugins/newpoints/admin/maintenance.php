@@ -32,6 +32,7 @@ declare(strict_types=1);
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\rules_get_all;
+use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\rules_group_get;
 use function Newpoints\Core\run_hooks;
 
@@ -227,7 +228,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
 
         $query = $db->simple_select(
             'users',
-            'uid,usergroup',
+            'uid,usergroup,additionalgroups',
             '',
             ['order_by' => 'uid', 'order_dir' => 'ASC', 'limit' => "{$start}, {$per_page}"]
         );
@@ -235,14 +236,9 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
             // recount points
             $points = 0;
 
-            // group rules
-            $grouprules = rules_group_get((int)$user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate($user);
 
-            // if the group rate is 0, nothing is going to be added so let's just skip this user
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -328,7 +324,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                             $thread['uid'],
                             $mybb->settings['newpoints_income_perreply'],
                             $allforumrules[$post['fid']]['rate'],
-                            $grouprules['rate']
+                            $group_rate
                         );
                     }
                 }
@@ -361,7 +357,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                 [
                     'newpoints' => floatval(
                             $mybb->settings['newpoints_income_newreg']
-                        ) + $points * $grouprules['rate']
+                        ) + $points * $group_rate
                 ],
                 'uid=\'' . $user['uid'] . '\''
             );

@@ -49,12 +49,4 @@ function upgrade19_info()
 // upgrade function
 function upgrade19_run()
 {
-    global $db;
-
-    $db->write_query(
-        'ALTER TABLE `' . $db->table_prefix . "newpoints_forumrules` MODIFY `pointsview` DECIMAL(16,2) NOT NULL default '0';"
-    );
-    $db->write_query(
-        'ALTER TABLE `' . $db->table_prefix . "newpoints_forumrules` MODIFY `pointspost` DECIMAL(16,2) NOT NULL default '0';"
-    );
 }

@@ -66,8 +66,6 @@ function upgrade12_run()
 	  `name` varchar(100) NOT NULL default '',
 	  `description` text NOT NULL,
 	  `rate` float NOT NULL default '1',
-	  `pointsview` DECIMAL(16,2) UNSIGNED NOT NULL default '0',
-	  `pointspost` DECIMAL(16,2) UNSIGNED NOT NULL default '0',
 	  PRIMARY KEY  (`rid`)
 		) ENGINE=MyISAM"
     );
@@ -79,8 +77,6 @@ function upgrade12_run()
 	  `name` varchar(100) NOT NULL default '',
 	  `description` text NOT NULL,
 	  `rate` float NOT NULL default '1',
-	  `pointsearn` DECIMAL(16,2) UNSIGNED NOT NULL default '0',
-	  `period` bigint(30) UNSIGNED NOT NULL default '0',
 	  `lastpay` bigint(30) UNSIGNED NOT NULL default '0',
 	  PRIMARY KEY  (`rid`)
 		) ENGINE=MyISAM"

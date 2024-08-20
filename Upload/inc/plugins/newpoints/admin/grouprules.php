@@ -128,9 +128,7 @@ if (!$mybb->get_input('action')) // view grouprules
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
-            'gid' => $mybb->get_input('group', MyBB::INPUT_INT),
-            'pointsearn' => $mybb->get_input('pointsearn', MyBB::INPUT_FLOAT),
-            'period' => $mybb->get_input('period', MyBB::INPUT_INT)
+            'gid' => $mybb->get_input('group', MyBB::INPUT_INT)
         ];
 
         $insert_query = run_hooks('admin_grouprules_add_insert', $insert_query);
@@ -175,18 +173,6 @@ if (!$mybb->get_input('action')) // view grouprules
         'rate'
     );
     $form_container->output_row(
-        $lang->newpoints_grouprules_pointsearn,
-        $lang->newpoints_grouprules_pointsearn_desc,
-        $form->generate_text_box('pointsearn', '0', ['id' => 'pointsearn']),
-        'pointsearn'
-    );
-    $form_container->output_row(
-        $lang->newpoints_grouprules_period,
-        $lang->newpoints_grouprules_period_desc,
-        $form->generate_text_box('period', '0', ['id' => 'period']),
-        'period'
-    );
-    $form_container->output_row(
         $lang->newpoints_grouprules_group . '<em>*</em>',
         $lang->newpoints_grouprules_group_desc,
         $form->generate_select_box('group', $options, 0, ['id' => 'group']),
@@ -225,9 +211,7 @@ if (!$mybb->get_input('action')) // view grouprules
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
-            'gid' => $mybb->get_input('group', MyBB::INPUT_INT),
-            'pointsearn' => $mybb->get_input('pointsearn', MyBB::INPUT_FLOAT),
-            'period' => $mybb->get_input('period', MyBB::INPUT_INT)
+            'gid' => $mybb->get_input('group', MyBB::INPUT_INT)
         ];
 
         $update_query = run_hooks('admin_grouprules_edit_update', $update_query);
@@ -283,18 +267,6 @@ if (!$mybb->get_input('action')) // view grouprules
         $lang->newpoints_grouprules_rate_desc,
         $form->generate_text_box('rate', floatval($rule['rate']), ['id' => 'rate']),
         'rate'
-    );
-    $form_container->output_row(
-        $lang->newpoints_grouprules_pointsearn,
-        $lang->newpoints_grouprules_pointsearn_desc,
-        $form->generate_text_box('pointsearn', floatval($rule['pointsearn']), ['id' => 'pointsearn']),
-        'pointsearn'
-    );
-    $form_container->output_row(
-        $lang->newpoints_grouprules_period,
-        $lang->newpoints_grouprules_period_desc,
-        $form->generate_text_box('period', intval($rule['period']), ['id' => 'period']),
-        'period'
     );
     $form_container->output_row(
         $lang->newpoints_grouprules_group . '<em>*</em>',

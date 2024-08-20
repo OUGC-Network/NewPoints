@@ -104,8 +104,6 @@ if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');
 }
 
-settings_load_init();
-
 const NEWPOINTS_VERSION = '3.0.0';
 
 const NEWPOINTS_VERSION_CODE = 3000;
@@ -299,5 +297,7 @@ function reload_newpoints_settings(): bool
 
     return true;
 }
+
+settings_load_init();
 
 plugins_load();

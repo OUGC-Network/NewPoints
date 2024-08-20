@@ -37,7 +37,7 @@ To display the page link it is required that you edit the following template for
    display the current user points.
 2. Place `{$newpoints_profile_user_balance_formatted}` or `{$GLOBALS['newpoints_profile_user_balance_formatted']}` in
    any `member_profile*` template to display the profile user points.
-3. Place `{$post['newpointsPostUserBalanceFormatted']}` in any `postbit*` template to display the post user points.
+3. Place `{$post['newpoints_balance_formatted']}` in any `postbit*` template to display the post user points.
 
 [Go up to Table of Contents](#table_of_contents)
 

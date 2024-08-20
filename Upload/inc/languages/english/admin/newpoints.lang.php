@@ -143,10 +143,6 @@ $l['newpoints_forumrules_forum_desc'] = 'Select the forum affected by this rule.
 $l['newpoints_forumrules_name_desc'] = 'Enter the name of the rule.';
 $l['newpoints_forumrules_desc'] = 'Description';
 $l['newpoints_forumrules_desc_desc'] = 'Enter a description of the rule.';
-$l['newpoints_forumrules_minview'] = 'Minimum points to view';
-$l['newpoints_forumrules_minview_desc'] = 'Enter the minimum points required to view the selected forum.';
-$l['newpoints_forumrules_minpost'] = 'Minimum points to post';
-$l['newpoints_forumrules_minpost_desc'] = 'Enter the minimum points required to create a new post or thread in the selected forum.';
 $l['newpoints_forumrules_rate'] = 'Income Rate';
 $l['newpoints_forumrules_rate_desc'] = 'Enter the income rate for the selected forum. Default is 1';
 $l['newpoints_forumrules_added'] = 'A new forum rule has been successfully added.';
@@ -186,10 +182,6 @@ $l['newpoints_grouprules_invalid'] = 'Invalid rule.';
 $l['newpoints_grouprules_edited'] = 'The selected rule has been edited successfully';
 $l['newpoints_grouprules_deleted'] = 'The selected rule has been deleted successfully';
 $l['newpoints_grouprules_deleteconfirm'] = 'Are you sure you want to delete the selected rule?';
-$l['newpoints_grouprules_pointsearn'] = 'Points to pay';
-$l['newpoints_grouprules_pointsearn_desc'] = 'Points paid to this group each X seconds (number seconds are set in the option below).';
-$l['newpoints_grouprules_period'] = 'How often this group is paid';
-$l['newpoints_grouprules_period_desc'] = 'Number of seconds between each payment to all users whose <strong>primary</strong> group is this one.';
 
 ///////////////// Upgrades
 $l['newpoints_upgrades'] = 'Upgrades';
@@ -266,6 +258,10 @@ $l['newpoints_user_groups_can_donate'] = 'Can donate points?';
 $l['newpoints_user_groups_allowance'] = 'Allowance Points<br /><small class="input">Set an amount of points to paid to users from this group.</small><br />';
 $l['newpoints_user_groups_allowance_period'] = 'Allowance Interval<br /><small class="input">Number of seconds between each allowance payment.</small><br />';
 $l['newpoints_user_groups_allowance_primary_only'] = 'Grant allowance if this is the user primary group only?';
+
+$l['newpoints_forums'] = 'Newpoints';
+$l['newpoints_forums_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
+$l['newpoints_forums_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
 
 $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';

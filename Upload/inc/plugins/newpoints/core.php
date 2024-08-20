@@ -559,9 +559,10 @@ function settings_add(
 
 function settings_load(): bool
 {
-    global $mybb, $cache;
+    global $cache;
 
     $settings = $cache->read('newpoints_settings');
+
     global $mybb;
 
     if (!empty($settings)) {
@@ -582,6 +583,16 @@ function settings_load(): bool
 
 function settings_load_init(): bool
 {
+    global $mybb;
+
+    static $done = false;
+
+    if ($done) {
+        return true;
+    }
+
+    $done = true;
+
     // Load NewPoints' settings whenever NewPoints plugin is executed
     // Adds one additional query per page
     // TODO: Perhaps use Plugin Library to modify the init.php file to load settings from both tables (MyBB's and NewPoints')
@@ -592,7 +603,7 @@ function settings_load_init(): bool
 
         // Plugins get "require_once" on Plugins List and Plugins Check and we do not want to load our settings when our file is required by those
         if ($mybb->get_input('module') === 'config-plugins' || !$db->table_exists('newpoints_settings')) {
-            return false;
+            //return false;
         }
     }
 
@@ -965,7 +976,7 @@ function rules_get_group_rate(array $user = []): float
     $user_groups = (string)$user['usergroup'];
 
     if (!get_setting('main_group_rate_primary_only')) {
-        $user_groups .= ",{$user['usergroup']}";
+        $user_groups .= ",{$user['additionalgroups']}";
     }
 
     foreach (explode(',', $user_groups) as $group_id) {

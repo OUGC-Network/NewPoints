@@ -130,8 +130,6 @@ if (!$mybb->get_input('action')) // view forumrules
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
-            'pointsview' => $mybb->get_input('minview', MyBB::INPUT_INT),
-            'pointspost' => $mybb->get_input('minpost', MyBB::INPUT_INT),
             'fid' => $mybb->get_input('forum', MyBB::INPUT_INT)
         ];
 
@@ -171,18 +169,6 @@ if (!$mybb->get_input('action')) // view forumrules
         'rate'
     );
     $form_container->output_row(
-        $lang->newpoints_forumrules_minview,
-        $lang->newpoints_forumrules_minview_desc,
-        $form->generate_text_box('minview', '0', ['id' => 'minview']),
-        'minview'
-    );
-    $form_container->output_row(
-        $lang->newpoints_forumrules_minpost,
-        $lang->newpoints_forumrules_minpost_desc,
-        $form->generate_text_box('minpost', '0', ['id' => 'minpost']),
-        'minpost'
-    );
-    $form_container->output_row(
         $lang->newpoints_forumrules_forum . '<em>*</em>',
         $lang->newpoints_forumrules_forum_desc,
         $form->generate_forum_select('forum', 0, ['id' => 'forum', 'main_option' => $lang->newpoints_select_forum]
@@ -220,8 +206,6 @@ if (!$mybb->get_input('action')) // view forumrules
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
-            'pointsview' => $mybb->get_input('minview', MyBB::INPUT_INT),
-            'pointspost' => $mybb->get_input('minpost', MyBB::INPUT_INT),
             'fid' => $mybb->get_input('forum', MyBB::INPUT_INT)
         ];
 
@@ -272,18 +256,6 @@ if (!$mybb->get_input('action')) // view forumrules
         $lang->newpoints_forumrules_rate_desc,
         $form->generate_text_box('rate', floatval($rule['rate']), ['id' => 'rate']),
         'rate'
-    );
-    $form_container->output_row(
-        $lang->newpoints_forumrules_minview,
-        $lang->newpoints_forumrules_minview_desc,
-        $form->generate_text_box('minview', intval($rule['pointsview']), ['id' => 'minview']),
-        'minview'
-    );
-    $form_container->output_row(
-        $lang->newpoints_forumrules_minpost,
-        $lang->newpoints_forumrules_minpost_desc,
-        $form->generate_text_box('minpost', intval($rule['pointspost']), ['id' => 'minpost']),
-        'minpost'
     );
     $form_container->output_row(
         $lang->newpoints_forumrules_forum . '<em>*</em>',

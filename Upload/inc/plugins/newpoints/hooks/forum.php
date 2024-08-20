@@ -146,7 +146,7 @@ function postbit(array &$post): array
 {
     global $mybb, $db, $currency, $points, $templates, $donate, $lang, $uid;
 
-    $post['newpoints_postbit'] = '';
+    $post['newpoints_postbit'] = $points = $post['newpoints_balance_formatted'] = '';
 
     if (empty($post['uid'])) {
         return $post;
@@ -156,7 +156,7 @@ function postbit(array &$post): array
 
     $currency = $mybb->settings['newpoints_main_curname'];
 
-    $points = $post['newpointsPostUserBalanceFormatted'] = points_format((float)$post['newpoints']);
+    $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
 
     $uid = intval($post['uid']);
 
@@ -1388,73 +1388,42 @@ function ratethread_process(): bool
     return true;
 }
 
-function forumdisplay_end(): bool
+function forumdisplay_start(): bool
 {
-    global $mybb, $lang, $fid;
+    global $mybb;
 
-    if (THIS_SCRIPT == 'forumdisplay.php') {
-        $fid = $mybb->get_input('fid', MyBB::INPUT_INT);
-    }
-
-    $fid = (int)$fid;
-
-    $forumrules = rules_forum_get($fid);
-
-    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
-        language_load();
-
-        error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
-        );
-    }
+    _helper_evaluate_forum_view_lock($mybb->get_input('fid', MyBB::INPUT_INT));
 
     return true;
 }
 
 function showthread_start(): bool
 {
-    return forumdisplay_end();
+    global $forum;
+
+    _helper_evaluate_forum_view_lock((int)$forum['fid']);
+
+    return true;
 }
 
 function editpost_start(): bool
 {
-    global $mybb, $lang;
+    global $mybb;
 
-    $pid = $mybb->get_input('pid', MyBB::INPUT_INT);
-    $post = get_post($pid);
-    if (!$post) {
-        return false;
-    }
+    $post_id = $mybb->get_input('pid', MyBB::INPUT_INT);
 
-    $fid = (int)$post['fid'];
+    $post_data = get_post($post_id);
 
-    $forumrules = rules_forum_get($fid);
-
-    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
-        language_load();
-
-        error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
-        );
-    }
+    _helper_evaluate_forum_view_lock((int)$post_data['fid']);
 
     return true;
 }
 
 function sendthread_do_sendtofriend_start(): bool
 {
-    global $mybb, $lang, $fid;
+    global $thread;
 
-    $fid = (int)$fid;
-
-    $forumrules = rules_forum_get($fid);
-    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
-        language_load();
-
-        error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
-        );
-    }
+    _helper_evaluate_forum_view_lock((int)$thread['fid']);
 
     return true;
 }
@@ -1466,18 +1435,9 @@ function sendthread_start(): bool
 
 function archive_forum_start(): bool
 {
-    global $mybb, $lang, $forum;
+    global $forum;
 
-    $fid = (int)$forum['fid'];
-
-    $forumrules = rules_forum_get($fid);
-    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
-        language_load();
-
-        error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
-        );
-    }
+    _helper_evaluate_forum_view_lock((int)$forum['fid']);
 
     return true;
 }
@@ -1489,35 +1449,18 @@ function archive_thread_start(): bool
 
 function printthread_end(): bool
 {
-    global $mybb, $lang, $fid;
+    global $thread;
 
-    $fid = (int)$fid;
-
-    $forumrules = rules_forum_get($fid);
-    if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
-        language_load();
-
-        error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointsview']))
-        );
-    }
+    _helper_evaluate_forum_view_lock((int)$thread['fid']);
 
     return true;
 }
 
 function newreply_start(): bool
 {
-    global $mybb, $lang, $fid;
+    global $fid;
 
-    $fid = (int)$fid;
-
-    $forumrules = rules_forum_get($fid);
-    if (isset($forumrules['pointspost']) && $forumrules['pointspost'] > $mybb->user['newpoints']) {
-        language_load();
-        error(
-            $lang->sprintf($lang->newpoints_not_enough_points, points_format((float)$forumrules['pointspost']))
-        );
-    }
+    _helper_evaluate_forum_post_lock((int)$fid);
 
     return true;
 }
@@ -1535,4 +1478,52 @@ function newthread_start(): bool
 function newthread_do_newthread_start(): bool
 {
     return newreply_start();
+}
+
+function _helper_evaluate_forum_view_lock(int $forum_ID): bool
+{
+    $forum_data = get_forum($forum_ID);
+
+    if (empty($forum_data['newpoints_view_lock_points'])) {
+        return false;
+    }
+
+    global $mybb, $lang;
+
+    if ($forum_data['newpoints_view_lock_points'] > $mybb->user['newpoints']) {
+        language_load();
+
+        error(
+            $lang->sprintf(
+                $lang->newpoints_not_enough_points,
+                points_format((float)$forum_data['newpoints_view_lock_points'])
+            )
+        );
+    }
+
+    return true;
+}
+
+function _helper_evaluate_forum_post_lock(int $forum_ID): bool
+{
+    $forum_data = get_forum($forum_ID);
+
+    if (empty($forum_data['newpoints_post_lock_points'])) {
+        return false;
+    }
+
+    global $mybb, $lang;
+
+    if ($forum_data['newpoints_post_lock_points'] > $mybb->user['newpoints']) {
+        language_load();
+
+        error(
+            $lang->sprintf(
+                $lang->newpoints_not_enough_points,
+                points_format((float)$forum_data['newpoints_post_lock_points'])
+            )
+        );
+    }
+
+    return true;
 }

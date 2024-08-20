@@ -242,7 +242,7 @@ function admin_user_groups_edit_graph(): bool
 
     echo '<div id="tab_newpoints">';
 
-    $form_container = new FormContainer($lang->ougc_withdraw_points_groups_tab);
+    $form_container = new FormContainer($lang->newpoints_groups_tab);
 
     $form_fields = [];
 
@@ -282,22 +282,15 @@ function admin_user_groups_edit_graph(): bool
 
                 $form_fields[] = ($lang->{$setting_language_string} ?? '') . $form->generate_numeric_field(
                         $data_field_key,
-                        $mybb->get_input($data_field_key, MyBB::INPUT_INT),
+                        $value,
                         [
                             'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
                             'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                        ],
-                        $lang->{$setting_language_string} ?? '',
-                        ['checked' => $mybb->get_input($data_field_key, MyBB::INPUT_INT)]
+                        ]
                     );
                 break;
         }
     }
-    $lang->ougc_withdraw_points_groups_queuetime . $form->generate_numeric_field(
-        'ougc_withdraw_points_queuetime',
-        $mybb->get_input('ougc_withdraw_points_queuetime', MyBB::INPUT_INT),
-        ['id' => 'ougc_withdraw_points_queuetime', 'class' => 'field50', 'min' => 0]
-    );
 
     if (empty($form_fields)) {
         return false;
@@ -342,6 +335,124 @@ function admin_user_groups_edit_commit(): bool
             $updated_group[$data_field_key] = $db->escape_string($mybb->get_input($data_field_key));
         }
     }
+
+    return true;
+}
+
+function admin_formcontainer_end(array &$hook_arguments): array
+{
+    global $lang;
+    global $run_module;
+
+    static $done = false;
+
+    if (
+        $done ||
+        $run_module !== 'forum' ||
+        !isset($hook_arguments['this']->_title) ||
+        (
+            $hook_arguments['this']->_title !== $lang->additional_forum_options &&
+            $hook_arguments['this']->_title !== "<div class=\"float_right\" style=\"font-weight: normal;\"><a href=\"#\" onclick=\"$('#additional_options_link').toggle(); $('#additional_options').fadeToggle('fast'); return false;\">{$lang->hide_additional_options}</a></div>" . $lang->additional_forum_options
+        )) {
+        return $hook_arguments;
+    }
+
+    $done = true;
+
+    global $lang, $form;
+    global $forum_data;
+
+    language_load();
+
+    $data_fields = FIELDS_DATA['forums'];
+
+    $form_fields = [];
+
+    $newpoints_hook_arguments = [
+        'data_fields' => &$data_fields,
+        'form_fields' => &$form_fields
+    ];
+
+    $newpoints_hook_arguments = run_hooks('admin_formcontainer_end_start', $newpoints_hook_arguments);
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType'])) {
+            continue;
+        }
+
+        $setting_language_string = $data_field_key;
+
+        if (strpos($data_field_key, 'newpoints_forums_') !== 0) {
+            $setting_language_string = str_replace('newpoints_', 'newpoints_forums_', $data_field_key);
+        }
+
+        switch ($data_field_data['formType']) {
+            case FORM_TYPE_NUMERIC_FIELD:
+                $value = (int)$forum_data[$data_field_key];
+
+                if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
+                    $value = (float)$forum_data[$data_field_key];
+                }
+
+                $form_fields[] = ($lang->{$setting_language_string} ?? '') . $form->generate_numeric_field(
+                        $data_field_key,
+                        $value,
+                        [
+                            'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
+                            'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
+                        ]
+                    );
+                break;
+        }
+    }
+
+    if (empty($form_fields)) {
+        return $hook_arguments;
+    }
+
+    $newpoints_hook_arguments = run_hooks('admin_user_groups_edit_graph_intermediate', $newpoints_hook_arguments);
+
+    $hook_arguments['this']->output_row(
+        $lang->newpoints_forums,
+        '',
+        "<div class=\"forum_settings_bit\">" . implode(
+            "</div><div class=\"forum_settings_bit\">",
+            $form_fields
+        ) . '</div>'
+    );
+
+    $newpoints_hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $newpoints_hook_arguments);
+
+    return $hook_arguments;
+}
+
+function admin_forum_management_edit_commit()
+{
+    global $db, $mybb, $fid;
+
+    $data_fields = FIELDS_DATA['forums'];
+
+    $hook_arguments = [
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('admin_forum_management_edit_commit_start', $hook_arguments);
+
+    $updated_forum = [];
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+            $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+        } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
+            $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+        } else {
+            $updated_forum[$data_field_key] = $db->escape_string($mybb->get_input($data_field_key));
+        }
+    }
+
+    $db->update_query('forums', $updated_forum, "fid='{$fid}'");
+
+    $mybb->cache->update_forums();
 
     return true;
 }

@@ -129,7 +129,7 @@ const TABLES_DATA = [
             'type' => 'FLOAT',
             'default' => 1
         ],
-        'pointsview' => [
+        /*'pointsview' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
             'default' => 0
@@ -138,7 +138,7 @@ const TABLES_DATA = [
             'type' => 'DECIMAL',
             'size' => '16,2',
             'default' => 0
-        ],
+        ],*/
     ],
     'newpoints_grouprules' => [
         'rid' => [
@@ -165,7 +165,7 @@ const TABLES_DATA = [
             'type' => 'FLOAT',
             'default' => 1
         ],
-        'pointsearn' => [
+        /*'pointsearn' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
             'default' => 0
@@ -174,7 +174,7 @@ const TABLES_DATA = [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0
-        ],
+        ],*/
         'lastpay' => [
             'type' => 'INT',
             'unsigned' => true,
@@ -240,6 +240,26 @@ const FIELDS_DATA = [
         ],
     ],
     'forums' => [
+        'newpoints_view_lock_points' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_post_lock_points' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
     ],
 ];
 
