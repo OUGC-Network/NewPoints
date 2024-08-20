@@ -31,8 +31,8 @@ declare(strict_types=1);
 
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\points_add;
-use function Newpoints\Core\rules_get;
 use function Newpoints\Core\rules_get_all;
+use function Newpoints\Core\rules_group_get;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {
@@ -236,7 +236,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
             $points = 0;
 
             // group rules
-            $grouprules = rules_get('group', $user['usergroup']);
+            $grouprules = rules_group_get((int)$user['usergroup']);
             if (!$grouprules) {
                 $grouprules['rate'] = 1;
             } // no rule set so default income rate is 1

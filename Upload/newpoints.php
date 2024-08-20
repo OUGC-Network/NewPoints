@@ -44,14 +44,14 @@ const IN_MYBB = 1;
 
 const THIS_SCRIPT = 'newpoints.php';
 
-const NP_DISABLE_GUESTS = 0;
+const NP_DISABLE_GUESTS = false;
 
 // Templates used by NewPoints
 $templatelist = 'newpoints_home,newpoints_donate,newpoints_statistics,newpoints_statistics_richest_user,newpoints_statistics_donation,newpoints_no_results,newpoints_option,newpoints_home_income_row,newpoints_home_income_table';
 
 require_once './global.php';
 
-if (!function_exists('\\Newpoints\\Core\\language_load')) {
+if (!function_exists('\Newpoints\Core\language_load')) {
     error_no_permission();
 }
 
@@ -62,30 +62,32 @@ $mybb->input['action'] = $mybb->get_input('action');
 run_hooks('begin');
 
 // Allow guests here? Some plugins may allow guest access and they may hook to newpoints_start
-if (!$mybb->user['uid'] && NP_DISABLE_GUESTS == 1) {
+if (empty($mybb->usergroup['newpoints_can_see_page'])) {
     error_no_permission();
 }
 
 language_load();
 
-// build the menu
-
-// default menu options
 $menu = [
-    [
+    0 => [
         'lang_string' => 'newpoints_home',
-    ],
-    [
-        'action' => 'stats',
-        'lang_string' => 'newpoints_statistics',
-        'setting' => 'main_statsvisible',
-    ],
-    [
-        'action' => 'donate',
-        'lang_string' => 'newpoints_donate',
-        'setting' => 'main_donationsenabled',
     ]
 ];
+
+if (!empty($mybb->usergroup['newpoints_can_see_stats'])) {
+    $menu[10] = [
+        'action' => 'stats',
+        'lang_string' => 'newpoints_statistics',
+    ];
+}
+
+if (!empty($mybb->usergroup['newpoints_can_donate'])) {
+    $menu[20] = [
+        'action' => 'donate',
+        'lang_string' => 'newpoints_donate',
+    ];
+}
+
 
 $menu = run_hooks('default_menu', $menu);
 
@@ -169,7 +171,7 @@ if (!$mybb->get_input('action')) {
 }
 
 if ($mybb->get_input('action') == 'stats') {
-    if ($mybb->settings['newpoints_main_statsvisible'] != 1) {
+    if (empty($mybb->usergroup['newpoints_can_see_stats'])) {
         error($lang->newpoints_stats_disabled);
     }
 
@@ -263,7 +265,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     output_page($page);
 } elseif ($mybb->get_input('action') == 'donate') {
-    if ($mybb->settings['newpoints_main_donationsenabled'] != 1) {
+    if (empty($mybb->usergroup['newpoints_can_donate'])) {
         error($lang->newpoints_donations_disabled);
     }
 
@@ -299,11 +301,11 @@ if ($mybb->get_input('action') == 'stats') {
 
     output_page($page);
 } elseif ($mybb->get_input('action') == 'do_donate') {
-    verify_post_check($mybb->get_input('postcode'));
-
-    if ($mybb->settings['newpoints_main_donationsenabled'] != 1) {
+    if (empty($mybb->usergroup['newpoints_can_donate'])) {
         error($lang->newpoints_donations_disabled);
     }
+
+    verify_post_check($mybb->get_input('postcode'));
 
     run_hooks('do_donate_start');
 

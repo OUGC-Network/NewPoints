@@ -39,8 +39,11 @@ use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\points_format;
-use function Newpoints\Core\rules_get;
+use function Newpoints\Core\rules_forum_get_rate;
+use function Newpoints\Core\rules_forum_get;
 use function Newpoints\Core\rules_get_all;
+use function Newpoints\Core\rules_get_group_rate;
+use function Newpoints\Core\rules_group_get;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
@@ -90,9 +93,9 @@ function global_end(): bool
         return false;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get_all('group');
-    if (empty($grouprules)) {
+    $group_rate = rules_get_group_rate();
+
+    if (!$group_rate) {
         return false;
     }
 
@@ -101,7 +104,7 @@ function global_end(): bool
             $mybb->user['uid'],
             (float)$mybb->settings['newpoints_income_pageview'],
             1,
-            $grouprules[$mybb->user['usergroup']]['rate']
+            $group_rate
         );
     }
 
@@ -111,38 +114,8 @@ function global_end(): bool
                 $mybb->user['uid'],
                 (float)$mybb->settings['newpoints_income_visit'],
                 1,
-                $grouprules[$mybb->user['usergroup']]['rate']
+                $group_rate
             );
-        }
-    }
-
-    foreach ($grouprules as $gid => $rule) {
-        if ($rule['pointsearn'] == 0 || $rule['period'] == 0 || $rule['lastpay'] > (constant(
-                    'TIME_NOW'
-                ) - $rule['period'])) {
-            continue;
-        }
-
-        $amount = floatval($rule['pointsearn']);
-
-        $userupdates[$gid] = $amount;
-        // update rule with last payment
-        $db->update_query(
-            'newpoints_grouprules',
-            ['lastpay' => TIME_NOW],
-            'rid=\'' . (int)$rule['rid'] . '\''
-        );
-
-        // Re-cache rules (lastpay must be updated)
-        rules_rebuild_cache();
-
-        if ($mybb->user['usergroup'] == $gid) {
-            $mybb->user['newpoints'] += $amount;
-        }
-
-        if (!empty($userupdates)) {
-            // run updates to users on shut down
-            add_shutdown('newpoints_update_users');
         }
     }
 
@@ -158,9 +131,10 @@ function global_intermediate(): bool
         $mybb->user['newpoints'] = 0;
     } else {
         $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
+        $mybb->user['newpoints'] = 0;
     }
 
-    $newpoints_user_balance_formatted = points_format((float)$mybb->user['newpoints']);
+    $newpoints_user_balance_formatted = points_format($mybb->user['newpoints']);
 
     return true;
 }
@@ -214,7 +188,7 @@ function postbit(array &$post): array
 
     $uid = intval($post['uid']);
 
-    if ($mybb->settings['newpoints_main_donationsenabled'] && $post['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
+    if (!empty($mybb->usergroup['newpoints_can_donate']) && $post['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
         $donate = eval(templates_get('donate_inline'));
     } else {
         $donate = '';
@@ -256,7 +230,7 @@ function member_profile_end(): bool
 
     $uid = intval($memprofile['uid']);
 
-    if ($mybb->settings['newpoints_main_donationsenabled'] && $memprofile['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
+    if (!empty($mybb->usergroup['newpoints_can_donate']) && $memprofile['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
         $donate = eval(templates_get('donate_inline'));
     } else {
         $donate = '';
@@ -289,25 +263,17 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
         return $data;
     }
 
-    // check forum rules
-    $forumrules = rules_get('forum', $data->post_insert_data['fid']);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $forum_id = (int)$data->post_insert_data['fid'];
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    $forum_rate = rules_forum_get_rate($forum_id);
+
+    if (!$forum_rate) {
         return $data;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return $data;
     }
 
@@ -325,8 +291,8 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
     points_add(
         $mybb->user['uid'],
         (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     if ($thread['uid'] != $mybb->user['uid']) {
@@ -335,8 +301,8 @@ function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
             points_add(
                 $thread['uid'],
                 (float)$mybb->settings['newpoints_income_perreply'],
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -360,27 +326,25 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
         return $newpost;
     }
 
-    $fid = intval($newpost->data['fid']);
+    $fid = (int)$newpost->data['fid'];
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $forum_rate = rules_forum_get_rate($fid);
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    if (!$forum_rate) {
+        return $newpost;
+    }
+
+    $forum_rate = rules_forum_get_rate($fid);
+
+    if (!$forum_rate) {
         return $newpost;
     }
 
     // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    $group_rate = rules_get_group_rate();
+
+    if (!$group_rate) {
         return $newpost;
     }
 
@@ -414,7 +378,14 @@ function datahandler_post_update(postDatahandler &$newpost): postDatahandler
 
     if (isset($bonus)) // give points to the poster
     {
-        points_add($mybb->user['uid'], (float)$bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+        points_add(
+            $mybb->user['uid'],
+            (float)$bonus,
+            $forum_rate,
+            $group_rate,
+            false,
+            true
+        );
     }
 
     return $newpost;
@@ -450,27 +421,17 @@ function xmlhttp10(): bool
 
     $post = get_post($mybb->get_input('pid', MyBB::INPUT_INT));
 
-    $fid = intval($post['fid']);
+    $fid = (int)$post['fid'];
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $forum_rate = rules_forum_get_rate($fid);
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    if (!$forum_rate) {
         return false;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return false;
     }
 
@@ -515,7 +476,7 @@ function xmlhttp10(): bool
 
     if (isset($bonus)) // give points to the poster
     {
-        points_add($mybb->user['uid'], (float)$bonus, $forumrules['rate'], $grouprules['rate'], false, true);
+        points_add($mybb->user['uid'], (float)$bonus, $forum_rate, $group_rate, false, true);
     }
 
     return true;
@@ -540,27 +501,19 @@ function class_moderation_delete_post_start(int $pid): int
         return $pid;
     }
 
+    $fid = (int)$fid;
+
     $thread = get_thread($post['tid']);
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $forum_rate = rules_forum_get_rate($fid);
 
-    // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    if (!$forum_rate) {
         return $pid;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be removed so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return $pid;
     }
 
@@ -580,8 +533,8 @@ function class_moderation_delete_post_start(int $pid): int
             points_add(
                 $thread['uid'],
                 -(float)$mybb->settings['newpoints_income_perreply'],
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -590,8 +543,8 @@ function class_moderation_delete_post_start(int $pid): int
     points_add(
         $post['uid'],
         -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return $pid;
@@ -609,30 +562,22 @@ function class_moderation_soft_delete_posts(array $pids): array
         return $pids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($pids)) {
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -653,8 +598,8 @@ function class_moderation_soft_delete_posts(array $pids): array
                     points_add(
                         $thread['uid'],
                         -(float)$mybb->settings['newpoints_income_perreply'],
-                        $forumrules['rate'],
-                        $grouprules['rate']
+                        $forum_rate,
+                        $group_rate
                     );
                 }
             }
@@ -663,8 +608,8 @@ function class_moderation_soft_delete_posts(array $pids): array
             points_add(
                 $post['uid'],
                 -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -684,30 +629,22 @@ function class_moderation_restore_posts($pids): array
         return $pids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($pids)) {
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -728,8 +665,8 @@ function class_moderation_restore_posts($pids): array
                     points_add(
                         $thread['uid'],
                         (float)$mybb->settings['newpoints_income_perreply'],
-                        $forumrules['rate'],
-                        $grouprules['rate']
+                        $forum_rate,
+                        $group_rate
                     );
                 }
             }
@@ -738,8 +675,8 @@ function class_moderation_restore_posts($pids): array
             points_add(
                 $post['uid'],
                 (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -759,30 +696,22 @@ function class_moderation_approve_threads(array $tids): array
         return $tids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($tids)) {
         foreach ($tids as $tid) {
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -800,8 +729,8 @@ function class_moderation_approve_threads(array $tids): array
             points_add(
                 $post['uid'],
                 (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -821,30 +750,22 @@ function class_moderation_approve_posts(array $pids): array
         return $pids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($pids)) {
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -865,8 +786,8 @@ function class_moderation_approve_posts(array $pids): array
                     points_add(
                         $thread['uid'],
                         (float)$mybb->settings['newpoints_income_perreply'],
-                        $forumrules['rate'],
-                        $grouprules['rate']
+                        $forum_rate,
+                        $group_rate
                     );
                 }
             }
@@ -875,8 +796,8 @@ function class_moderation_approve_posts(array $pids): array
             points_add(
                 $post['uid'],
                 (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -896,30 +817,22 @@ function class_moderation_unapprove_threads(array $tids): array
         return $tids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($tids)) {
         foreach ($tids as $tid) {
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -937,8 +850,8 @@ function class_moderation_unapprove_threads(array $tids): array
             points_add(
                 $post['uid'],
                 -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -958,30 +871,22 @@ function class_moderation_unapprove_posts(array $pids): array
         return $pids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($pids)) {
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -1002,8 +907,8 @@ function class_moderation_unapprove_posts(array $pids): array
                     points_add(
                         $thread['uid'],
                         -(float)$mybb->settings['newpoints_income_perreply'],
-                        $forumrules['rate'],
-                        $grouprules['rate']
+                        $forum_rate,
+                        $group_rate
                     );
                 }
             }
@@ -1012,8 +917,8 @@ function class_moderation_unapprove_posts(array $pids): array
             points_add(
                 $post['uid'],
                 -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -1042,25 +947,17 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
         return $that;
     }
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $fid = (int)$fid;
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    $forum_rate = rules_forum_get_rate($fid);
+
+    if (!$forum_rate) {
         return $that;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return $that;
     }
 
@@ -1078,8 +975,8 @@ function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
     points_add(
         $mybb->user['uid'],
         (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return $that;
@@ -1098,8 +995,8 @@ function class_moderation_delete_thread(int $tid): int
     }
 
     // even though the thread was deleted it was previously cached so we can use get_thread
-    $thread = get_thread((int)$tid);
-    $fid = $thread['fid'];
+    $thread = get_thread($tid);
+    $fid = (int)$thread['fid'];
 
     // It's currently soft deleted, so we do nothing as we already subtracted points when doing that
     // If it's not visible (unapproved) we also don't take out any money
@@ -1107,25 +1004,15 @@ function class_moderation_delete_thread(int $tid): int
         return $tid;
     }
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $forum_rate = rules_forum_get_rate($fid);
 
-    // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    if (!$forum_rate) {
         return $tid;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be removed so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return $tid;
     }
 
@@ -1147,8 +1034,8 @@ function class_moderation_delete_thread(int $tid): int
         points_add(
             $thread['uid'],
             -(float)$mybb->settings['newpoints_income_newpoll'],
-            $forumrules['rate'],
-            $grouprules['rate']
+            $forum_rate,
+            $group_rate
         );
     }
 
@@ -1161,16 +1048,16 @@ function class_moderation_delete_thread(int $tid): int
     points_add(
         $thread['uid'],
         -(float)($thread['replies'] * $mybb->settings['newpoints_income_perreply']),
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     // take out points from the author of the thread
     points_add(
         $thread['uid'],
         -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return $tid;
@@ -1188,30 +1075,22 @@ function class_moderation_soft_delete_threads(array $tids): array
         return $tids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($tids)) {
         foreach ($tids as $tid) {
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -1232,8 +1111,8 @@ function class_moderation_soft_delete_threads(array $tids): array
                     points_add(
                         $thread['uid'],
                         -(float)$mybb->settings['newpoints_income_perreply'],
-                        $forumrules['rate'],
-                        $grouprules['rate']
+                        $forum_rate,
+                        $group_rate
                     );
                 }
             }
@@ -1242,8 +1121,8 @@ function class_moderation_soft_delete_threads(array $tids): array
             points_add(
                 $post['uid'],
                 -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -1263,30 +1142,22 @@ function class_moderation_restore_threads(array $tids): array
         return $tids;
     }
 
+    $fid = (int)$fid;
+
     if (!empty($tids)) {
         foreach ($tids as $tid) {
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            // check forum rules
-            $forumrules = rules_get('forum', $fid);
-            if (!$forumrules) {
-                $forumrules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $forum_rate = rules_forum_get_rate($fid);
 
-            // if the forum rate is 0, nothing is going to be removed so let's just leave the function
-            if ($forumrules['rate'] == 0) {
+            if (!$forum_rate) {
                 continue;
             }
 
-            // check group rules - primary group check
-            $grouprules = rules_get('group', $mybb->user['usergroup']);
-            if (!$grouprules) {
-                $grouprules['rate'] = 1;
-            } // no rule set so default income rate is 1
+            $group_rate = rules_get_group_rate();
 
-            // if the group rate is 0, nothing is going to be removed so let's just leave the function
-            if ($grouprules['rate'] == 0) {
+            if (!$group_rate) {
                 continue;
             }
 
@@ -1307,8 +1178,8 @@ function class_moderation_restore_threads(array $tids): array
                     points_add(
                         $thread['uid'],
                         (float)$mybb->settings['newpoints_income_perreply'],
-                        $forumrules['rate'],
-                        $grouprules['rate']
+                        $forum_rate,
+                        $group_rate
                     );
                 }
             }
@@ -1317,8 +1188,8 @@ function class_moderation_restore_threads(array $tids): array
             points_add(
                 $post['uid'],
                 (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
-                $forumrules['rate'],
-                $grouprules['rate']
+                $forum_rate,
+                $group_rate
             );
         }
     }
@@ -1338,25 +1209,17 @@ function polls_do_newpoll_process(): bool
         return false;
     }
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $fid = (int)$fid;
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    $forum_rate = rules_forum_get_rate($fid);
+
+    if (!$forum_rate) {
         return false;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return false;
     }
 
@@ -1364,8 +1227,8 @@ function polls_do_newpoll_process(): bool
     points_add(
         $mybb->user['uid'],
         (float)$mybb->settings['newpoints_income_newpoll'],
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return true;
@@ -1386,27 +1249,17 @@ function class_moderation_delete_poll(int $pid): int
     $query = $db->simple_select('polls', '*', "pid='{$pid}'");
     $poll = $db->fetch_array($query);
 
-    $fid = $poll['fid'];
+    $fid = (int)$poll['fid'];
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $forum_rate = rules_forum_get_rate($fid);
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    if (!$forum_rate) {
         return $pid;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return $pid;
     }
 
@@ -1414,8 +1267,8 @@ function class_moderation_delete_poll(int $pid): int
     points_add(
         $poll['uid'],
         -(float)$mybb->settings['newpoints_income_newpoll'],
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return $pid;
@@ -1445,18 +1298,13 @@ function member_do_register_end(): bool
             return false;
         }
 
-        // check group rules - primary group check
-        $grouprules = rules_get('group', $mybb->user['usergroup']);
-        if (!$grouprules) {
-            $grouprules['rate'] = 1;
-        } // no rule set so default income rate is 1
+        $group_rate = rules_get_group_rate();
 
-        // if the group rate is 0, nothing is going to be added so let's just leave the function
-        if ($grouprules['rate'] == 0) {
+        if (!$group_rate) {
             return false;
         }
 
-        points_add($user['uid'], (float)$mybb->settings['newpoints_income_referral'], 1, $grouprules['rate']);
+        points_add($user['uid'], (float)$mybb->settings['newpoints_income_referral'], 1, $group_rate);
     }
 
     return true;
@@ -1474,25 +1322,17 @@ function polls_vote_process(): bool
         return false;
     }
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $fid = (int)$fid;
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    $forum_rate = rules_forum_get_rate($fid);
+
+    if (!$forum_rate) {
         return false;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return false;
     }
 
@@ -1500,8 +1340,8 @@ function polls_vote_process(): bool
     points_add(
         $mybb->user['uid'],
         (float)$mybb->settings['newpoints_income_pervote'],
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return true;
@@ -1527,19 +1367,14 @@ function private_do_send_end(): bool
         return false;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return false;
     }
 
     // give points to the author of the PM
-    points_add($mybb->user['uid'], (float)$mybb->settings['newpoints_income_pmsent'], 1, $grouprules['rate']);
+    points_add($mybb->user['uid'], (float)$mybb->settings['newpoints_income_pmsent'], 1, $group_rate);
 
     return true;
 }
@@ -1556,25 +1391,17 @@ function ratethread_process(): bool
         return false;
     }
 
-    // check forum rules
-    $forumrules = rules_get('forum', $fid);
-    if (!$forumrules) {
-        $forumrules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $fid = (int)$fid;
 
-    // if the forum rate is 0, nothing is going to be added so let's just leave the function
-    if ($forumrules['rate'] == 0) {
+    $forum_rate = rules_forum_get_rate($fid);
+
+    if (!$forum_rate) {
         return false;
     }
 
-    // check group rules - primary group check
-    $grouprules = rules_get('group', $mybb->user['usergroup']);
-    if (!$grouprules) {
-        $grouprules['rate'] = 1;
-    } // no rule set so default income rate is 1
+    $group_rate = rules_get_group_rate();
 
-    // if the group rate is 0, nothing is going to be added so let's just leave the function
-    if ($grouprules['rate'] == 0) {
+    if (!$group_rate) {
         return false;
     }
 
@@ -1582,8 +1409,8 @@ function ratethread_process(): bool
     points_add(
         $mybb->user['uid'],
         (float)$mybb->settings['newpoints_income_perrate'],
-        $forumrules['rate'],
-        $grouprules['rate']
+        $forum_rate,
+        $group_rate
     );
 
     return true;
@@ -1597,7 +1424,9 @@ function forumdisplay_end(): bool
         $fid = $mybb->get_input('fid', MyBB::INPUT_INT);
     }
 
-    $forumrules = rules_get('forum', $fid);
+    $fid = (int)$fid;
+
+    $forumrules = rules_forum_get($fid);
 
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
@@ -1625,9 +1454,9 @@ function editpost_start(): bool
         return false;
     }
 
-    $fid = $post['fid'];
+    $fid = (int)$post['fid'];
 
-    $forumrules = rules_get('forum', $fid);
+    $forumrules = rules_forum_get($fid);
 
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
@@ -1644,7 +1473,9 @@ function sendthread_do_sendtofriend_start(): bool
 {
     global $mybb, $lang, $fid;
 
-    $forumrules = rules_get('forum', $fid);
+    $fid = (int)$fid;
+
+    $forumrules = rules_forum_get($fid);
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
 
@@ -1665,9 +1496,9 @@ function archive_forum_start(): bool
 {
     global $mybb, $lang, $forum;
 
-    $fid = intval($forum['fid']);
+    $fid = (int)$forum['fid'];
 
-    $forumrules = rules_get('forum', $fid);
+    $forumrules = rules_forum_get($fid);
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
 
@@ -1688,7 +1519,9 @@ function printthread_end(): bool
 {
     global $mybb, $lang, $fid;
 
-    $forumrules = rules_get('forum', $fid);
+    $fid = (int)$fid;
+
+    $forumrules = rules_forum_get($fid);
     if (isset($forumrules['pointsview']) && $forumrules['pointsview'] > $mybb->user['newpoints']) {
         language_load();
 
@@ -1704,7 +1537,9 @@ function newreply_start(): bool
 {
     global $mybb, $lang, $fid;
 
-    $forumrules = rules_get('forum', $fid);
+    $fid = (int)$fid;
+
+    $forumrules = rules_forum_get($fid);
     if (isset($forumrules['pointspost']) && $forumrules['pointspost'] > $mybb->user['newpoints']) {
         language_load();
         error(

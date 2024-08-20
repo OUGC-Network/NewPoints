@@ -1,8 +1,4 @@
 {
-  "enabled": {
-    "type": "yesno",
-    "value": 1
-  },
   "curname": {
     "type": "text",
     "value": "Points"
@@ -19,14 +15,6 @@
     "type": "numeric",
     "value": 2
   },
-  "statsvisible": {
-    "type": "yesno",
-    "value": 1
-  },
-  "donationsenabled": {
-    "type": "yesno",
-    "value": 1
-  },
   "donationspm": {
     "type": "yesno",
     "value": 1
@@ -38,5 +26,9 @@
   "stats_richestusers": {
     "type": "numeric",
     "value": 10
+  },
+  "group_rate_primary_only": {
+    "type": "yesno",
+    "value": 1
   }
 }

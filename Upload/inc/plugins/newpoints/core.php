@@ -33,12 +33,17 @@ namespace Newpoints\Core;
 
 use DirectoryIterator;
 use pluginSystem;
+use postParser;
 
 use function send_pm;
 
 use const Newpoints\ROOT;
 
 const URL = 'newpoints.php';
+
+const RULE_TYPE_FORUM = 'forum';
+
+const RULE_TYPE_GROUP = 'group';
 
 function language_load(string $plugin = ''): bool
 {
@@ -85,7 +90,7 @@ function add_hooks(string $namespace): bool
     return true;
 }
 
-function run_hooks(string $hook_name = '', mixed &$hook_arguments = ''): mixed
+function run_hooks(string $hook_name = '', &$hook_arguments = '')
 {
     global $plugins;
 
@@ -847,34 +852,43 @@ function rules_get(string $type, int $id): array
 {
     global $db, $cache;
 
-    if (!$type || !$id) {
-        return false;
-    }
+    $rule_data = [];
 
-    if ($type == 'forum') {
+    if ($type === RULE_TYPE_FORUM) {
         $typeid = 'f';
-    } elseif ($type == 'group') {
+    } elseif ($type === RULE_TYPE_GROUP) {
         $typeid = 'g';
     } else {
-        return [];
+        return $rule_data;
     }
 
-    $rule = [];
+    $cached_rules = $cache->read('newpoints_rules');
 
-    $cachedrules = $cache->read('newpoints_rules');
-    if ($cachedrules === false) {
+    if (!$cached_rules) {
+        //throw new Exception('Invalid rule identifier');
         // Something's wrong so let's get rule from DB
         // To fix this issue, the administrator should edit a rule and save it (all rules are re-cached when one is added/edited)
-        $query = $db->simple_select('newpoints_' . $type . 'rules', '*', $typeid . 'id=\'' . intval($id) . '\'');
-        $rule = $db->fetch_array($query);
-    } else {
-        if (!empty($cachedrules)) {
-            // If the array is not empty then grab from cache
-            $rule = $cachedrules[$type][$id];
+        $query = $db->simple_select("newpoints_{$type}rules", 'rate', "{$typeid}id='{$id}'");
+
+        if ($db->num_rows($query)) {
+            $rule_data = $db->fetch_array($query);
         }
+    } elseif (!empty($cached_rules) && isset($cached_rules[$type]) && !empty($cached_rules[$type][$id])) {
+        // If the array is not empty then grab from cache
+        $rule_data = $cached_rules[$type][$id];
     }
 
-    return $rule;
+    return $rule_data;
+}
+
+function rules_forum_get(int $forum_id): array
+{
+    return rules_get(RULE_TYPE_FORUM, $forum_id);
+}
+
+function rules_group_get(int $group_id): array
+{
+    return rules_get(RULE_TYPE_GROUP, $group_id);
 }
 
 /**
@@ -922,9 +936,23 @@ function rules_get_all(string $type): array
     return $rules;
 }
 
-function rules_get_group_rate(string $rule_key, array $user = []): float
+function rules_forum_get_rate(int $forum_id): float
 {
-    $group_rate = 0;
+    $forum_rules = rules_forum_get($forum_id);
+
+    return isset($forum_rules['rate']) ? (float)$forum_rules['rate'] : 1;
+}
+
+function rate_group_get(int $group_id)
+{
+    $group_rules = rules_group_get($group_id);
+
+    return isset($group_rules['rate']) ? (float)$group_rules['rate'] : 1;
+}
+
+function rules_get_group_rate(array $user = []): float
+{
+    $group_rate = 1;
 
     if (empty($user)) {
         global $mybb;
@@ -934,16 +962,22 @@ function rules_get_group_rate(string $rule_key, array $user = []): float
 
     $rate_values = [];
 
-    foreach (explode(',', "{$mybb->user['usergroup']},{$mybb->user['usergroup']}") as $group_id) {
-        $groupsrules = newpoints_getrules('group', (int)$group_id);
+    $user_groups = $user['usergroup'];
 
-        if (!empty($groupsrules[$rule_key])) {
-            $rate_values[] = (float)$groupsrules[$rule_key];
+    if (!get_setting('main_group_rate_primary_only')) {
+        $user_groups .= ",{$user['usergroup']}";
+    }
+
+    foreach (explode(',', $user_groups) as $group_id) {
+        $groups_rules = rules_group_get((int)$group_id);
+
+        if (!empty($groups_rules['rate'])) {
+            $rate_values[] = (float)$groups_rules['rate'];
         }
     }
 
     if (empty($rate_values)) {
-        return 1;
+        return $group_rate;
     }
 
     $distance = INF;
@@ -1202,17 +1236,6 @@ function plugins_load(): bool
 // Updates users' points by user group - used by group rules
 function users_update(): bool
 {
-    global $cache, $userupdates, $db;
-
-    if (!empty($userupdates)) {
-        foreach ($userupdates as $gid => $amount) {
-            $db->write_query(
-                'UPDATE `' . $db->table_prefix . 'users` SET `newpoints`=`newpoints`+' . $amount . ' WHERE `usergroup`=' . $gid
-            );
-        }
-        unset($userupdates);
-    }
-
     return true;
 }
 
@@ -1324,25 +1347,14 @@ function settings(string $group_name, string $title, string $description, array 
 }
 
 function sanitize_array_integers(
-    array|string $items_object,
-    bool $implode = false,
+    array $items_object,
     string $delimiter = ','
-): array|string {
-    if (!is_array($items_object)) {
-        $items_object = explode($delimiter, $items_object);
-    }
-
+): array {
     foreach ($items_object as &$item_value) {
         $item_value = (int)$item_value;
     }
 
-    $return_array = array_filter(array_unique($items_object));
-
-    if ($implode) {
-        return implode($delimiter, $return_array);
-    }
-
-    return $return_array;
+    return array_filter(array_unique($items_object));
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )
@@ -1355,7 +1367,7 @@ function control_object(&$obj, $code)
     $checkstr = 'O:' . strlen($classname) . ':"' . $classname . '":';
     $checkstr_len = strlen($checkstr);
     if (substr($objserial, 0, $checkstr_len) == $checkstr) {
-        $vars = array();
+        $vars = [];
         // grab resources/object etc, stripping scope info from keys
         foreach ((array)$obj as $k => $v) {
             if ($p = strrpos($k, "\0")) {
@@ -1387,11 +1399,11 @@ if ($GLOBALS['db'] instanceof AbstractPdoDbDriver) {
     function control_db($code)
     {
         global $db;
-        $linkvars = array(
+        $linkvars = [
             'read_link' => $db->read_link,
             'write_link' => $db->write_link,
             'current_link' => $db->current_link,
-        );
+        ];
         unset($db->read_link, $db->write_link, $db->current_link);
         $lastResult = $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->getValue($db);
         $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setValue($db, null); // don't let this block serialization

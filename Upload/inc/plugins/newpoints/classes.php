@@ -191,5 +191,58 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'default' => 0
         ],
-    ]
+    ],
+    'usergroups' => [
+        'newpoints_can_see_page' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 1,
+            'formType' => 'checkBox'
+        ],
+        'newpoints_can_see_stats' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 1,
+            'formType' => 'checkBox'
+        ],
+        'newpoints_can_donate' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 0,
+            'formType' => 'checkBox'
+        ],
+        'newpoints_allowance' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_allowance_period' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0,
+            'formType' => 'numericField'
+        ],
+        'newpoints_allowance_primary_only' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 0,
+            'formType' => 'checkBox'
+        ],
+        'newpoints_allowance_last_stamp' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+    ],
+    'forums' => [
+    ],
 ];
+
+const FORM_TYPE_CHECK_BOX = 'checkBox';
+
+const FORM_TYPE_NUMERIC_FIELD = 'numericField';

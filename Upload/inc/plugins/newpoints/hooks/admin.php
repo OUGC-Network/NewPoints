@@ -31,11 +31,15 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Admin;
 
+use FormContainer;
 use MyBB;
 
+use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\run_hooks;
 
+use const Newpoints\Core\FIELDS_DATA;
+use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
 use const Newpoints\ROOT;
 
 function admin_config_plugins_deactivate(): bool
@@ -219,4 +223,129 @@ function newpoints_admin_permissions(array &$admin_permissions): array
     $admin_permissions = run_hooks('admin_newpoints_permissions', $admin_permissions);
 
     return $admin_permissions;
+}
+
+function admin_user_groups_edit_graph_tabs(array &$tabs): array
+{
+    global $lang;
+
+    language_load();
+
+    $tabs['newpoints'] = $lang->newpoints_groups_tab;
+
+    return $tabs;
+}
+
+function admin_user_groups_edit_graph(): bool
+{
+    global $lang, $form, $mybb;
+
+    language_load();
+
+    $data_fields = FIELDS_DATA['usergroups'];
+
+    echo '<div id="tab_newpoints">';
+
+    $form_container = new FormContainer($lang->ougc_withdraw_points_groups_tab);
+
+    $form_fields = [];
+
+    $hook_arguments = [
+        'data_fields' => &$data_fields,
+        'form_fields' => &$form_fields
+    ];
+
+    $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType'])) {
+            continue;
+        }
+
+        $setting_language_string = $data_field_key;
+
+        if (strpos($data_field_key, 'newpoints_user_groups_') !== 0) {
+            $setting_language_string = str_replace('newpoints_', 'newpoints_user_groups_', $data_field_key);
+        }
+
+        switch ($data_field_data['formType']) {
+            case FORM_TYPE_CHECK_BOX:
+                $form_fields[] = $form->generate_check_box(
+                    $data_field_key,
+                    1,
+                    $lang->{$setting_language_string} ?? '',
+                    ['checked' => $mybb->get_input($data_field_key, MyBB::INPUT_INT)]
+                );
+                break;
+            case \Newpoints\Core\FORM_TYPE_NUMERIC_FIELD:
+                $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+
+                if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
+                    $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+                }
+
+                $form_fields[] = ($lang->{$setting_language_string} ?? '') . $form->generate_numeric_field(
+                        $data_field_key,
+                        $mybb->get_input($data_field_key, MyBB::INPUT_INT),
+                        [
+                            'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
+                            'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
+                        ],
+                        $lang->{$setting_language_string} ?? '',
+                        ['checked' => $mybb->get_input($data_field_key, MyBB::INPUT_INT)]
+                    );
+                break;
+        }
+    }
+    $lang->ougc_withdraw_points_groups_queuetime . $form->generate_numeric_field(
+        'ougc_withdraw_points_queuetime',
+        $mybb->get_input('ougc_withdraw_points_queuetime', MyBB::INPUT_INT),
+        ['id' => 'ougc_withdraw_points_queuetime', 'class' => 'field50', 'min' => 0]
+    );
+
+    if (empty($form_fields)) {
+        return false;
+    }
+
+    $hook_arguments = run_hooks('admin_user_groups_edit_graph_intermediate', $hook_arguments);
+
+    $form_container->output_row(
+        $lang->newpoints_groups_users,
+        '',
+        '<div class="group_settings_bit">' . implode('</div><div class="group_settings_bit">', $form_fields) . '</div>'
+    );
+
+    $hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $hook_arguments);
+
+    $form_container->end();
+
+    echo '</div>';
+
+    return true;
+}
+
+function admin_user_groups_edit_commit(): bool
+{
+    global $mybb, $db;
+    global $updated_group;
+
+    $data_fields = FIELDS_DATA['usergroups'];
+
+    $hook_arguments = [
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('admin_user_groups_edit_commit_start', $hook_arguments);
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+            $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+        } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
+            $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+        } else {
+            $updated_group[$data_field_key] = $db->escape_string($mybb->get_input($data_field_key));
+        }
+    }
+
+    return true;
 }
