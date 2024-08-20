@@ -40,6 +40,7 @@ use function Newpoints\Core\run_hooks;
 
 use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
+use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
 use const Newpoints\ROOT;
 
 function admin_config_plugins_deactivate(): bool
@@ -69,13 +70,8 @@ function admin_config_plugins_deactivate(): bool
 
 function admin_load(): bool
 {
-    global $plugins, $newpoints_plugins, $mybb;
+    load_set_guest_data();
 
-    if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        load_set_guest_data();
-    }
-
-    // as plugins can't hook to admin_load, we must allow them to hook to newpoints_admin_load
     run_hooks('admin_load');
 
     return true;
@@ -277,7 +273,7 @@ function admin_user_groups_edit_graph(): bool
                     ['checked' => $mybb->get_input($data_field_key, MyBB::INPUT_INT)]
                 );
                 break;
-            case \Newpoints\Core\FORM_TYPE_NUMERIC_FIELD:
+            case FORM_TYPE_NUMERIC_FIELD:
                 $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
 
                 if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {

@@ -47,6 +47,7 @@ use function Newpoints\Core\rules_group_get;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\users_update;
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
@@ -67,21 +68,12 @@ function global_start(): bool
         $templatelist .= 'newpoints_profile,newpoints_donate_inline';
     }
 
-    global $plugins, $mybb, $mypoints;
-
     load_set_guest_data();
-
-    //newpoints_load_settings();
-
-    if ($mybb->user['uid'] > 0) {
-        $mypoints = points_format((float)$mybb->user['newpoints']);
-    } else {
-        $mypoints = 0;
-    }
 
     // as plugins can't hook to global_start, we must allow them to hook to global_start
     run_hooks('global_start');
 
+    //users_update();
     return true;
 }
 
@@ -124,17 +116,7 @@ function global_end(): bool
 
 function global_intermediate(): bool
 {
-    global $mybb;
-    global $newpoints_user_balance_formatted;
-
-    if (!isset($mybb->user['newpoints'])) {
-        $mybb->user['newpoints'] = 0;
-    } else {
-        $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
-        $mybb->user['newpoints'] = 0;
-    }
-
-    $newpoints_user_balance_formatted = points_format($mybb->user['newpoints']);
+    load_set_guest_data();
 
     return true;
 }
@@ -144,14 +126,8 @@ function global_intermediate(): bool
 // todo, fix plugins not being able to use xmlhttp by loading plugins before
 function xmlhttp(): bool
 {
-    global $plugins;
-
-    global_intermediate();
-
     load_set_guest_data();
-    //newpoints_load_settings();
 
-    // as plugins can't hook to xmlhttp, we must allow them to hook to newpoints_xmlhttp
     run_hooks('xmlhttp');
 
     return true;
@@ -161,12 +137,8 @@ function xmlhttp(): bool
 // todo, fix plugins not being able to use archive_start by loading plugins before
 function archive_start()
 {
-    global $plugins;
-
     load_set_guest_data();
-    //newpoints_load_settings();
 
-    // as plugins can't hook to archive_start, we must allow them to hook to newpoints_archive_start
     run_hooks('archive_start');
 }
 

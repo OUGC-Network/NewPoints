@@ -962,7 +962,7 @@ function rules_get_group_rate(array $user = []): float
 
     $rate_values = [];
 
-    $user_groups = $user['usergroup'];
+    $user_groups = (string)$user['usergroup'];
 
     if (!get_setting('main_group_rate_primary_only')) {
         $user_groups .= ",{$user['usergroup']}";
@@ -1194,10 +1194,15 @@ function check_permissions(string $groups_comma): bool
 function load_set_guest_data(): bool
 {
     global $mybb;
+    global $mypoints, $newpoints_user_balance_formatted;
 
-    if (empty($mybb->user) || empty($mybb->user['uid'])) {
+    if (empty($mybb->user) || empty($mybb->user['uid']) || !isset($mybb->user['newpoints'])) {
         $mybb->user['newpoints'] = 0;
+    } else {
+        $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
     }
+
+    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
 
     return true;
 }
@@ -1233,9 +1238,52 @@ function plugins_load(): bool
     return true;
 }
 
-// Updates users' points by user group - used by group rules
+// Updates users' points by user group
 function users_update(): bool
 {
+    global $db, $cache;
+
+    $user_groups = $cache->read('usergroups');
+
+    foreach ($user_groups as $user_group_data) {
+        if (
+            empty($user_group_data['newpoints_allowance']) ||
+            empty($user_group_data['newpoints_allowance_period']) ||
+            $user_group_data['newpoints_allowance_last_stamp'] > (TIME_NOW - $user_group_data['newpoints_allowance_period'])
+        ) {
+            continue;
+        }
+
+        $amount = (float)$user_group_data['newpoints_allowance'];
+
+        $group_id = (int)$user_group_data['gid'];
+
+        $where_clauses = ["`usergroup`='{$group_id}'"];
+
+        if (empty($user_group_data['newpoints_allowance_primary_only'])) {
+            switch ($db->type) {
+                case 'pgsql':
+                case 'sqlite':
+                    $where_clauses[] = "','||additionalgroups||',' LIKE '%,{$group_id},%'";
+                    break;
+                default:
+                    $where_clauses[] = "CONCAT(',',`additionalgroups`,',') LIKE '%,{$group_id},%'";
+            }
+        }
+
+        $db->update_query(
+            'users',
+            ['newpoints' => "`newpoints`+'{$amount}'"],
+            implode(' OR ', $where_clauses),
+            '',
+            true
+        );
+
+        $db->update_query('usergroups', ['newpoints_allowance_last_stamp' => TIME_NOW], "gid='{$group_id}'");
+    }
+
+    $cache->update_usergroups();
+
     return true;
 }
 

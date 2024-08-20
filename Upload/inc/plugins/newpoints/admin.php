@@ -247,8 +247,7 @@ function plugin_uninstallation(): bool
 
     //rebuild_settings();
 
-    $db->delete_query('tasks', "file='backupnewpoints'");
-
+    task_enable(TASK_DELETE);
 
     foreach (TABLES_DATA as $table_name => $table_data) {
         if ($db->table_exists($table_name)) {
@@ -312,34 +311,44 @@ function task_enable(int $action = TASK_ENABLE): bool
     language_load();
 
     if ($action === TASK_DELETE) {
-        $db->delete_query('tasks', "file='backupnewpoints'");
+        $db->delete_query('tasks', "file IN ('newpoints', 'backupnewpoints')");
 
         return true;
     }
 
-    $db_query = $db->simple_select('tasks', '*', "file='backupnewpoints'", ['limit' => 1]);
+    foreach (
+        [
+            'newpoints' => ['title' => 'NewPoints', 'description' => 'Handles Newpoints automatic features.'],
+            'backupnewpoints' => [
+                'title' => 'Backup NewPoints',
+                'description' => "Creates a backup of NewPoints default tables and users's points."
+            ]
+        ] as $task_file => $task_data
+    ) {
+        $db_query = $db->simple_select('tasks', '*', "file='{$task_file}'", ['limit' => 1]);
 
-    if ($db->num_rows($db_query)) {
-        $db->update_query('tasks', ['enabled' => $action], "file='backupnewpoints'");
-    } else {
-        include_once MYBB_ROOT . 'inc/functions_task.php';
+        if ($db->num_rows($db_query)) {
+            $db->update_query('tasks', ['enabled' => $action], "file='{$task_file}'");
+        } else {
+            include_once MYBB_ROOT . 'inc/functions_task.php';
 
-        $new_task_data = [
-            'title' => $db->escape_string('Backup NewPoints'),
-            'description' => $db->escape_string("Creates a backup of NewPoints default tables and users\'s points."),
-            'file' => $db->escape_string('backupnewpoints'),
-            'minute' => $db->escape_string('0'),
-            'hour' => $db->escape_string('0'),
-            'day' => $db->escape_string('*'),
-            'weekday' => $db->escape_string('0'),
-            'month' => $db->escape_string('*'),
-            'enabled' => 0,
-            'logging' => 1
-        ];
+            $new_task_data = [
+                'title' => $db->escape_string($task_data['title']),
+                'description' => $db->escape_string($task_data['description']),
+                'file' => $db->escape_string($task_file),
+                'minute' => 0,
+                'hour' => 0,
+                'day' => $db->escape_string('*'),
+                'weekday' => 0,
+                'month' => $db->escape_string('*'),
+                'enabled' => 0,
+                'logging' => 1
+            ];
 
-        $new_task_data['nextrun'] = fetch_next_run($new_task_data);
+            $new_task_data['nextrun'] = fetch_next_run($new_task_data);
 
-        $db->insert_query('tasks', $new_task_data);
+            $db->insert_query('tasks', $new_task_data);
+        }
     }
 
     return true;

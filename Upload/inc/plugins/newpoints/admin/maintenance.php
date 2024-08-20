@@ -174,7 +174,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
         $lang->newpoints_edituser_points_desc,
         $form->generate_text_box(
             'points',
-            round($user['newpoints'], intval($mybb->settings['newpoints_main_decimal'])),
+            round((float)$user['newpoints'], intval($mybb->settings['newpoints_main_decimal'])),
             ['id' => 'points']
         ),
         'points'
