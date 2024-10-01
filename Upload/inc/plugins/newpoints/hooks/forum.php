@@ -32,7 +32,6 @@ declare(strict_types=1);
 namespace Newpoints\Hooks\Forum;
 
 use MyBB;
-use postDatahandler;
 
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\language_load;
@@ -40,14 +39,9 @@ use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\rules_forum_get_rate;
-use function Newpoints\Core\rules_forum_get;
-use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_get_group_rate;
-use function Newpoints\Core\rules_group_get;
-use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\users_update;
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
@@ -213,162 +207,6 @@ function member_profile_end(): bool
     $newpoints_profile = eval(templates_get('profile'));
 
     return true;
-}
-
-function datahandler_post_insert_post(postDatahandler &$data): postDatahandler
-{
-    global $db, $mybb, $post, $thread;
-
-    if ($mybb->get_input('action') != 'do_newreply' || $post['savedraft']) {
-        return $data;
-    }
-
-    if ($data->post_insert_data['visible'] != 1) {
-        // If it's not visible, then we may have moderation (drafts are already considered above so it doesn't matter here)
-
-        return $data;
-    }
-
-    if (!$mybb->user['uid']) {
-        return $data;
-    }
-
-    if ($mybb->settings['newpoints_income_newpost'] == 0) {
-        return $data;
-    }
-
-    $forum_id = (int)$data->post_insert_data['fid'];
-
-    $forum_rate = rules_forum_get_rate($forum_id);
-
-    if (!$forum_rate) {
-        return $data;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return $data;
-    }
-
-    // calculate points per character bonus
-    // let's see if the number of characters in the post is greater than the minimum characters
-    if (($charcount = count_characters(
-            $post['message']
-        )) >= $mybb->settings['newpoints_income_minchar']) {
-        $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
-    } else {
-        $bonus = 0;
-    }
-
-    $user_id = (int)$mybb->user['uid'];
-
-    // give points to the poster
-    points_add(
-        $user_id,
-        (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
-        $forum_rate,
-        $group_rate
-    );
-
-    if ($thread['uid'] != $mybb->user['uid']) {
-        // we are not the thread started so give points to him/her
-        if ($mybb->settings['newpoints_income_perreply'] != 0) {
-            $thread_user_id = (int)$thread['uid'];
-
-            points_add(
-                $thread_user_id,
-                (float)$mybb->settings['newpoints_income_perreply'],
-                $forum_rate,
-                $group_rate
-            );
-        }
-    }
-
-    return $data;
-}
-
-function datahandler_post_update(postDatahandler &$newpost): postDatahandler
-{
-    global $db, $mybb, $thread;
-
-    if (!$mybb->user['uid']) {
-        return $newpost;
-    }
-
-    if ($mybb->settings['newpoints_income_perchar'] == 0) {
-        return $newpost;
-    }
-
-    if ($mybb->get_input('action') != 'do_editpost' || $mybb->get_input('editdraft')) {
-        return $newpost;
-    }
-
-    $fid = (int)$newpost->data['fid'];
-
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return $newpost;
-    }
-
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return $newpost;
-    }
-
-    // check group rules - primary group check
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return $newpost;
-    }
-
-    // get old message
-    $post = get_post(intval($newpost->data['pid']));
-    $oldcharcount = count_characters($post['message']);
-    $newcharcount = count_characters($newpost->data['message']);
-
-    // calculate points per character bonus
-    // let's see if the number of characters in the post is greater than the minimum characters
-    if ($newcharcount >= $mybb->settings['newpoints_income_minchar']) {
-        // if we have more characters now
-        if ($newcharcount > $oldcharcount) {
-            // calculate bonus based on difference of characters
-            // bonus will be positive as the new message is longer than the old one
-            $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
-        } // otherwise if the message is shorter
-        elseif ($newcharcount < $oldcharcount) {
-            // calculate bonus based on difference of characters
-            // bonus will be negative as the new message is shorter than the old one
-            $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
-        } // else if the length is the same, the bonus is 0
-        elseif ($newcharcount == $oldcharcount) {
-            $bonus = 0;
-        }
-    } elseif ($newcharcount >= $mybb->settings['newpoints_income_minchar'] && $oldcharcount >= $mybb->settings['newpoints_income_minchar']) {
-        // calculate bonus based on difference of characters
-        // bonus will be negative as the new message is shorter than the minimum chars
-        $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
-    }
-
-    if (isset($bonus)) // give points to the poster
-    {
-        $user_id = (int)$mybb->user['uid'];
-
-        points_add(
-            $user_id,
-            (float)$bonus,
-            $forum_rate,
-            $group_rate,
-            false,
-            true
-        );
-    }
-
-    return $newpost;
 }
 
 // edit post - counts less chars on edit because of \n\r being deleted
@@ -930,64 +768,6 @@ function class_moderation_unapprove_posts(array $pids): array
     }
 
     return $pids;
-}
-
-function datahandler_post_insert_thread(postDatahandler &$that): postDatahandler
-{
-    global $db, $mybb, $fid, $thread;
-
-    if ($mybb->get_input('action') != 'do_newthread' || $mybb->get_input('savedraft')) {
-        return $that;
-    }
-
-    if ($that->thread_insert_data['visible'] != 1) {
-        // If it's not visible, then we may have moderation(drafts are already considered above so it doesn't matter here)
-        return $that;
-    }
-
-    if (!$mybb->user['uid']) {
-        return $that;
-    }
-
-    if ($mybb->settings['newpoints_income_newthread'] == 0) {
-        return $that;
-    }
-
-    $fid = (int)$fid;
-
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return $that;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return $that;
-    }
-
-    // calculate points per character bonus
-    // let's see if the number of characters in the thread is greater than the minimum characters
-    if (($charcount = count_characters(
-            $mybb->get_input('message')
-        )) >= $mybb->settings['newpoints_income_minchar']) {
-        $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
-    } else {
-        $bonus = 0;
-    }
-
-    $user_id = (int)$mybb->user['uid'];
-
-    // give points to the author of the new thread
-    points_add(
-        $user_id,
-        (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
-        $forum_rate,
-        $group_rate
-    );
-
-    return $that;
 }
 
 function class_moderation_delete_thread(int $tid): int
