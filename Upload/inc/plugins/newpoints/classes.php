@@ -211,6 +211,16 @@ const FIELDS_DATA = [
             'default' => 0,
             'formType' => 'checkBox'
         ],
+        'newpoints_rate' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 1,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
         'newpoints_allowance' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
@@ -240,6 +250,16 @@ const FIELDS_DATA = [
         ],
     ],
     'forums' => [
+        'newpoints_rate' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 1,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
         'newpoints_view_lock_points' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
@@ -266,3 +286,21 @@ const FIELDS_DATA = [
 const FORM_TYPE_CHECK_BOX = 'checkBox';
 
 const FORM_TYPE_NUMERIC_FIELD = 'numericField';
+
+const POST_VISIBLE_STATUS_DRAFT = -2;
+
+const POST_VISIBLE_STATUS_SOFT_DELETED = -1;
+
+const POST_VISIBLE_STATUS_UNAPPROVED = 0;
+
+const POST_VISIBLE_STATUS_VISIBLE = 1;
+
+const INCOME_TYPE_POST_NEW = 'newpost';
+
+const INCOME_TYPE_POST_MINIMUM_CHARACTERS = 'minchar';
+
+const INCOME_TYPE_POST_PER_CHARACTER = 'perchar';
+
+const INCOME_TYPE_POST_PER_REPLY = 'perreply';
+
+const INCOME_TYPE_THREAD_NEW = 'newthread';

@@ -100,7 +100,7 @@ if (defined('IN_ADMINCP')) {
 
     global $PL;
 
-    if (!($PL instanceof \PluginLibrary)) {
+    if (!($PL instanceof PluginLibrary)) {
         $PL || require_once PLUGINLIBRARY;
     }
 } else {

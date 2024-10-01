@@ -260,11 +260,13 @@ $l['newpoints_groups_users'] = 'Users Configuration';
 $l['newpoints_user_groups_can_see_page'] = 'Can see main page?';
 $l['newpoints_user_groups_can_see_stats'] = 'Can see the stats page?';
 $l['newpoints_user_groups_can_donate'] = 'Can donate points?';
+$l['newpoints_user_groups_rate'] = 'Group Rate<br /><small class="input">The income rate for this group. Default is <code>1</code>.</small><br />';
 $l['newpoints_user_groups_allowance'] = 'Allowance Points<br /><small class="input">Set an amount of points to paid to users from this group.</small><br />';
 $l['newpoints_user_groups_allowance_period'] = 'Allowance Interval<br /><small class="input">Number of seconds between each allowance payment.</small><br />';
 $l['newpoints_user_groups_allowance_primary_only'] = 'Grant allowance if this is the user primary group only?';
 
 $l['newpoints_forums'] = 'Newpoints';
+$l['newpoints_forums_rate'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
 $l['newpoints_forums_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
 $l['newpoints_forums_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
 

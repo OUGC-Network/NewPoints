@@ -124,8 +124,7 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
         points_add_simple(
             (int)$post['uid'],
             $bonus_income,
-            (int)$data_handler->data['fid'],
-            true
+            (int)$data_handler->data['fid']
         );
     }
 

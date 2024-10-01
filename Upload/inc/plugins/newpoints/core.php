@@ -35,6 +35,7 @@ use AbstractPdoDbDriver;
 use DateTime;
 use DB_SQLite;
 use DirectoryIterator;
+use PluginLibrary;
 use pluginSystem;
 use postParser;
 
@@ -139,7 +140,7 @@ function url_handler_build(array $urlAppend = [], bool $fetchImportUrl = false, 
 {
     global $PL;
 
-    if (!($PL instanceof \PluginLibrary)) {
+    if (!($PL instanceof PluginLibrary)) {
         $PL || require_once PLUGINLIBRARY;
     }
 
@@ -191,18 +192,20 @@ function count_characters(string $message): int
 
     // Attempt to remove any MyCode
     global $parser;
+
     if (!is_object($parser)) {
         require_once MYBB_ROOT . 'inc/class_parser.php';
+
         $parser = new postParser();
     }
 
     $message = $parser->parse_message($message, [
-        'allow_html' => 0,
-        'allow_mycode' => 1,
-        'allow_smilies' => 0,
-        'allow_imgcode' => 1,
-        'filter_badwords' => 1,
-        'nl2br' => 0
+        'allow_html' => false,
+        'allow_mycode' => true,
+        'allow_smilies' => false,
+        'allow_imgcode' => true,
+        'filter_badwords' => true,
+        'nl2br' => false
     ]);
 
     // before stripping tags, try converting some into spaces
@@ -374,7 +377,7 @@ function templates_rebuild(): bool
 {
     global $PL;
 
-    if (!($PL instanceof \PluginLibrary)) {
+    if (!($PL instanceof PluginLibrary)) {
         $PL || require_once PLUGINLIBRARY;
     }
 
@@ -868,6 +871,26 @@ function points_add(
     return true;
 }
 
+function points_add_simple(
+    int $user_id,
+    float $points,
+    int $forum_id = 1
+): bool {
+    $forum_rate = rules_forum_get_rate($forum_id);
+
+    if (!$forum_rate) {
+        return false;
+    }
+
+    $group_rate = rules_get_group_rate(get_user($user_id));
+
+    if (!$group_rate) {
+        return false;
+    }
+
+    return points_add($user_id, $points, $forum_rate, $group_rate, false, true);
+}
+
 function points_update(): bool
 {
     global $cache, $userpoints, $db;
@@ -1005,10 +1028,9 @@ function rules_get_all(string $type): array
 
 function rules_forum_get_rate(int $forum_id): float
 {
-    _dump($forum_id);
-    $forum_rules = rules_forum_get($forum_id);
+    $forum_data = get_forum($forum_id);
 
-    return isset($forum_rules['rate']) ? (float)$forum_rules['rate'] : 1;
+    return isset($forum_data['newpoints_rate']) ? (float)$forum_data['newpoints_rate'] : 1;
 }
 
 function rate_group_get(int $group_id)
@@ -1020,11 +1042,11 @@ function rate_group_get(int $group_id)
 
 function rules_get_group_rate(array $user = []): float
 {
+    global $mybb;
+
     $group_rate = 1;
 
     if (empty($user)) {
-        global $mybb;
-
         $user = $mybb->user;
     }
 
@@ -1036,11 +1058,13 @@ function rules_get_group_rate(array $user = []): float
         $user_groups .= ",{$user['additionalgroups']}";
     }
 
-    foreach (explode(',', $user_groups) as $group_id) {
-        $groups_rules = rules_group_get((int)$group_id);
+    $groups_cache = $mybb->cache->read('usergroups');
 
-        if (!empty($groups_rules['rate'])) {
-            $rate_values[] = (float)$groups_rules['rate'];
+    foreach (explode(',', $user_groups) as $group_id) {
+        $group_data = $groups_cache[(int)$group_id] ?? [];
+
+        if (!empty($group_data['newpoints_rate'])) {
+            $rate_values[] = (float)$group_data['newpoints_rate'];
         }
     }
 
@@ -1680,6 +1704,28 @@ function page_build_menu(): string
 function main_file_name(): string
 {
     return (string)get_setting('main_file');
+}
+
+function get_income_value(string $income_type): float
+{
+    $income_value = 1;
+
+    switch ($income_type) {
+        case INCOME_TYPE_POST_NEW:
+            $income_value = (float)get_setting('income_newpost');
+            break;
+        case INCOME_TYPE_POST_MINIMUM_CHARACTERS:
+            $income_value = (float)get_setting('income_minchar');
+            break;
+        case INCOME_TYPE_POST_PER_CHARACTER:
+            $income_value = (float)get_setting('income_perchar');
+            break;
+        case INCOME_TYPE_POST_PER_REPLY:
+            $income_value = (float)get_setting('income_perreply');
+            break;
+    }
+
+    return $income_value;
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )
