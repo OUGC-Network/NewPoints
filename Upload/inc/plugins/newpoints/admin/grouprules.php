@@ -126,16 +126,16 @@ if (!$mybb->get_input('action')) // view grouprules
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
-        $insert_query = [
+        $insert_data = [
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
             'gid' => $mybb->get_input('group', MyBB::INPUT_INT)
         ];
 
-        $insert_query = run_hooks('admin_grouprules_add_insert', $insert_query);
+        $insert_data = run_hooks('admin_grouprules_add_insert', $insert_data);
 
-        $db->insert_query('newpoints_grouprules', $insert_query);
+        $db->insert_query('newpoints_grouprules', $insert_data);
 
         // Rebuild rules cache
         $array = [];
@@ -209,16 +209,16 @@ if (!$mybb->get_input('action')) // view grouprules
             admin_redirect('index.php?module=newpoints-grouprules');
         }
 
-        $update_query = [
+        $update_data = [
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
             'gid' => $mybb->get_input('group', MyBB::INPUT_INT)
         ];
 
-        $update_query = run_hooks('admin_grouprules_edit_update', $update_query);
+        $update_data = run_hooks('admin_grouprules_edit_update', $update_data);
 
-        $db->update_query('newpoints_grouprules', $update_query, "rid='{$mybb->get_input('rid', MyBB::INPUT_INT)}'");
+        $db->update_query('newpoints_grouprules', $update_data, "rid='{$mybb->get_input('rid', MyBB::INPUT_INT)}'");
 
         // Rebuild rules cache
         $array = [];

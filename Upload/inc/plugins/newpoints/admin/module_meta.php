@@ -36,78 +36,105 @@ if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
 }
 
-function newpoints_meta()
+function newpoints_meta(): bool
 {
-    global $page, $lang, $plugins;
-
-    $sub_menu = [];
-    $sub_menu['10'] = [
-        'id' => 'plugins',
-        'title' => $lang->nav_plugins,
-        'link' => 'index.php?module=newpoints-plugins'
-    ];
-    $sub_menu['15'] = [
-        'id' => 'settings',
-        'title' => $lang->nav_settings,
-        'link' => 'index.php?module=newpoints-settings'
-    ];
-    $sub_menu['20'] = ['id' => 'log', 'title' => $lang->nav_log, 'link' => 'index.php?module=newpoints-log'];
-    $sub_menu['25'] = [
-        'id' => 'maintenance',
-        'title' => $lang->nav_maintenance,
-        'link' => 'index.php?module=newpoints-maintenance'
-    ];
-    $sub_menu['30'] = [
-        'id' => 'forumrules',
-        'title' => $lang->nav_forumrules,
-        'link' => 'index.php?module=newpoints-forumrules'
-    ];
-    $sub_menu['35'] = [
-        'id' => 'grouprules',
-        'title' => $lang->nav_grouprules,
-        'link' => 'index.php?module=newpoints-grouprules'
-    ];
-
-    if (function_exists('\\Newpoints\\Core\\run_hooks')) {
-        $sub_menu = run_hooks('admin_menu', $sub_menu);
-    }
+    global $page, $lang;
 
     language_load();
 
-    $page->add_menu_item($lang->newpoints, 'newpoints', 'index.php?module=newpoints', 60, $sub_menu);
+    $sub_menu_items = [
+        10 => [
+            'id' => 'plugins',
+            'title' => $lang->nav_plugins,
+            'link' => 'index.php?module=newpoints-plugins'
+        ],
+        15 => [
+            'id' => 'settings',
+            'title' => $lang->nav_settings,
+            'link' => 'index.php?module=newpoints-settings'
+        ],
+        20 => [
+            'id' => 'log',
+            'title' => $lang->nav_log,
+            'link' => 'index.php?module=newpoints-log'
+        ],
+        25 => [
+            'id' => 'maintenance',
+            'title' => $lang->nav_maintenance,
+            'link' => 'index.php?module=newpoints-maintenance'
+        ],
+        30 => [
+            'id' => 'forumrules',
+            'title' => $lang->nav_forumrules,
+            'link' => 'index.php?module=newpoints-forumrules'
+        ],
+        35 => [
+            'id' => 'grouprules',
+            'title' => $lang->nav_grouprules,
+            'link' => 'index.php?module=newpoints-grouprules'
+        ]
+    ];
+
+    if (function_exists('\Newpoints\Core\run_hooks')) {
+        $sub_menu_items = run_hooks('admin_menu', $sub_menu_items);
+    }
+
+    $page->add_menu_item($lang->newpoints, 'newpoints', 'index.php?module=newpoints', 60, $sub_menu_items);
 
     return true;
 }
 
-function newpoints_action_handler($action)
+function newpoints_action_handler(string $current_action): string
 {
-    global $page, $lang, $plugins;
+    global $page;
 
     $page->active_module = 'newpoints';
 
-    $actions = [
-        'plugins' => ['active' => 'plugins', 'file' => 'plugins.php'],
-        'settings' => ['active' => 'settings', 'file' => 'settings.php'],
-        'log' => ['active' => 'log', 'file' => 'log.php'],
-        'maintenance' => ['active' => 'maintenance', 'file' => 'maintenance.php'],
-        'forumrules' => ['active' => 'forumrules', 'file' => 'forumrules.php'],
-        'grouprules' => ['active' => 'grouprules', 'file' => 'grouprules.php'],
+    $action_handlers = [
+        'plugins' => [
+            'active' => 'plugins',
+            'file' => 'plugins.php'
+        ],
+        'settings' => [
+            'active' => 'settings',
+            'file' => 'settings.php'
+        ],
+        'log' => [
+            'active' => 'log',
+            'file' => 'log.php'
+        ],
+        'maintenance' => [
+            'active' => 'maintenance',
+            'file' => 'maintenance.php'
+        ],
+        'forumrules' => [
+            'active' => 'forumrules',
+            'file' => 'forumrules.php'
+        ],
+        'grouprules' => [
+            'active' => 'grouprules',
+            'file' => 'grouprules.php'
+        ],
     ];
 
-    $actions = run_hooks('admin_action_handler', $actions);
+    $action_handlers = run_hooks('admin_action_handler', $action_handlers);
 
-    if (!isset($actions[$action])) {
+    if (!isset($action_handlers[$current_action])) {
         $page->active_action = 'plugins';
+
         return 'plugins.php';
     }
 
-    $page->active_action = $actions[$action]['active'];
-    return $actions[$action]['file'];
+    $page->active_action = $action_handlers[$current_action]['active'];
+
+    return $action_handlers[$current_action]['file'];
 }
 
-function newpoints_admin_permissions()
+function newpoints_admin_permissions(): array
 {
-    global $lang, $plugins;
+    global $lang;
+
+    language_load();
 
     $admin_permissions = [
         'newpoints' => $lang->can_manage_newpoints,

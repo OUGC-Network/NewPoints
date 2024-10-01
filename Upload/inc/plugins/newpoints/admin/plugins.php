@@ -32,7 +32,7 @@ declare(strict_types=1);
 use function Newpoints\Admin\db_verify_columns;
 use function Newpoints\Admin\db_verify_tables;
 use function Newpoints\Admin\plugin_library_load;
-use function Newpoints\Admin\task_enable;
+use function Newpoints\Core\task_enable;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
@@ -384,7 +384,7 @@ function newpoints_get_plugins(): array
             if (
                 $file == '.' ||
                 $file == '..' ||
-                !str_starts_with($file, 'newpoints_') ||
+                strpos($file, 'newpoints_') !== 0 ||
                 is_dir(MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $file)
             ) {
                 continue;

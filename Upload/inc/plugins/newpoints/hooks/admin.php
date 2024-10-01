@@ -181,12 +181,6 @@ function admin_page_output_tab_control_start(array $tabs): array
 
 function newpoints_admin_menu(array &$sub_menu): array
 {
-    global $plugins, $newpoints_plugins;
-
-    if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        //plugins_load();
-    }
-
     // as plugins can't hook to admin_newpoints_menu, we must allow them to hook to newpoints_admin_newpoints_menu
     $sub_menu = run_hooks('admin_newpoints_menu', $sub_menu);
 
@@ -195,12 +189,6 @@ function newpoints_admin_menu(array &$sub_menu): array
 
 function newpoints_admin_action_handler(array &$actions): array
 {
-    global $plugins, $newpoints_plugins;
-
-    if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        //plugins_load();
-    }
-
     // as plugins can't hook to admin_newpoints_action_handler, we must allow them to hook to newpoints_newpoints_action_handler
     $actions = run_hooks('admin_newpoints_action_handler', $actions);
 
@@ -209,12 +197,6 @@ function newpoints_admin_action_handler(array &$actions): array
 
 function newpoints_admin_permissions(array &$admin_permissions): array
 {
-    global $plugins, $newpoints_plugins;
-
-    if (!$newpoints_plugins || !isset($newpoints_plugins)) {
-        //plugins_load();
-    }
-
     // as plugins can't hook to admin_newpoints_permissions, we must allow them to hook to newpoints_newpoints_permissions
     $admin_permissions = run_hooks('admin_newpoints_permissions', $admin_permissions);
 
@@ -339,7 +321,7 @@ function admin_user_groups_edit_commit(): bool
     return true;
 }
 
-function admin_formcontainer_end(array &$hook_arguments): array
+function admin_formcontainer_end(array &$current_hook_arguments): array
 {
     global $lang;
     global $run_module;
@@ -349,12 +331,12 @@ function admin_formcontainer_end(array &$hook_arguments): array
     if (
         $done ||
         $run_module !== 'forum' ||
-        !isset($hook_arguments['this']->_title) ||
+        !isset($current_hook_arguments['this']->_title) ||
         (
-            $hook_arguments['this']->_title !== $lang->additional_forum_options &&
-            $hook_arguments['this']->_title !== "<div class=\"float_right\" style=\"font-weight: normal;\"><a href=\"#\" onclick=\"$('#additional_options_link').toggle(); $('#additional_options').fadeToggle('fast'); return false;\">{$lang->hide_additional_options}</a></div>" . $lang->additional_forum_options
+            $current_hook_arguments['this']->_title !== $lang->additional_forum_options &&
+            $current_hook_arguments['this']->_title !== "<div class=\"float_right\" style=\"font-weight: normal;\"><a href=\"#\" onclick=\"$('#additional_options_link').toggle(); $('#additional_options').fadeToggle('fast'); return false;\">{$lang->hide_additional_options}</a></div>" . $lang->additional_forum_options
         )) {
-        return $hook_arguments;
+        return $current_hook_arguments;
     }
 
     $done = true;
@@ -368,12 +350,12 @@ function admin_formcontainer_end(array &$hook_arguments): array
 
     $form_fields = [];
 
-    $newpoints_hook_arguments = [
+    $hook_arguments = [
         'data_fields' => &$data_fields,
         'form_fields' => &$form_fields
     ];
 
-    $newpoints_hook_arguments = run_hooks('admin_formcontainer_end_start', $newpoints_hook_arguments);
+    $hook_arguments = run_hooks('admin_formcontainer_end_start', $hook_arguments);
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
         if (!isset($data_field_data['formType'])) {
@@ -407,12 +389,12 @@ function admin_formcontainer_end(array &$hook_arguments): array
     }
 
     if (empty($form_fields)) {
-        return $hook_arguments;
+        return $current_hook_arguments;
     }
 
-    $newpoints_hook_arguments = run_hooks('admin_user_groups_edit_graph_intermediate', $newpoints_hook_arguments);
+    $hook_arguments = run_hooks('admin_user_groups_edit_graph_intermediate', $hook_arguments);
 
-    $hook_arguments['this']->output_row(
+    $current_hook_arguments['this']->output_row(
         $lang->newpoints_forums,
         '',
         "<div class=\"forum_settings_bit\">" . implode(
@@ -421,9 +403,9 @@ function admin_formcontainer_end(array &$hook_arguments): array
         ) . '</div>'
     );
 
-    $newpoints_hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $newpoints_hook_arguments);
+    $hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $hook_arguments);
 
-    return $hook_arguments;
+    return $current_hook_arguments;
 }
 
 function admin_forum_management_edit_commit(): bool

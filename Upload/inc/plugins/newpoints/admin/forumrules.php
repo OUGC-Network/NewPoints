@@ -128,16 +128,16 @@ if (!$mybb->get_input('action')) // view forumrules
             admin_redirect('index.php?module=newpoints-forumrules');
         }
 
-        $insert_query = [
+        $insert_data = [
             'name' => $db->escape_string($mybb->get_input('name')),
             'description' => $db->escape_string($mybb->get_input('description')),
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
             'fid' => $mybb->get_input('forum', MyBB::INPUT_INT)
         ];
 
-        $insert_query = run_hooks('admin_forumrules_add_insert', $insert_query);
+        $insert_data = run_hooks('admin_forumrules_add_insert', $insert_data);
 
-        $db->insert_query('newpoints_forumrules', $insert_query);
+        $db->insert_query('newpoints_forumrules', $insert_data);
 
         // Rebuild rules cache
         $array = [];
