@@ -15,14 +15,6 @@
     "type": "numeric",
     "value": 2
   },
-  "donationspm": {
-    "type": "yesno",
-    "value": 1
-  },
-  "stats_lastdonations": {
-    "type": "numeric",
-    "value": 10
-  },
   "stats_richestusers": {
     "type": "numeric",
     "value": 10
@@ -30,5 +22,9 @@
   "group_rate_primary_only": {
     "type": "yesno",
     "value": 1
+  },
+  "file": {
+    "type": "text",
+    "value": "newpoints.php"
   }
 }

@@ -32,12 +32,15 @@ declare(strict_types=1);
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_add;
+use function Newpoints\Core\main_file_name;
+use function Newpoints\Core\page_build_menu;
+use function Newpoints\Core\page_build_menu_options;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\url_handler_build;
+use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
 const IN_MYBB = 1;
@@ -59,6 +62,8 @@ global $mybb, $plugins, $lang, $db, $templates;
 
 $mybb->input['action'] = $mybb->get_input('action');
 
+url_handler_set(main_file_name());
+
 run_hooks('begin');
 
 // Allow guests here? Some plugins may allow guest access and they may hook to newpoints_start
@@ -68,64 +73,13 @@ if (empty($mybb->usergroup['newpoints_can_see_page'])) {
 
 language_load();
 
-$menu = [
-    0 => [
-        'lang_string' => 'newpoints_home',
-    ]
-];
+$options = page_build_menu_options();
 
-if (!empty($mybb->usergroup['newpoints_can_see_stats'])) {
-    $menu[10] = [
-        'action' => 'stats',
-        'lang_string' => 'newpoints_statistics',
-    ];
-}
-
-if (!empty($mybb->usergroup['newpoints_can_donate'])) {
-    $menu[20] = [
-        'action' => 'donate',
-        'lang_string' => 'newpoints_donate',
-    ];
-}
-
-
-$menu = run_hooks('default_menu', $menu);
-
-$alternative_background = alt_trow(true);
-
-$options = '';
-
-foreach ($menu as $option) {
-    if (isset($option['setting']) && !get_setting($option['setting'])) {
-        continue;
-    }
-
-    $action_url = $item_selected = $option_name = '';
-
-    if (isset($option['action'])) {
-        $action_url = url_handler_build(['action' => $option['action']]);
-
-        if ($mybb->get_input('action') === (string)$option['action']) {
-            $item_selected = eval(templates_get('option_selected'));
-        }
-    } else {
-        $action_url = url_handler_build();
-    }
-
-    if (isset($option['lang_string']) && isset($lang->{$option['lang_string']})) {
-        $option_name = $lang->{$option['lang_string']};
-    } else {
-        $option_name = ucwords($option['action']);
-    }
-
-    $option = run_hooks('menu_build_option', $option);
-
-    $options .= eval(templates_get('option'));
-
-    $alternative_background = alt_trow();
-}
+$newpoints_menu = page_build_menu();
 
 run_hooks('start');
+
+add_breadcrumb($lang->newpoints, main_file_name());
 
 // Block guests here
 if (!$mybb->user['uid']) {
@@ -226,7 +180,7 @@ if ($mybb->get_input('action') == 'stats') {
 		LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)
 		WHERE l.action='donation'
 		ORDER BY l.date DESC
-		LIMIT " . intval($mybb->settings['newpoints_main_stats_lastdonations'])
+		LIMIT " . (int)get_setting('donations_stats_latest')
     );
 
     while ($donation = $db->fetch_array($query)) {
@@ -315,10 +269,10 @@ if ($mybb->get_input('action') == 'stats') {
             'COUNT(*) as donations',
             'action=\'donation\' AND date>' . (constant(
                     'TIME_NOW'
-                ) - 15 * 60 * 60) . ' AND uid=' . (int)$mybb->user['uid']
+                ) - (int)get_setting('donations_flood_minutes') * 60 * 60) . ' AND uid=' . (int)$mybb->user['uid']
         );
         $totaldonations = (int)$db->fetch_field($q, 'donations');
-        if ($totaldonations >= MAX_DONATIONS_CONTROL) {
+        if ($totaldonations >= (int)get_setting('donations_flood_limit')) {
             error($lang->sprintf($lang->newpoints_max_donations_control, $totaldonations));
         }
     }
@@ -349,7 +303,7 @@ if ($mybb->get_input('action') == 'stats') {
     points_add($touser['uid'], $amount);
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
-    if ($mybb->settings['newpoints_main_donationspm'] != 0) {
+    if (get_setting('donations_send_private_message')) {
         if ($mybb->get_input('reason') != '') {
             private_message_send(
                 [

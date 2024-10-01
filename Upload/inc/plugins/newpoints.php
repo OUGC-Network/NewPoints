@@ -66,14 +66,22 @@ use function Newpoints\Core\users_update;
 
 use const Newpoints\ROOT;
 
+const NEWPOINTS_VERSION = '3.0.0';
+
+const NEWPOINTS_VERSION_CODE = 3000;
+
+const MAX_DONATIONS_CONTROL = 5; // Maximum donations someone can send each 15 minutes
+
+const NP_HOOKS = 0;
+
 defined('IN_MYBB') || die('Direct initialization of this file is not allowed.');
 
 // You can uncomment the lines below to avoid storing some settings in the DB
 define('Newpoints\Core\SETTINGS', [
-    //'key' => '',
+    //'main_file' => 'newpoints.php',
 ]);
 
-define('Newpoints\Core\DEBUG', true);
+define('Newpoints\Core\DEBUG', false);
 
 define('Newpoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
 
@@ -86,10 +94,15 @@ require_once ROOT . '/classes.php';
 
 if (defined('IN_ADMINCP')) {
     require_once ROOT . '/admin.php';
-
     require_once ROOT . '/hooks/admin.php';
 
     add_hooks('Newpoints\Hooks\Admin');
+
+    global $PL;
+
+    if (!($PL instanceof \PluginLibrary)) {
+        $PL || require_once PLUGINLIBRARY;
+    }
 } else {
     require_once ROOT . '/hooks/forum.php';
 
@@ -99,18 +112,6 @@ if (defined('IN_ADMINCP')) {
 require_once ROOT . '/hooks/shared.php';
 
 add_hooks('Newpoints\Hooks\Shared');
-
-if (!defined('IN_MYBB')) {
-    die('This file cannot be accessed directly.');
-}
-
-const NEWPOINTS_VERSION = '3.0.0';
-
-const NEWPOINTS_VERSION_CODE = 3000;
-
-const MAX_DONATIONS_CONTROL = 5; // Maximum donations someone can send each 15 minutes
-
-const NP_HOOKS = 0;
 
 if (defined('IN_ADMINCP')) {
     function newpoints_info(): array

@@ -60,11 +60,13 @@ $sub_tabs['newpoints_grouprules_add'] = [
     'description' => $lang->newpoints_grouprules_add_description
 ];
 
-$sub_tabs['newpoints_grouprules_edit'] = [
-    'title' => $lang->newpoints_grouprules_edit,
-    'link' => 'index.php?module=newpoints-grouprules&amp;action=edit',
-    'description' => $lang->newpoints_grouprules_edit_description
-];
+if ($mybb->get_input('action') == 'edit') {
+    $sub_tabs['newpoints_grouprules_edit'] = [
+        'title' => $lang->newpoints_grouprules_edit,
+        'link' => 'index.php?module=newpoints-grouprules&amp;action=edit',
+        'description' => $lang->newpoints_grouprules_edit_description
+    ];
+}
 
 if (!$mybb->get_input('action')) // view grouprules
 {

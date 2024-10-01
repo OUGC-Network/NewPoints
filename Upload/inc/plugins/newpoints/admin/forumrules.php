@@ -59,11 +59,13 @@ $sub_tabs['newpoints_forumrules_add'] = [
     'description' => $lang->newpoints_forumrules_add_description
 ];
 
-$sub_tabs['newpoints_forumrules_edit'] = [
-    'title' => $lang->newpoints_forumrules_edit,
-    'link' => 'index.php?module=newpoints-forumrules&amp;action=edit',
-    'description' => $lang->newpoints_forumrules_edit_description
-];
+if ($mybb->get_input('action') == 'edit') {
+    $sub_tabs['newpoints_forumrules_edit'] = [
+        'title' => $lang->newpoints_forumrules_edit,
+        'link' => 'index.php?module=newpoints-forumrules&amp;action=edit',
+        'description' => $lang->newpoints_forumrules_edit_description
+    ];
+}
 
 if (!$mybb->get_input('action')) // view forumrules
 {

@@ -1,0 +1,18 @@
+{
+  "flood_minutes": {
+    "type": "numeric",
+    "value": 15
+  },
+  "flood_limit": {
+    "type": "numeric",
+    "value": 5
+  },
+  "send_private_message": {
+    "type": "yesno",
+    "value": 1
+  },
+  "stats_latest": {
+    "type": "numeric",
+    "value": 10
+  }
+}

@@ -65,30 +65,9 @@ if (!$mybb->get_input('action')) // view stats
     $table->construct_header($lang->newpoints_stats_user, ['width' => '50%']);
     $table->construct_header($lang->newpoints_stats_points, ['width' => '50%', 'class' => 'align_center']);
 
-    $query = $db->simple_select(
-        'users',
-        implode(',', $fields),
-        '',
-        [
-            'order_by' => 'newpoints',
-            'order_dir' => 'DESC',
-            'limit' => intval($mybb->settings['newpoints_main_stats_richestusers'])
-        ]
-    );
-
-    while ($user = $db->fetch_array($query)) {
-        $link = build_profile_link(htmlspecialchars_uni($user['username']), intval($user['uid']));
-        $table->construct_cell($link);
-        $table->construct_cell(points_format((float)$user['newpoints']), ['class' => 'align_center']);
-
-        $table->construct_row();
-    }
-
-    if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
-        $table->construct_row();
-    }
-
+    $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
+    $table->construct_row();
+    
     $table->output($lang->newpoints_stats_richest_users);
 
     echo '<br />';
@@ -100,41 +79,8 @@ if (!$mybb->get_input('action')) // view stats
     $table->construct_header($lang->newpoints_stats_amount, ['width' => '20%', 'class' => 'align_center']);
     $table->construct_header($lang->newpoints_stats_date, ['width' => '20%', 'class' => 'align_center']);
 
-    $query = $db->simple_select(
-        'newpoints_log',
-        '*',
-        'action=\'donation\'',
-        [
-            'order_by' => 'date',
-            'order_dir' => 'DESC',
-            'limit' => intval($mybb->settings['newpoints_main_stats_lastdonations'])
-        ]
-    );
-    while ($stats = $db->fetch_array($query)) {
-        $data = explode('-', $stats['data']);
-
-        $link = build_profile_link(htmlspecialchars_uni($data[0]), intval($data[1]));
-        $table->construct_cell($link);
-
-        $link = build_profile_link(htmlspecialchars_uni($stats['username']), intval($stats['uid']));
-        $table->construct_cell($link);
-
-        $table->construct_cell(points_format((float)$data[2]), ['class' => 'align_center']);
-        $table->construct_cell(
-            my_date($mybb->settings['dateformat'], intval($stats['date']), '', false) . ', ' . my_date(
-                $mybb->settings['timeformat'],
-                intval($stats['date'])
-            ),
-            ['class' => 'align_center']
-        );
-
-        $table->construct_row();
-    }
-
-    if ($table->num_rows() == 0) {
-        $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
-        $table->construct_row();
-    }
+    $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
+    $table->construct_row();
 
     $table->output($lang->newpoints_stats_lastdonations);
 

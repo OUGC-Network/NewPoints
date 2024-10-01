@@ -109,7 +109,7 @@ if ($mybb->get_input('action') == 'change') {
     $mybb->input['plugin'] = trim($mybb->get_input('plugin'));
 
     $plugin_short_name = '';
-    
+
     if ($mybb->get_input('plugin')) {
         $groupinfo = [];
 
@@ -134,8 +134,8 @@ if ($mybb->get_input('action') == 'change') {
             $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
         }
 
-        if ($plugin == 'income' || $plugin == 'main') {
-            $lang_var = 'newpoints_settings_' . $mybb->get_input('plugin');
+        if (in_array($plugin, ['income', 'main', 'donations'], true)) {
+            $lang_var = 'setting_group_newpoints_' . $mybb->get_input('plugin');
 
             $groupinfo['title'] = $lang->$lang_var;
             $groupinfo['description'] = $lang->$lang_var . '_description';
@@ -361,13 +361,18 @@ if ($mybb->get_input('action') == 'change') {
 				checkAction('{$element_id}');
 			</script>";
         } else {
+            $option_list = [];
+
             for ($i = 0; $i < count($type); $i++) {
                 $optionsexp = explode('=', $type[$i]);
-                if (!$optionsexp[1]) {
+
+                if (empty($optionsexp[1])) {
                     continue;
                 }
+
                 $title_lang = "setting_{$setting['name']}_{$optionsexp[0]}";
-                if ($lang->$title_lang) {
+
+                if (($lang->$title_lang)) {
                     $optionsexp[1] = $lang->$title_lang;
                 }
 
@@ -434,8 +439,6 @@ if ($mybb->get_input('action') == 'change') {
             } else {
                 $setting_code = implode('<br />', $option_list);
             }
-
-            $option_list = [];
         }
         // Do we have a custom language variable for this title or description?
         $title_lang = 'setting_' . $setting['name'];
@@ -492,28 +495,21 @@ if (!$mybb->get_input('action')) {
     $table = new Table();
     $table->construct_header($lang->setting_groups);
 
-    // default settings
-    $group['settingcount'] = $db->fetch_field(
-        $db->simple_select('newpoints_settings', 'COUNT(sid) as settings', "plugin='main'"),
-        'settings'
-    );
-    $group_title = htmlspecialchars_uni($lang->newpoints_settings_main);
-    $group_desc = htmlspecialchars_uni($lang->newpoints_settings_main_description);
-    $table->construct_cell(
-        "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=main\">{$group_title}</a></strong> ({$group['settingcount']} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
-    );
-    $table->construct_row();
+    foreach (['income', 'main', 'donations'] as $core_group) {
+        $settingcount = $db->fetch_field(
+            $db->simple_select('newpoints_settings', 'COUNT(sid) as settings', "plugin='{$core_group}'"),
+            'settings'
+        );
 
-    $group['settingcount'] = $db->fetch_field(
-        $db->simple_select('newpoints_settings', 'COUNT(sid) as settings', "plugin='income'"),
-        'settings'
-    );
-    $group_title = htmlspecialchars_uni($lang->newpoints_settings_income);
-    $group_desc = htmlspecialchars_uni($lang->newpoints_settings_income_description);
-    $table->construct_cell(
-        "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=income\">{$group_title}</a></strong> ({$group['settingcount']} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
-    );
-    $table->construct_row();
+        $group_title = htmlspecialchars_uni($lang->{"setting_group_newpoints_{$core_group}"});
+
+        $group_desc = htmlspecialchars_uni($lang->{"setting_group_newpoints_{$core_group}_desc"});
+
+        $table->construct_cell(
+            "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin={$core_group}\">{$group_title}</a></strong> ({$settingcount} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
+        );
+        $table->construct_row();
+    }
 
     $plugins_cache = $cache->read('newpoints_plugins');
 

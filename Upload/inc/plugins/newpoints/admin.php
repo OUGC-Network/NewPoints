@@ -44,6 +44,9 @@ use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\settings_add;
 use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\settings_rebuild_cache;
+use function Newpoints\Core\task_delete;
+use function Newpoints\Core\task_disable;
+use function Newpoints\Core\task_enable;
 use function Newpoints\Core\templates_rebuild;
 
 use const Newpoints\Core\FIELDS_DATA;
@@ -54,12 +57,6 @@ const PERMISSION_ENABLE = 1;
 const PERMISSION_DISABLE = 0;
 
 const PERMISSION_REMOVE = -1;
-
-const TASK_ENABLE = 1;
-
-const TASK_DEACTIVATE = 0;
-
-const TASK_DELETE = -1;
 
 function plugin_information(): array
 {
@@ -94,6 +91,10 @@ function plugin_activation(): bool
 
     plugin_library_load();
 
+    db_verify_tables();
+
+    db_verify_columns();
+
     settings_rebuild();
 
     templates_rebuild();
@@ -109,11 +110,17 @@ function plugin_activation(): bool
         $plugins_list['newpoints'] = $plugin_information['versioncode'];
     }
 
-    db_verify_tables();
-
-    db_verify_columns();
-
-    task_enable();
+    foreach (
+        [
+            'newpoints' => ['title' => 'NewPoints', 'description' => 'Handles Newpoints automatic features.'],
+            'backupnewpoints' => [
+                'title' => 'Backup NewPoints',
+                'description' => "Creates a backup of NewPoints default tables and users's points."
+            ]
+        ] as $task_name => $task_data
+    ) {
+        task_enable($task_name, $task_data['title'], $task_data['description']);
+    }
 
     permissions_update();
 
@@ -122,6 +129,10 @@ function plugin_activation(): bool
     /*~*~* RUN UPDATES START *~*~*/
 
     /*~*~* RUN UPDATES END *~*~*/
+
+    $cache->update_usergroups();
+
+    $cache->update_forums();
 
     $plugins_list['newpoints'] = $plugin_information['versioncode'];
 
@@ -132,7 +143,9 @@ function plugin_activation(): bool
 
 function plugin_deactivation(): bool
 {
-    task_disable();
+    foreach (['newpoints', 'backupnewpoints'] as $task_name) {
+        task_disable($task_name);
+    }
 
     permissions_update(PERMISSION_DISABLE);
 
@@ -141,19 +154,23 @@ function plugin_deactivation(): bool
 
 function plugin_installation(): bool
 {
+    global $cache;
+
     plugin_library_load();
-
-    settings_rebuild();
-
-    templates_rebuild();
 
     db_verify_tables();
 
     db_verify_columns();
 
-    task_enable();
+    settings_rebuild();
+
+    templates_rebuild();
 
     rules_rebuild_cache();
+
+    $cache->update_usergroups();
+
+    $cache->update_forums();
 
     return true;
 }
@@ -247,8 +264,6 @@ function plugin_uninstallation(): bool
 
     //rebuild_settings();
 
-    task_enable(TASK_DELETE);
-
     foreach (TABLES_DATA as $table_name => $table_data) {
         if ($db->table_exists($table_name)) {
             $db->drop_table($table_name);
@@ -269,7 +284,9 @@ function plugin_uninstallation(): bool
 
     $PL->templates_delete('newpoints');
 
-    task_delete();
+    foreach (['newpoints', 'backupnewpoints'] as $task_name) {
+        task_delete($task_name);
+    }
 
     permissions_update(PERMISSION_REMOVE);
 
@@ -300,70 +317,6 @@ function permissions_update(int $action = PERMISSION_ENABLE): bool
     change_admin_permission('newpoints', 'grouprules', $action);
     change_admin_permission('newpoints', 'stats', $action);
     change_admin_permission('newpoints', 'upgrades', $action);
-
-    return true;
-}
-
-function task_enable(int $action = TASK_ENABLE): bool
-{
-    global $db, $lang;
-
-    language_load();
-
-    if ($action === TASK_DELETE) {
-        $db->delete_query('tasks', "file IN ('newpoints', 'backupnewpoints')");
-
-        return true;
-    }
-
-    foreach (
-        [
-            'newpoints' => ['title' => 'NewPoints', 'description' => 'Handles Newpoints automatic features.'],
-            'backupnewpoints' => [
-                'title' => 'Backup NewPoints',
-                'description' => "Creates a backup of NewPoints default tables and users's points."
-            ]
-        ] as $task_file => $task_data
-    ) {
-        $db_query = $db->simple_select('tasks', '*', "file='{$task_file}'", ['limit' => 1]);
-
-        if ($db->num_rows($db_query)) {
-            $db->update_query('tasks', ['enabled' => $action], "file='{$task_file}'");
-        } else {
-            include_once MYBB_ROOT . 'inc/functions_task.php';
-
-            $new_task_data = [
-                'title' => $db->escape_string($task_data['title']),
-                'description' => $db->escape_string($task_data['description']),
-                'file' => $db->escape_string($task_file),
-                'minute' => 0,
-                'hour' => 0,
-                'day' => $db->escape_string('*'),
-                'weekday' => 0,
-                'month' => $db->escape_string('*'),
-                'enabled' => 0,
-                'logging' => 1
-            ];
-
-            $new_task_data['nextrun'] = fetch_next_run($new_task_data);
-
-            $db->insert_query('tasks', $new_task_data);
-        }
-    }
-
-    return true;
-}
-
-function task_disable(): bool
-{
-    task_enable(TASK_DEACTIVATE);
-
-    return true;
-}
-
-function task_delete(): bool
-{
-    task_enable(TASK_DELETE);
 
     return true;
 }

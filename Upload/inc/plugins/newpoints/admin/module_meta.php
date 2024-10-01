@@ -67,12 +67,6 @@ function newpoints_meta()
         'title' => $lang->nav_grouprules,
         'link' => 'index.php?module=newpoints-grouprules'
     ];
-    $sub_menu['40'] = ['id' => 'stats', 'title' => $lang->nav_stats, 'link' => 'index.php?module=newpoints-stats'];
-    $sub_menu['45'] = [
-        'id' => 'upgrades',
-        'title' => $lang->nav_upgrades,
-        'link' => 'index.php?module=newpoints-upgrades'
-    ];
 
     if (function_exists('\\Newpoints\\Core\\run_hooks')) {
         $sub_menu = run_hooks('admin_menu', $sub_menu);
@@ -98,8 +92,6 @@ function newpoints_action_handler($action)
         'maintenance' => ['active' => 'maintenance', 'file' => 'maintenance.php'],
         'forumrules' => ['active' => 'forumrules', 'file' => 'forumrules.php'],
         'grouprules' => ['active' => 'grouprules', 'file' => 'grouprules.php'],
-        'stats' => ['active' => 'stats', 'file' => 'stats.php'],
-        'upgrades' => ['active' => 'upgrades', 'file' => 'upgrades.php'],
     ];
 
     $actions = run_hooks('admin_action_handler', $actions);
@@ -125,8 +117,6 @@ function newpoints_admin_permissions()
         'maintenance' => $lang->can_manage_maintenance,
         'forumrules' => $lang->can_manage_forumrules,
         'grouprules' => $lang->can_manage_grouprules,
-        'stats' => $lang->can_manage_stats,
-        'upgrades' => $lang->can_manage_upgrades
     ];
 
     $admin_permissions = run_hooks('admin_permissions', $admin_permissions);

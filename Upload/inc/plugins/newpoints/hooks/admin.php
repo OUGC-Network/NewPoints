@@ -134,7 +134,7 @@ function admin_user_admin_permissions_edit(): bool
 
     require_once ROOT . '/admin/module_meta.php';
 
-    $permission_modules['newpoints'] = newpoints_admin_permissions();
+    $permission_modules['newpoints'] = \newpoints_admin_permissions();
 
     return true;
 }
@@ -426,7 +426,7 @@ function admin_formcontainer_end(array &$hook_arguments): array
     return $hook_arguments;
 }
 
-function admin_forum_management_edit_commit()
+function admin_forum_management_edit_commit(): bool
 {
     global $db, $mybb, $fid;
 
