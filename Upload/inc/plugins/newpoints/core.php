@@ -897,7 +897,8 @@ function points_add_simple(
 
 function points_update(): bool
 {
-    global $cache, $userpoints, $db;
+    global $userpoints, $db;
+
     if (!empty($userpoints)) {
         foreach ($userpoints as $uid => $amount) {
             if ($amount < 0) {
@@ -1752,7 +1753,7 @@ function get_income_value(string $income_type): float
             $income_value = (float)get_setting('income_pervote');
             break;
         case INCOME_TYPE_PRIVATE_MESSAGE_NEW:
-            $income_value = (float)get_setting('income_newthread');
+            $income_value = (float)get_setting('income_pmsent');
             break;
     }
 

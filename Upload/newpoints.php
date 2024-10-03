@@ -35,7 +35,7 @@ use function Newpoints\Core\log_add;
 use function Newpoints\Core\main_file_name;
 use function Newpoints\Core\page_build_menu;
 use function Newpoints\Core\page_build_menu_options;
-use function Newpoints\Core\points_add;
+use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
@@ -297,10 +297,10 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     // remove points from us
-    points_add($mybb->user['uid'], -($amount));
+    points_add_simple($mybb->user['uid'], -$amount);
 
     // give points to user
-    points_add($touser['uid'], $amount);
+    points_add_simple($touser['uid'], $amount);
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if (get_setting('donations_send_private_message')) {

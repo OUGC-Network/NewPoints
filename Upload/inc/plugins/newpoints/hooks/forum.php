@@ -37,11 +37,8 @@ use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\points_add;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
-use function Newpoints\Core\rules_forum_get_rate;
-use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 
@@ -286,18 +283,6 @@ function class_moderation_delete_post_start(int $pid): int
 
     $thread = get_thread($post['tid']);
 
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return $pid;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return $pid;
-    }
-
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
     if (($charcount = count_characters(
@@ -313,11 +298,10 @@ function class_moderation_delete_post_start(int $pid): int
         if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
             $thread_user_id = (int)$thread['uid'];
 
-            points_add(
+            points_add_simple(
                 $thread_user_id,
                 -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -325,11 +309,10 @@ function class_moderation_delete_post_start(int $pid): int
     $post_user_id = (int)$post['uid'];
 
     // remove points from the poster
-    points_add(
+    points_add_simple(
         $post_user_id,
         -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     return $pid;
@@ -337,7 +320,7 @@ function class_moderation_delete_post_start(int $pid): int
 
 function class_moderation_soft_delete_posts(array $pids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $pids;
@@ -353,18 +336,6 @@ function class_moderation_soft_delete_posts(array $pids): array
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
-
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
@@ -382,11 +353,10 @@ function class_moderation_soft_delete_posts(array $pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add(
+                    points_add_simple(
                         $thread_user_id,
                         -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $forum_rate,
-                        $group_rate
+                        $fid
                     );
                 }
             }
@@ -394,11 +364,10 @@ function class_moderation_soft_delete_posts(array $pids): array
             $post_user_id = (int)$post['uid'];
 
             // remove points from the poster
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -408,7 +377,7 @@ function class_moderation_soft_delete_posts(array $pids): array
 
 function class_moderation_restore_posts($pids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $pids;
@@ -424,18 +393,6 @@ function class_moderation_restore_posts($pids): array
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
-
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
@@ -453,11 +410,10 @@ function class_moderation_restore_posts($pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add(
+                    points_add_simple(
                         $thread_user_id,
                         get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $forum_rate,
-                        $group_rate
+                        $fid
                     );
                 }
             }
@@ -465,11 +421,10 @@ function class_moderation_restore_posts($pids): array
             $post_user_id = (int)$post['uid'];
 
             // give points to the author of the post
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 get_income_value(INCOME_TYPE_POST_NEW) + (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -479,7 +434,7 @@ function class_moderation_restore_posts($pids): array
 
 function class_moderation_approve_threads(array $tids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $tids;
@@ -496,18 +451,6 @@ function class_moderation_approve_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
-
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
@@ -521,11 +464,10 @@ function class_moderation_approve_threads(array $tids): array
             $post_user_id = (int)$post['uid'];
 
             // add points to the poster
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 get_income_value(INCOME_TYPE_THREAD_NEW) + (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -535,7 +477,7 @@ function class_moderation_approve_threads(array $tids): array
 
 function class_moderation_approve_posts(array $pids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $pids;
@@ -551,18 +493,6 @@ function class_moderation_approve_posts(array $pids): array
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
-
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
@@ -580,11 +510,10 @@ function class_moderation_approve_posts(array $pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add(
+                    points_add_simple(
                         $thread_user_id,
                         get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $forum_rate,
-                        $group_rate
+                        $fid
                     );
                 }
             }
@@ -592,11 +521,10 @@ function class_moderation_approve_posts(array $pids): array
             $post_user_id = (int)$post['uid'];
 
             // give points to the author of the post
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 get_income_value(INCOME_TYPE_POST_NEW) + (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -606,7 +534,7 @@ function class_moderation_approve_posts(array $pids): array
 
 function class_moderation_unapprove_threads(array $tids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $tids;
@@ -623,18 +551,6 @@ function class_moderation_unapprove_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
-
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
@@ -648,11 +564,10 @@ function class_moderation_unapprove_threads(array $tids): array
             $post_user_id = (int)$post['uid'];
 
             // add points to the poster
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -662,7 +577,7 @@ function class_moderation_unapprove_threads(array $tids): array
 
 function class_moderation_unapprove_posts(array $pids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $pids;
@@ -678,18 +593,6 @@ function class_moderation_unapprove_posts(array $pids): array
         foreach ($pids as $pid) {
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
-
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
@@ -707,11 +610,10 @@ function class_moderation_unapprove_posts(array $pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add(
+                    points_add_simple(
                         $thread_user_id,
                         -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $forum_rate,
-                        $group_rate
+                        $fid
                     );
                 }
             }
@@ -719,11 +621,10 @@ function class_moderation_unapprove_posts(array $pids): array
             $post_user_id = (int)$post['uid'];
 
             // give points to the author of the post
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -753,18 +654,6 @@ function class_moderation_delete_thread(int $tid): int
         return $tid;
     }
 
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return $tid;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return $tid;
-    }
-
     // get post of the thread
     $post = get_post($thread['firstpost']);
 
@@ -783,11 +672,10 @@ function class_moderation_delete_thread(int $tid): int
     if ($thread['poll'] != 0) {
         // if this thread has a poll, remove points from the author of the thread
 
-        points_add(
+        points_add_simple(
             $thread_user_id,
             -get_income_value(INCOME_TYPE_POLL_NEW),
-            $forum_rate,
-            $group_rate
+            $fid
         );
     }
 
@@ -798,19 +686,17 @@ function class_moderation_delete_thread(int $tid): int
     );
     $thread['replies'] = (int)$db->fetch_field($q, 'total_replies');
 
-    points_add(
+    points_add_simple(
         $thread_user_id,
         -(float)($thread['replies'] * get_income_value(INCOME_TYPE_POST_PER_REPLY)),
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     // take out points from the author of the thread
-    points_add(
+    points_add_simple(
         $thread_user_id,
         -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     return $tid;
@@ -835,18 +721,6 @@ function class_moderation_soft_delete_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
-
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
@@ -863,11 +737,10 @@ function class_moderation_soft_delete_threads(array $tids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add(
+                    points_add_simple(
                         $thread_user_id,
                         -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $forum_rate,
-                        $group_rate
+                        $fid
                     );
                 }
             }
@@ -875,11 +748,10 @@ function class_moderation_soft_delete_threads(array $tids): array
             $post_user_id = (int)$post['uid'];
 
             // remove points from the poster
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -889,7 +761,7 @@ function class_moderation_soft_delete_threads(array $tids): array
 
 function class_moderation_restore_threads(array $tids): array
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return $tids;
@@ -905,18 +777,6 @@ function class_moderation_restore_threads(array $tids): array
         foreach ($tids as $tid) {
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
-
-            $forum_rate = rules_forum_get_rate($fid);
-
-            if (!$forum_rate) {
-                continue;
-            }
-
-            $group_rate = rules_get_group_rate();
-
-            if (!$group_rate) {
-                continue;
-            }
 
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
@@ -934,11 +794,10 @@ function class_moderation_restore_threads(array $tids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add(
+                    points_add_simple(
                         $thread_user_id,
                         get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $forum_rate,
-                        $group_rate
+                        $fid
                     );
                 }
             }
@@ -946,11 +805,10 @@ function class_moderation_restore_threads(array $tids): array
             $post_user_id = (int)$post['uid'];
 
             // give points to the author of the post
-            points_add(
+            points_add_simple(
                 $post_user_id,
                 get_income_value(INCOME_TYPE_THREAD_NEW) + (float)$bonus,
-                $forum_rate,
-                $group_rate
+                $fid
             );
         }
     }
@@ -960,7 +818,7 @@ function class_moderation_restore_threads(array $tids): array
 
 function polls_do_newpoll_process(): bool
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return false;
@@ -972,26 +830,13 @@ function polls_do_newpoll_process(): bool
 
     $fid = (int)$fid;
 
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return false;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return false;
-    }
-
     $user_id = (int)$mybb->user['uid'];
 
     // give points to the author of the new polls
-    points_add(
+    points_add_simple(
         $user_id,
         get_income_value(INCOME_TYPE_POLL_NEW),
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     return true;
@@ -1014,26 +859,13 @@ function class_moderation_delete_poll(int $pid): int
 
     $fid = (int)$poll['fid'];
 
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return $pid;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return $pid;
-    }
-
     $poll_user_id = (int)$poll['uid'];
 
     // remove points from the author by deleting the poll
-    points_add(
+    points_add_simple(
         $poll_user_id,
         -get_income_value(INCOME_TYPE_POLL_NEW),
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     return $pid;
@@ -1047,7 +879,7 @@ function member_do_register_end(): bool
     if (get_income_value(INCOME_TYPE_USER_REGISTRATION)) {
         $user_id = (int)$user_info['uid'];
 
-        points_add(
+        points_add_simple(
             $user_id,
             get_income_value(INCOME_TYPE_USER_REGISTRATION)
         );
@@ -1065,15 +897,9 @@ function member_do_register_end(): bool
             return false;
         }
 
-        $group_rate = rules_get_group_rate();
-
-        if (!$group_rate) {
-            return false;
-        }
-
         $user_id = (int)$user['uid'];
 
-        points_add($user_id, get_income_value(INCOME_TYPE_USER_REFERRAL), 1, $group_rate);
+        points_add_simple($user_id, get_income_value(INCOME_TYPE_USER_REFERRAL));
     }
 
     return true;
@@ -1081,7 +907,7 @@ function member_do_register_end(): bool
 
 function polls_vote_process(): bool
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return false;
@@ -1093,26 +919,13 @@ function polls_vote_process(): bool
 
     $fid = (int)$fid;
 
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return false;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return false;
-    }
-
     $user_id = (int)$mybb->user['uid'];
 
     // give points to us as we're voting in a poll
-    points_add(
+    points_add_simple(
         $user_id,
         get_income_value(INCOME_TYPE_POLL_VOTE),
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     return true;
@@ -1138,23 +951,17 @@ function private_do_send_end(): bool
         return false;
     }
 
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return false;
-    }
-
     $user_id = (int)$mybb->user['uid'];
 
     // give points to the author of the PM
-    points_add($user_id, get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW), 1, $group_rate);
+    points_add_simple($user_id, get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW));
 
     return true;
 }
 
 function ratethread_process(): bool
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
     if (empty($mybb->user['uid'])) {
         return false;
@@ -1166,26 +973,13 @@ function ratethread_process(): bool
 
     $fid = (int)$fid;
 
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return false;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return false;
-    }
-
     $user_id = (int)$mybb->user['uid'];
 
     // give points us, as we're rating a thread
-    points_add(
+    points_add_simple(
         $user_id,
         get_income_value(INCOME_TYPE_PRIVATE_THREAD_RATE_NEW),
-        $forum_rate,
-        $group_rate
+        $fid
     );
 
     return true;
@@ -1283,9 +1077,9 @@ function newthread_do_newthread_start(): bool
     return newreply_start();
 }
 
-function _helper_evaluate_forum_view_lock(int $forum_ID): bool
+function _helper_evaluate_forum_view_lock(int $forum_id): bool
 {
-    $forum_data = get_forum($forum_ID);
+    $forum_data = get_forum($forum_id);
 
     if (empty($forum_data['newpoints_view_lock_points'])) {
         return false;
@@ -1307,9 +1101,9 @@ function _helper_evaluate_forum_view_lock(int $forum_ID): bool
     return true;
 }
 
-function _helper_evaluate_forum_post_lock(int $forum_ID): bool
+function _helper_evaluate_forum_post_lock(int $forum_id): bool
 {
-    $forum_data = get_forum($forum_ID);
+    $forum_data = get_forum($forum_id);
 
     if (empty($forum_data['newpoints_post_lock_points'])) {
         return false;

@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\points_add;
+use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\rules_group_get;
@@ -329,11 +329,10 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                 if ($thread['uid'] != $user['uid']) {
                     // we are not the thread started so give points to him/her
                     if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
-                        points_add(
+                        points_add_simple(
                             $thread['uid'],
                             get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                            $allforumrules[$post['fid']]['rate'],
-                            $group_rate
+                            (int)$post['fid']
                         );
                     }
                 }
