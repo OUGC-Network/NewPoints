@@ -841,7 +841,7 @@ function points_add(
     // might work only for MySQL and MySQLi
     //$db->update_query("users", array('newpoints' =>'newpoints+('.floatval($points).')'), 'uid=\''.intval($uid).'\'', '', true);
 
-    $points_rounded = round($points * $forumrate * $grouprate, intval($mybb->settings['newpoints_main_decimal']));
+    $points_rounded = round($points * $forumrate * $grouprate, (int)get_setting('main_decimal'));
 
     if ($isstring) // where username
     {
@@ -878,6 +878,8 @@ function points_add_simple(
     float $points,
     int $forum_id = 0
 ): bool {
+    $forum_rate = 1;
+
     if ($forum_id !== 0) {
         $forum_rate = rules_forum_get_rate($forum_id);
 
@@ -930,9 +932,9 @@ function points_format(float $points): string
 {
     global $mybb;
 
-    return $mybb->settings['newpoints_main_curprefix'] . my_number_format(
-            round((float)$points, intval($mybb->settings['newpoints_main_decimal']))
-        ) . $mybb->settings['newpoints_main_cursuffix'];
+    return get_setting('main_curprefix') . my_number_format(
+            round($points, (int)get_setting('main_decimal'))
+        ) . get_setting('main_cursuffix');
 }
 
 /**

@@ -30,6 +30,7 @@
 declare(strict_types=1);
 
 // Disallow direct access to this file for security reasons
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\settings_add;
 use function Newpoints\Core\settings_rebuild_cache;
@@ -110,7 +111,6 @@ function newpoints_hello_info(): array
  */
 function newpoints_hello_activate(): bool
 {
-    global $db, $mybb;
     // add settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
     settings_add(
@@ -138,7 +138,6 @@ function newpoints_hello_activate(): bool
  */
 function newpoints_hello_deactivate(): bool
 {
-    global $db, $mybb;
     // delete settings
     // take a look at inc/plugins/newpoints.php to know exactly what each parameter means
     settings_remove(['show'], 'newpoints_hello_');
@@ -151,9 +150,9 @@ function newpoints_hello_deactivate(): bool
 
 function newpoints_hello_world(string &$page): string
 {
-    global $mybb, $lang;
+    global $lang;
 
-    if ($mybb->settings['newpoints_hello_show'] != 1) {
+    if (!get_setting('hello_show')) {
         return $page;
     }
 

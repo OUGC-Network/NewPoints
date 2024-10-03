@@ -35,6 +35,7 @@ use MyBB;
 
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_add_simple;
@@ -147,7 +148,7 @@ function postbit(array &$post): array
 
     language_load();
 
-    $currency = $mybb->settings['newpoints_main_curname'];
+    $currency = get_setting('main_curname');
 
     $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
 
@@ -189,7 +190,7 @@ function member_profile_end(): bool
 
     language_load();
 
-    $currency = $mybb->settings['newpoints_main_curname'];
+    $currency = get_setting('main_curname');
 
     $points = $newpoints_profile_user_balance_formatted = points_format((float)$memprofile['newpoints']);
 

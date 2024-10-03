@@ -30,6 +30,7 @@
 declare(strict_types=1);
 
 use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
@@ -182,7 +183,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
         $lang->newpoints_edituser_points_desc,
         $form->generate_text_box(
             'points',
-            round((float)$user['newpoints'], intval($mybb->settings['newpoints_main_decimal'])),
+            round((float)$user['newpoints'], (int)get_setting('main_decimal')),
             ['id' => 'points']
         ),
         'points'

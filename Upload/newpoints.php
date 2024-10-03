@@ -49,8 +49,9 @@ const THIS_SCRIPT = 'newpoints.php';
 
 const NP_DISABLE_GUESTS = false;
 
-// Templates used by NewPoints
-$templatelist = 'newpoints_home,newpoints_donate,newpoints_statistics,newpoints_statistics_richest_user,newpoints_statistics_donation,newpoints_no_results,newpoints_option,newpoints_home_income_row,newpoints_home_income_table';
+$templatelist = 'newpoints_withdraw_points_header_link, newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home';
+$templatelist .= ', newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics';
+$templatelist .= ', newpoints_donate_form, newpoints_donate';
 
 require_once './global.php';
 
@@ -100,6 +101,12 @@ if (!$mybb->get_input('action')) {
         if (!empty($lang->{$lang_var})) {
             $setting['title'] = $lang->{$lang_var};
         }
+
+        $income_amount = $lang->sprintf(
+            $lang->newpoints_income_amount,
+            get_setting('main_curname')
+        );
+
         if (!empty($lang->{$lang_var_desc})) {
             $setting['description'] = $lang->{$lang_var_desc};
         }
@@ -110,16 +117,16 @@ if (!$mybb->get_input('action')) {
             $value = points_format((float)$setting['value']);
         }
 
-        $income_settings .= eval($templates->render('newpoints_home_income_row'));
+        $income_settings .= eval(templates_get('home_income_row'));
     }
 
     run_hooks('home_end', $income_settings);
 
-    $income_settings = eval($templates->render('newpoints_home_income_table'));
+    $income_settings = eval(templates_get('home_income_table'));
 
     $lang->newpoints_home_desc = $lang->sprintf($lang->newpoints_home_desc, $income_settings);
 
-    $page = eval($templates->render('newpoints_home'));
+    $page = eval(templates_get('home'));
 
     output_page($page);
 }
@@ -144,7 +151,7 @@ if ($mybb->get_input('action') == 'stats') {
         [
             'order_by' => 'newpoints',
             'order_dir' => 'DESC',
-            'limit' => intval($mybb->settings['newpoints_main_stats_richestusers'])
+            'limit' => (int)get_setting('main_stats_richestusers')
         ]
     );
     while ($user = $db->fetch_array($query)) {
@@ -228,7 +235,7 @@ if ($mybb->get_input('action') == 'stats') {
     // make sure wen're trying to send a donation to ourselves
     $uid = $mybb->get_input('uid', MyBB::INPUT_INT);
     $user = get_user($uid);
-    if ($user['username'] != '') {
+    if (!empty($user['username'])) {
         $user['username'] = htmlspecialchars_uni($user['username']);
     } else {
         $user['username'] = '';
@@ -240,11 +247,11 @@ if ($mybb->get_input('action') == 'stats') {
 
     $pid = $mybb->get_input('pid', 1);
 
-    $form = eval($templates->render('newpoints_donate_form'));
+    $form = eval(templates_get('donate_form'));
 
     if ($mybb->get_input('modal', 1)) {
         $code = $form;
-        $modal = eval($templates->render('newpoints_modal', 1, 0));
+        $modal = eval(templates_get('modal', 1, 0));
         echo $modal;
         exit;
     }
@@ -277,7 +284,7 @@ if ($mybb->get_input('action') == 'stats') {
         }
     }
 
-    $amount = round($mybb->get_input('amount', MyBB::INPUT_FLOAT), (int)$mybb->settings['newpoints_main_decimal']);
+    $amount = round($mybb->get_input('amount', MyBB::INPUT_FLOAT), (int)get_setting('main_decimal'));
 
     // do we have enough points?
     if ($amount <= 0 || $amount > $mybb->user['newpoints']) {
