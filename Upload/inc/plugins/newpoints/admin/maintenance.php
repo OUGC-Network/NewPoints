@@ -29,12 +29,19 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\points_add;
 use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\rules_group_get;
 use function Newpoints\Core\run_hooks;
+
+use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
+use const Newpoints\Core\INCOME_TYPE_POST_MINIMUM_CHARACTERS;
+use const Newpoints\Core\INCOME_TYPE_POST_NEW;
+use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
+use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -251,7 +258,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                 "uid='" . $user['uid'] . "' AND visible=1"
             );
             while ($thread = $db->fetch_array($totalthreads_query)) {
-                if ($mybb->settings['newpoints_income_newthread'] == 0) {
+                if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
                     continue;
                 }
 
@@ -268,18 +275,18 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                 // let's see if the number of characters in the thread is greater than the minimum characters
                 if (($charcount = my_strlen(
                         $mybb->get_input('message')
-                    )) >= $mybb->settings['newpoints_income_minchar']) {
-                    $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                    )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                    $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
                 } else {
                     $bonus = 0;
                 }
 
                 // give points to the author of the new thread
-                $points += ($mybb->settings['newpoints_income_newthread'] + $bonus) * $allforumrules[$thread['fid']]['rate'];
+                $points += (get_income_value(INCOME_TYPE_THREAD_NEW) + $bonus) * $allforumrules[$thread['fid']]['rate'];
 
                 if ($thread['poll'] != 0) // has a poll
                 {
-                    $points += $mybb->settings['newpoints_income_newpoll'] * $allforumrules[$thread['fid']]['rate'];
+                    $points += get_income_value(INCOME_TYPE_POLL_NEW) * $allforumrules[$thread['fid']]['rate'];
                 }
 
                 $firstposts[] = $thread['firstpost'];
@@ -292,7 +299,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                 "uid='" . $user['uid'] . "' AND pid NOT IN(" . implode(',', $firstposts) . ') AND visible=1'
             );
             while ($post = $db->fetch_array($totalposts_query)) {
-                if ($mybb->settings['newpoints_income_newpost'] == 0) {
+                if (!get_income_value(INCOME_TYPE_POST_NEW)) {
                     continue;
                 }
 
@@ -307,22 +314,24 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
 
                 // calculate points ber character bonus
                 // let's see if the number of characters in the post is greater than the minimum characters
-                if (($charcount = my_strlen($post['message'])) >= $mybb->settings['newpoints_income_minchar']) {
-                    $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                if (($charcount = my_strlen($post['message'])) >= get_income_value(
+                        INCOME_TYPE_POST_MINIMUM_CHARACTERS
+                    )) {
+                    $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
                 } else {
                     $bonus = 0;
                 }
 
                 // give points to the poster
-                $points += ($mybb->settings['newpoints_income_newpost'] + $bonus) * $allforumrules[$post['fid']]['rate'];
+                $points += (get_income_value(INCOME_TYPE_POST_NEW) + $bonus) * $allforumrules[$post['fid']]['rate'];
 
                 $thread = get_thread($post['tid']);
                 if ($thread['uid'] != $user['uid']) {
                     // we are not the thread started so give points to him/her
-                    if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                    if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                         points_add(
                             $thread['uid'],
-                            $mybb->settings['newpoints_income_perreply'],
+                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
                             $allforumrules[$post['fid']]['rate'],
                             $group_rate
                         );
@@ -331,16 +340,16 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
             }
 
             // poll votes
-            if ($mybb->settings['newpoints_income_pervote'] != 0) {
+            if (get_income_value(INCOME_TYPE_POLL_VOTE)) {
                 // just count the votes and don't get the poll and the thread (to calculate the correct income value  using the forum income rate but as it is a slow process, let's just not use forum rate here)
                 $pollvotes_query = $db->simple_select('pollvotes', 'COUNT(*) AS votes', "uid='" . $user['uid'] . "'");
                 $votes = $db->fetch_field($pollvotes_query, 'votes');
 
-                $points += $votes * $mybb->settings['newpoints_income_pervote'];
+                $points += $votes * get_income_value(INCOME_TYPE_POLL_VOTE);
             }
 
             // private messages
-            if ($mybb->settings['newpoints_income_pmsent'] != 0) {
+            if (get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW)) {
                 // count private messages this user has sent
                 $pmssent_query = $db->simple_select(
                     'privatemessages',
@@ -349,14 +358,14 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
                 );
                 $pmssent = $db->fetch_field($pmssent_query, 'numpms');
 
-                $points += $pmssent * $mybb->settings['newpoints_income_pmsent'];
+                $points += $pmssent * get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW);
             }
 
             $db->update_query(
                 'users',
                 [
                     'newpoints' => floatval(
-                            $mybb->settings['newpoints_income_newreg']
+                            get_income_value(INCOME_TYPE_USER_REGISTRATION)
                         ) + $points * $group_rate
                 ],
                 'uid=\'' . $user['uid'] . '\''

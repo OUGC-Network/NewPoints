@@ -304,3 +304,21 @@ const INCOME_TYPE_POST_PER_CHARACTER = 'perchar';
 const INCOME_TYPE_POST_PER_REPLY = 'perreply';
 
 const INCOME_TYPE_THREAD_NEW = 'newthread';
+
+const INCOME_TYPE_PAGE_VIEW = 'pageview';
+
+const INCOME_TYPE_VISIT = 'visit';
+
+const INCOME_TYPE_VISIT_MINUTES = 'visit_minutes';
+
+const INCOME_TYPE_POLL_NEW = 'newpoll';
+
+const INCOME_TYPE_POLL_VOTE = 'pervote';
+
+const INCOME_TYPE_USER_REGISTRATION = 'newreg';
+
+const INCOME_TYPE_USER_REFERRAL = 'referral';
+
+const INCOME_TYPE_PRIVATE_MESSAGE_NEW = 'pmsent';
+
+const INCOME_TYPE_PRIVATE_THREAD_RATE_NEW = 'perrate';

@@ -74,11 +74,6 @@ function admin_load(): bool
 
     run_hooks('admin_load');
 
-    return true;
-}
-
-function admin_load10(): bool
-{
     global $run_module, $action_file;
 
     if ($run_module !== 'newpoints') {
@@ -94,12 +89,11 @@ function admin_load10(): bool
 
 function admin_tabs(array $modules): array
 {
-    global $lang;
     global $is_super_admin;
 
     require_once ROOT . '/admin/module_meta.php';
 
-    $lang->load('newpoints_module_meta', false, true);
+    language_load('module_meta', false, true);
 
     $has_permission = false;
 
@@ -126,11 +120,10 @@ function admin_tabs(array $modules): array
 
 function admin_user_admin_permissions_edit(): bool
 {
-    global $permission_modules, $modules;
+    global $permission_modules;
     global $newpoints_custom_load;
 
     $newpoints_custom_load = true;
-    //$modules = [];
 
     require_once ROOT . '/admin/module_meta.php';
 

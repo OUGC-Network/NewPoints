@@ -34,31 +34,46 @@ namespace Newpoints\Hooks\Forum;
 use MyBB;
 
 use function Newpoints\Core\count_characters;
+use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_add;
+use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\rules_forum_get_rate;
 use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 
+use const Newpoints\Core\INCOME_TYPE_PAGE_VIEW;
+use const Newpoints\Core\INCOME_TYPE_POLL_NEW;
+use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
+use const Newpoints\Core\INCOME_TYPE_POST_MINIMUM_CHARACTERS;
+use const Newpoints\Core\INCOME_TYPE_POST_NEW;
+use const Newpoints\Core\INCOME_TYPE_POST_PER_CHARACTER;
+use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
+use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE_NEW;
+use const Newpoints\Core\INCOME_TYPE_PRIVATE_THREAD_RATE_NEW;
+use const Newpoints\Core\INCOME_TYPE_THREAD_NEW;
+use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
+use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const Newpoints\Core\INCOME_TYPE_VISIT;
+use const Newpoints\Core\INCOME_TYPE_VISIT_MINUTES;
+
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
 // todo, fix plugins not being able to use global_start by loading plugins before
 function global_start(): bool
 {
+    global $templatelist;
+
+    if (isset($templatelist)) {
+        $templatelist .= ',';
+    }
+
     if (THIS_SCRIPT == 'showthread.php') {
-        global $templatelist;
-        if (isset($templatelist)) {
-            $templatelist .= ',';
-        }
         $templatelist .= 'newpoints_postbit,newpoints_donate_inline';
     } elseif (THIS_SCRIPT == 'member.php') {
-        global $templatelist;
-        if (isset($templatelist)) {
-            $templatelist .= ',';
-        }
         $templatelist .= 'newpoints_profile,newpoints_donate_inline';
     }
 
@@ -75,44 +90,27 @@ function global_end(): bool
 {
     global $db, $mybb, $cache, $groupscache, $userupdates;
 
-    if (!$mybb->user['uid']) {
-        return false;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
+    if (empty($mybb->user['uid'])) {
         return false;
     }
 
     $user_id = (int)$mybb->user['uid'];
 
-    if ($mybb->settings['newpoints_income_pageview'] != 0) {
-        points_add(
+    if (get_income_value(INCOME_TYPE_PAGE_VIEW)) {
+        points_add_simple(
             $user_id,
-            (float)$mybb->settings['newpoints_income_pageview'],
-            1,
-            $group_rate
+            get_income_value(INCOME_TYPE_PAGE_VIEW)
         );
     }
 
-    if ($mybb->settings['newpoints_income_visit'] != 0) {
-        if ((TIME_NOW - $mybb->user['lastactive']) > 900) {
-            points_add(
+    if (get_income_value(INCOME_TYPE_VISIT)) {
+        if ((TIME_NOW - $mybb->user['lastactive']) > get_income_value(INCOME_TYPE_VISIT_MINUTES) * 60) {
+            points_add_simple(
                 $user_id,
-                (float)$mybb->settings['newpoints_income_visit'],
-                1,
-                $group_rate
+                get_income_value(INCOME_TYPE_VISIT)
             );
         }
     }
-
-    return true;
-}
-
-function global_intermediate(): bool
-{
-    load_set_guest_data();
 
     return true;
 }
@@ -131,16 +129,18 @@ function xmlhttp(): bool
 
 // Loads plugins when in archive and runs a new hook called 'newpoints_archive_start' that can be used by NewPoints plugins (instead of archive_start)
 // todo, fix plugins not being able to use archive_start by loading plugins before
-function archive_start()
+function archive_start(): bool
 {
     load_set_guest_data();
 
     run_hooks('archive_start');
+
+    return true;
 }
 
 function postbit(array &$post): array
 {
-    global $mybb, $db, $currency, $points, $templates, $donate, $lang, $uid;
+    global $mybb, $currency, $points, $donate, $lang, $uid;
 
     $post['newpoints_postbit'] = $points = $post['newpoints_balance_formatted'] = '';
 
@@ -156,7 +156,7 @@ function postbit(array &$post): array
 
     $uid = intval($post['uid']);
 
-    if (!empty($mybb->usergroup['newpoints_can_donate']) && $post['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
+    if (!empty($mybb->usergroup['newpoints_can_donate']) && !empty($mybb->user['uid']) && $uid !== (int)$mybb->user['uid']) {
         $donate = eval(templates_get('donate_inline'));
     } else {
         $donate = '';
@@ -184,7 +184,7 @@ function postbit_announcement(array &$post): array
 
 function member_profile_end(): bool
 {
-    global $mybb, $db, $currency, $points, $templates, $memprofile, $newpoints_profile, $lang, $uid;
+    global $mybb, $currency, $points, $memprofile, $newpoints_profile, $lang, $uid;
 
     $newpoints_profile = '';
 
@@ -198,7 +198,7 @@ function member_profile_end(): bool
 
     $uid = intval($memprofile['uid']);
 
-    if (!empty($mybb->usergroup['newpoints_can_donate']) && $memprofile['uid'] != $mybb->user['uid'] && $mybb->user['uid'] > 0) {
+    if (!empty($mybb->usergroup['newpoints_can_donate']) && !empty($mybb->user['uid']) && $uid !== $mybb->user['uid']) {
         $donate = eval(templates_get('donate_inline'));
     } else {
         $donate = '';
@@ -209,94 +209,55 @@ function member_profile_end(): bool
     return true;
 }
 
+// todo, I'm unsure how this is necessary if we already hook at the data handler
 // edit post - counts less chars on edit because of \n\r being deleted
-function xmlhttp10(): bool
+function xmlhttp_edit_post_end(): bool
 {
-    global $db, $mybb, $thread, $lang, $charset;
+    global $mybb, $post, $lang, $charset;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return false;
     }
 
-    if ($mybb->settings['newpoints_income_perchar'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POST_PER_CHARACTER)) {
         return false;
     }
 
-    if ($mybb->get_input('action') != 'edit_post') {
-        return false;
-    } elseif ($mybb->get_input('action') == 'edit_post' && $mybb->get_input('do') != 'update_post') {
+    if ($mybb->get_input('do') != 'update_post') {
         return false;
     }
 
-    if ($mybb->get_input('editdraft')) {
-        return false;
-    }
-
-    // Verify POST request
     if (!verify_post_check($mybb->get_input('my_post_key'), true)) {
         xmlhttp_error($lang->invalid_post_code);
     }
 
-    $post = get_post($mybb->get_input('pid', MyBB::INPUT_INT));
-
-    $fid = (int)$post['fid'];
-
-    $forum_rate = rules_forum_get_rate($fid);
-
-    if (!$forum_rate) {
-        return false;
-    }
-
-    $group_rate = rules_get_group_rate();
-
-    if (!$group_rate) {
-        return false;
-    }
-
-    // get old message
-    $oldcharcount = count_characters($post['message']);
+    $old_character_count = count_characters($post['message']);
 
     $message = strval($_POST['value']);
     if (my_strtolower($charset) != 'utf-8') {
         if (function_exists('iconv')) {
             $message = iconv($charset, 'UTF-8//IGNORE', $message);
         } elseif (function_exists('mb_convert_encoding')) {
-            $message = @mb_convert_encoding($message, $charset, 'UTF-8');
+            $message = mb_convert_encoding($message, $charset, 'UTF-8');
         } elseif (my_strtolower($charset) == 'iso-8859-1') {
             $message = utf8_decode($message);
         }
     }
 
-    $newcharcount = count_characters($message);
+    $new_character_count = count_characters($message);
+
+    $bonus_income = 0;
 
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
-    if ($newcharcount >= $mybb->settings['newpoints_income_minchar']) {
-        // if we have more characters now
-        if ($newcharcount > $oldcharcount) {
-            // calculate bonus based on difference of characters
-            // bonus will be positive as the new message is longer than the old one
-            $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
-        } // otherwise if the message is shorter
-        elseif ($newcharcount < $oldcharcount) {
-            // calculate bonus based on difference of characters
-            // bonus will be positive as the new message is longer than the old one
-            $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
-        } // else if the length is the same, the bonus is 0
-        elseif ($newcharcount == $oldcharcount) {
-            $bonus = 0;
-        }
-    } else {
-        // calculate bonus based on difference of characters
-        // bonus will be negative as the new message is shorter than the minimum chars
-        $bonus = ($newcharcount - $oldcharcount) * $mybb->settings['newpoints_income_perchar'];
+    if ($new_character_count !== $old_character_count) {
+        $bonus_income = ($new_character_count - $old_character_count) * get_income_value(
+                INCOME_TYPE_POST_PER_CHARACTER
+            );
     }
 
-    if (isset($bonus)) // give points to the poster
-    {
-        $user_id = (int)$mybb->user['uid'];
-
-        points_add($user_id, (float)$bonus, $forum_rate, $group_rate, false, true);
+    if (!empty($bonus_income)) {
+        points_add_simple((int)$mybb->user['uid'], $bonus_income, (int)$post['fid']);
     }
 
     return true;
@@ -304,13 +265,13 @@ function xmlhttp10(): bool
 
 function class_moderation_delete_post_start(int $pid): int
 {
-    global $db, $mybb, $fid;
+    global $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $pid;
     }
 
-    if ($mybb->settings['newpoints_income_newpost'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
         return $pid;
     }
 
@@ -341,20 +302,20 @@ function class_moderation_delete_post_start(int $pid): int
     // let's see if the number of characters in the post is greater than the minimum characters
     if (($charcount = count_characters(
             $post['message']
-        )) >= $mybb->settings['newpoints_income_minchar']) {
-        $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+        )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+        $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
     } else {
         $bonus = 0;
     }
 
     if ($thread['uid'] != $post['uid']) {
         // we are not the thread started so remove points from him/her
-        if ($mybb->settings['newpoints_income_perreply'] != 0) {
+        if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
             $thread_user_id = (int)$thread['uid'];
 
             points_add(
                 $thread_user_id,
-                -(float)$mybb->settings['newpoints_income_perreply'],
+                -get_income_value(INCOME_TYPE_POST_PER_REPLY),
                 $forum_rate,
                 $group_rate
             );
@@ -366,7 +327,7 @@ function class_moderation_delete_post_start(int $pid): int
     // remove points from the poster
     points_add(
         $post_user_id,
-        -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
+        -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
         $forum_rate,
         $group_rate
     );
@@ -378,11 +339,11 @@ function class_moderation_soft_delete_posts(array $pids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $pids;
     }
 
-    if ($mybb->settings['newpoints_income_newpost'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
         return $pids;
     }
 
@@ -409,8 +370,8 @@ function class_moderation_soft_delete_posts(array $pids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -418,12 +379,12 @@ function class_moderation_soft_delete_posts(array $pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from him/her
-                if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     points_add(
                         $thread_user_id,
-                        -(float)$mybb->settings['newpoints_income_perreply'],
+                        -get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         $forum_rate,
                         $group_rate
                     );
@@ -435,7 +396,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             // remove points from the poster
             points_add(
                 $post_user_id,
-                -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
+                -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -449,11 +410,11 @@ function class_moderation_restore_posts($pids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $pids;
     }
 
-    if ($mybb->settings['newpoints_income_newpost'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
         return $pids;
     }
 
@@ -480,8 +441,8 @@ function class_moderation_restore_posts($pids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -489,12 +450,12 @@ function class_moderation_restore_posts($pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
-                if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     points_add(
                         $thread_user_id,
-                        (float)$mybb->settings['newpoints_income_perreply'],
+                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         $forum_rate,
                         $group_rate
                     );
@@ -506,7 +467,7 @@ function class_moderation_restore_posts($pids): array
             // give points to the author of the post
             points_add(
                 $post_user_id,
-                (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
+                get_income_value(INCOME_TYPE_POST_NEW) + (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -520,11 +481,11 @@ function class_moderation_approve_threads(array $tids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_income_newthread'] == 0) {
+    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
         return $tids;
     }
 
@@ -551,8 +512,8 @@ function class_moderation_approve_threads(array $tids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -562,7 +523,7 @@ function class_moderation_approve_threads(array $tids): array
             // add points to the poster
             points_add(
                 $post_user_id,
-                (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
+                get_income_value(INCOME_TYPE_THREAD_NEW) + (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -576,11 +537,11 @@ function class_moderation_approve_posts(array $pids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $pids;
     }
 
-    if ($mybb->settings['newpoints_income_newpost'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
         return $pids;
     }
 
@@ -607,8 +568,8 @@ function class_moderation_approve_posts(array $pids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -616,12 +577,12 @@ function class_moderation_approve_posts(array $pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
-                if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     points_add(
                         $thread_user_id,
-                        (float)$mybb->settings['newpoints_income_perreply'],
+                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         $forum_rate,
                         $group_rate
                     );
@@ -633,7 +594,7 @@ function class_moderation_approve_posts(array $pids): array
             // give points to the author of the post
             points_add(
                 $post_user_id,
-                (float)$mybb->settings['newpoints_income_newpost'] + (float)$bonus,
+                get_income_value(INCOME_TYPE_POST_NEW) + (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -647,11 +608,11 @@ function class_moderation_unapprove_threads(array $tids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_income_newthread'] == 0) {
+    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
         return $tids;
     }
 
@@ -678,8 +639,8 @@ function class_moderation_unapprove_threads(array $tids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -689,7 +650,7 @@ function class_moderation_unapprove_threads(array $tids): array
             // add points to the poster
             points_add(
                 $post_user_id,
-                -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
+                -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -703,11 +664,11 @@ function class_moderation_unapprove_posts(array $pids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $pids;
     }
 
-    if ($mybb->settings['newpoints_income_newpost'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
         return $pids;
     }
 
@@ -734,8 +695,8 @@ function class_moderation_unapprove_posts(array $pids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -743,12 +704,12 @@ function class_moderation_unapprove_posts(array $pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from them
-                if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     points_add(
                         $thread_user_id,
-                        -(float)$mybb->settings['newpoints_income_perreply'],
+                        -get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         $forum_rate,
                         $group_rate
                     );
@@ -760,7 +721,7 @@ function class_moderation_unapprove_posts(array $pids): array
             // give points to the author of the post
             points_add(
                 $post_user_id,
-                -(float)$mybb->settings['newpoints_income_newpost'] - (float)$bonus,
+                -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -774,11 +735,11 @@ function class_moderation_delete_thread(int $tid): int
 {
     global $db, $mybb;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $tid;
     }
 
-    if ($mybb->settings['newpoints_income_newthread'] == 0) {
+    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
         return $tid;
     }
 
@@ -811,8 +772,8 @@ function class_moderation_delete_thread(int $tid): int
     // let's see if the number of characters in the thread is greater than the minimum characters
     if (($charcount = count_characters(
             $post['message']
-        )) >= $mybb->settings['newpoints_income_minchar']) {
-        $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+        )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+        $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
     } else {
         $bonus = 0;
     }
@@ -824,7 +785,7 @@ function class_moderation_delete_thread(int $tid): int
 
         points_add(
             $thread_user_id,
-            -(float)$mybb->settings['newpoints_income_newpoll'],
+            -get_income_value(INCOME_TYPE_POLL_NEW),
             $forum_rate,
             $group_rate
         );
@@ -839,7 +800,7 @@ function class_moderation_delete_thread(int $tid): int
 
     points_add(
         $thread_user_id,
-        -(float)($thread['replies'] * $mybb->settings['newpoints_income_perreply']),
+        -(float)($thread['replies'] * get_income_value(INCOME_TYPE_POST_PER_REPLY)),
         $forum_rate,
         $group_rate
     );
@@ -847,7 +808,7 @@ function class_moderation_delete_thread(int $tid): int
     // take out points from the author of the thread
     points_add(
         $thread_user_id,
-        -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
+        -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
         $forum_rate,
         $group_rate
     );
@@ -859,11 +820,11 @@ function class_moderation_soft_delete_threads(array $tids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_income_newthread'] == 0) {
+    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
         return $tids;
     }
 
@@ -890,8 +851,8 @@ function class_moderation_soft_delete_threads(array $tids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -899,12 +860,12 @@ function class_moderation_soft_delete_threads(array $tids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from him/her
-                if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     points_add(
                         $thread_user_id,
-                        -(float)$mybb->settings['newpoints_income_perreply'],
+                        -get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         $forum_rate,
                         $group_rate
                     );
@@ -916,7 +877,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             // remove points from the poster
             points_add(
                 $post_user_id,
-                -(float)$mybb->settings['newpoints_income_newthread'] - (float)$bonus,
+                -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -930,11 +891,11 @@ function class_moderation_restore_threads(array $tids): array
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $tids;
     }
 
-    if ($mybb->settings['newpoints_income_newthread'] == 0) {
+    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
         return $tids;
     }
 
@@ -961,8 +922,8 @@ function class_moderation_restore_threads(array $tids): array
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= $mybb->settings['newpoints_income_minchar']) {
-                $bonus = $charcount * $mybb->settings['newpoints_income_perchar'];
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -970,12 +931,12 @@ function class_moderation_restore_threads(array $tids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
-                if ($mybb->settings['newpoints_income_perreply'] != 0) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     points_add(
                         $thread_user_id,
-                        (float)$mybb->settings['newpoints_income_perreply'],
+                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         $forum_rate,
                         $group_rate
                     );
@@ -987,7 +948,7 @@ function class_moderation_restore_threads(array $tids): array
             // give points to the author of the post
             points_add(
                 $post_user_id,
-                (float)$mybb->settings['newpoints_income_newthread'] + (float)$bonus,
+                get_income_value(INCOME_TYPE_THREAD_NEW) + (float)$bonus,
                 $forum_rate,
                 $group_rate
             );
@@ -1001,11 +962,11 @@ function polls_do_newpoll_process(): bool
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return false;
     }
 
-    if ($mybb->settings['newpoints_income_newpoll'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POLL_NEW)) {
         return false;
     }
 
@@ -1028,7 +989,7 @@ function polls_do_newpoll_process(): bool
     // give points to the author of the new polls
     points_add(
         $user_id,
-        (float)$mybb->settings['newpoints_income_newpoll'],
+        get_income_value(INCOME_TYPE_POLL_NEW),
         $forum_rate,
         $group_rate
     );
@@ -1040,11 +1001,11 @@ function class_moderation_delete_poll(int $pid): int
 {
     global $db, $mybb;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return $pid;
     }
 
-    if ($mybb->settings['newpoints_income_newpoll'] == 0) {
+    if (!get_income_value(INCOME_TYPE_POLL_NEW)) {
         return $pid;
     }
 
@@ -1070,7 +1031,7 @@ function class_moderation_delete_poll(int $pid): int
     // remove points from the author by deleting the poll
     points_add(
         $poll_user_id,
-        -(float)$mybb->settings['newpoints_income_newpoll'],
+        -get_income_value(INCOME_TYPE_POLL_NEW),
         $forum_rate,
         $group_rate
     );
@@ -1083,16 +1044,16 @@ function member_do_register_end(): bool
     global $db, $mybb, $user_info;
 
     // give points to our new user
-    if ($mybb->settings['newpoints_income_newreg'] != 0) {
+    if (get_income_value(INCOME_TYPE_USER_REGISTRATION)) {
         $user_id = (int)$user_info['uid'];
 
         points_add(
             $user_id,
-            (float)$mybb->settings['newpoints_income_newreg']
+            get_income_value(INCOME_TYPE_USER_REGISTRATION)
         );
     }
 
-    if ($mybb->settings['newpoints_income_referral'] != 0) {
+    if (get_income_value(INCOME_TYPE_USER_REFERRAL)) {
         // Grab the referred user's points
         $query = $db->simple_select(
             'users',
@@ -1112,7 +1073,7 @@ function member_do_register_end(): bool
 
         $user_id = (int)$user['uid'];
 
-        points_add($user_id, (float)$mybb->settings['newpoints_income_referral'], 1, $group_rate);
+        points_add($user_id, get_income_value(INCOME_TYPE_USER_REFERRAL), 1, $group_rate);
     }
 
     return true;
@@ -1122,11 +1083,11 @@ function polls_vote_process(): bool
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return false;
     }
 
-    if ($mybb->settings['newpoints_income_pervote'] == 0) {
+    if (get_income_value(INCOME_TYPE_POLL_VOTE)) {
         return false;
     }
 
@@ -1149,7 +1110,7 @@ function polls_vote_process(): bool
     // give points to us as we're voting in a poll
     points_add(
         $user_id,
-        (float)$mybb->settings['newpoints_income_pervote'],
+        get_income_value(INCOME_TYPE_POLL_VOTE),
         $forum_rate,
         $group_rate
     );
@@ -1161,11 +1122,11 @@ function private_do_send_end(): bool
 {
     global $pmhandler, $pminfo, $db, $mybb;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return false;
     }
 
-    if ($mybb->settings['newpoints_income_pmsent'] == 0) {
+    if (!get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW)) {
         return false;
     }
 
@@ -1186,7 +1147,7 @@ function private_do_send_end(): bool
     $user_id = (int)$mybb->user['uid'];
 
     // give points to the author of the PM
-    points_add($user_id, (float)$mybb->settings['newpoints_income_pmsent'], 1, $group_rate);
+    points_add($user_id, get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW), 1, $group_rate);
 
     return true;
 }
@@ -1195,11 +1156,11 @@ function ratethread_process(): bool
 {
     global $db, $mybb, $fid;
 
-    if (!$mybb->user['uid']) {
+    if (empty($mybb->user['uid'])) {
         return false;
     }
 
-    if ($mybb->settings['newpoints_income_perrate'] == 0) {
+    if (!get_income_value(INCOME_TYPE_PRIVATE_THREAD_RATE_NEW)) {
         return false;
     }
 
@@ -1222,7 +1183,7 @@ function ratethread_process(): bool
     // give points us, as we're rating a thread
     points_add(
         $user_id,
-        (float)$mybb->settings['newpoints_income_perrate'],
+        get_income_value(INCOME_TYPE_PRIVATE_THREAD_RATE_NEW),
         $forum_rate,
         $group_rate
     );

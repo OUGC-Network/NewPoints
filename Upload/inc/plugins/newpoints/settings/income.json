@@ -47,6 +47,10 @@
     "type": "text",
     "value": "0.1"
   },
+  "visit_minutes": {
+    "type": "numeric",
+    "value": 15
+  },
   "referral": {
     "type": "text",
     "value": 5

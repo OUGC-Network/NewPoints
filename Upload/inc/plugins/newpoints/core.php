@@ -55,16 +55,18 @@ const TASK_DEACTIVATE = 0;
 
 const TASK_DELETE = -1;
 
-function language_load(string $plugin = '', bool $forceUserArea = false, bool $supressError = false): bool
+function language_load(string $plugin = '', bool $forceUserArea = false, bool $suppressError = false): bool
 {
     global $lang;
 
     if ($plugin === '') {
-        isset($lang->newpoints) || $lang->load('newpoints', $forceUserArea, $supressError);
+        isset($lang->newpoints) || $lang->load('newpoints', $forceUserArea, $suppressError);
+    } elseif ($plugin === 'module_meta') {
+        isset($lang->nav_plugins) || $lang->load('newpoints_module_meta', $forceUserArea, $suppressError);
     } elseif (!isset($lang->{"newpoints_{$plugin}"})) {
         $lang->set_path(MYBB_ROOT . 'inc/plugins/newpoints/languages');
 
-        $lang->load("newpoints_{$plugin}", $forceUserArea, $supressError);
+        $lang->load("newpoints_{$plugin}", $forceUserArea, $suppressError);
 
         $lang->set_path(MYBB_ROOT . 'inc/languages');
     }
@@ -874,12 +876,14 @@ function points_add(
 function points_add_simple(
     int $user_id,
     float $points,
-    int $forum_id = 1
+    int $forum_id = 0
 ): bool {
-    $forum_rate = rules_forum_get_rate($forum_id);
+    if ($forum_id !== 0) {
+        $forum_rate = rules_forum_get_rate($forum_id);
 
-    if (!$forum_rate) {
-        return false;
+        if (!$forum_rate) {
+            return false;
+        }
     }
 
     $group_rate = rules_get_group_rate(get_user($user_id));
@@ -1722,6 +1726,33 @@ function get_income_value(string $income_type): float
             break;
         case INCOME_TYPE_POST_PER_REPLY:
             $income_value = (float)get_setting('income_perreply');
+            break;
+        case INCOME_TYPE_PAGE_VIEW:
+            $income_value = (float)get_setting('income_pageview');
+            break;
+        case INCOME_TYPE_VISIT:
+            $income_value = (float)get_setting('income_visit');
+            break;
+        case INCOME_TYPE_VISIT_MINUTES:
+            $income_value = (float)get_setting('income_visit_minutes');
+            break;
+        case INCOME_TYPE_THREAD_NEW:
+            $income_value = (float)get_setting('income_newthread');
+            break;
+        case INCOME_TYPE_POLL_NEW:
+            $income_value = (float)get_setting('income_newpoll');
+            break;
+        case INCOME_TYPE_USER_REGISTRATION:
+            $income_value = (float)get_setting('income_newreg');
+            break;
+        case INCOME_TYPE_USER_REFERRAL:
+            $income_value = (float)get_setting('income_referral');
+            break;
+        case INCOME_TYPE_POLL_VOTE:
+            $income_value = (float)get_setting('income_pervote');
+            break;
+        case INCOME_TYPE_PRIVATE_MESSAGE_NEW:
+            $income_value = (float)get_setting('income_newthread');
             break;
     }
 
