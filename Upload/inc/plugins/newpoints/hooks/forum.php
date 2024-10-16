@@ -273,7 +273,7 @@ function class_moderation_delete_post_start(int $pid): int
         return $pid;
     }
 
-    $post = get_post((int)$pid);
+    $post = get_post($pid);
     // It's currently soft deleted, so we do nothing as we already subtracted points when doing that
     // If it's not visible (unapproved) we also don't take out any money
     if ($post['visible'] == -1 || $post['visible'] == 0) {

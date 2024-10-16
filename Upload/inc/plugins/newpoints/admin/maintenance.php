@@ -364,9 +364,7 @@ if (!$mybb->get_input('action')) // show page with various actions that can be t
             $db->update_query(
                 'users',
                 [
-                    'newpoints' => floatval(
-                            get_income_value(INCOME_TYPE_USER_REGISTRATION)
-                        ) + $points * $group_rate
+                    'newpoints' => get_income_value(INCOME_TYPE_USER_REGISTRATION) + $points * $group_rate
                 ],
                 'uid=\'' . $user['uid'] . '\''
             );

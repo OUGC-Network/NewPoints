@@ -317,7 +317,7 @@ if ($mybb->get_input('action') == 'stats') {
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message_reason,
-                        points_format((float)$amount),
+                        points_format($amount),
                         htmlspecialchars_uni($mybb->get_input('reason'))
                     ),
                     'receivepms' => 1,
@@ -330,7 +330,7 @@ if ($mybb->get_input('action') == 'stats') {
                     'subject' => $lang->newpoints_donate_subject,
                     'message' => $lang->sprintf(
                         $lang->newpoints_donate_message,
-                        points_format((float)$amount)
+                        points_format($amount)
                     ),
                     'receivepms' => 1,
                     'touid' => $touser['uid']
@@ -353,7 +353,7 @@ if ($mybb->get_input('action') == 'stats') {
         $link = get_post_link($post['pid'], $post['tid']) . '#pid' . $post['pid'];
     }
 
-    redirect($link, $lang->sprintf($lang->newpoints_donated, points_format((float)$amount)));
+    redirect($link, $lang->sprintf($lang->newpoints_donated, points_format($amount)));
 }
 
 run_hooks('terminate');

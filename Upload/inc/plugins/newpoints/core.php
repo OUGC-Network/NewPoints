@@ -168,7 +168,7 @@ function get_setting(string $setting_key = '')
 /**
  * Somewhat like htmlspecialchars_uni but for JavaScript strings
  *
- * @param string: The string to be parsed
+ * @param string $str : The string to be parsed
  * @return string: Javascript compatible string
  */
 function js_special_characters(string $str): string
@@ -232,15 +232,15 @@ function count_characters(string $message): int
     // newline fix for browsers which don't support them
     $message = preg_replace("~ ?\n ?~", " \n", $message);
 
-    return (int)my_strlen($message);
+    return my_strlen($message);
 }
 
 /**
  * Deletes templates from the database
  *
- * @param string a list of templates seperated by ',' e.g. 'test','test_again','testing'
+ * @param array $templates a list of templates seperated by ',' e.g. 'test','test_again','testing'
+ * @param string $newpoints_prefix
  * @return bool false if something went wrong
- *
  */
 function templates_remove(array $templates, string $newpoints_prefix = 'newpoints_'): bool
 {
@@ -268,13 +268,13 @@ function templates_remove(array $templates, string $newpoints_prefix = 'newpoint
 /**
  * Adds a new template
  *
- * @param string the title of the template
- * @param string the contents of the template
- * @param int the sid of the template
+ * @param string $name the title of the template
+ * @param string $contents the contents of the template
+ * @param int $sid the sid of the template
  * @return bool false if something went wrong
  *
  */
-function templates_add(string $name, string $contents, $sid = -1): bool
+function templates_add(string $name, string $contents, int $sid = -1): bool
 {
     global $db;
 
@@ -436,9 +436,9 @@ function templates_rebuild(): bool
 /**
  * Deletes settings from the database
  *
- * @param string a list of settings seperated by ',' e.g. 'test','test_again','testing'
+ * @param array $settings a list of settings seperated by ',' e.g. 'test','test_again','testing'
+ * @param string $newpoints_prefix
  * @return bool false if something went wrong
- *
  */
 function settings_remove(array $settings, string $newpoints_prefix = 'newpoints_'): bool
 {
@@ -466,8 +466,8 @@ function settings_remove(array $settings, string $newpoints_prefix = 'newpoints_
 /**
  * Adds a new set of settings
  *
- * @param string the name (unique identifier) of the setting plugin
- * @param array the array containing the settings
+ * @param string $plugin the name (unique identifier) of the setting plugin
+ * @param array $settings the array containing the settings
  * @return bool false on failure, true on success
  *
  */
@@ -533,13 +533,13 @@ function settings_add_group(string $plugin, array $settings): bool
 /**
  * Adds a new setting
  *
- * @param string the name (unique identifier) of the setting
- * @param string the codename of plugin which owns the setting ('main' for main setting)
- * @param string the title of the setting
- * @param string the description of the setting
- * @param string the type of the setting ('text', 'textarea', etc...)
- * @param string the value of the setting
- * @param int the display order of the setting
+ * @param string $name the name (unique identifier) of the setting
+ * @param string $plugin the codename of plugin which owns the setting ('main' for main setting)
+ * @param string $title the title of the setting
+ * @param string $description the description of the setting
+ * @param string $options_code the type of the setting ('text', 'textarea', etc...)
+ * @param string $value the value of the setting
+ * @param int $display_order the display order of the setting
  * @return bool false on failure, true on success
  *
  */
@@ -671,7 +671,7 @@ function settings_load_init(): bool
 /**
  * Rebuild the settings cache.
  *
- * @param array An array which will contain the settings once the function is run.
+ * @param array $settings An array which will contain the settings once the function is run.
  */
 function settings_rebuild_cache(array &$settings = []): array
 {
@@ -811,14 +811,14 @@ function settings_rebuild(): bool
 /**
  * Adds/Subtracts points to a user
  *
- * @param int the id of the user
- * @param float the number of points to add or subtract (if a negative value)
- * @param int the forum income rate
- * @param int the user group income rate
- * @param bool if the uid is a string in case we don't have the uid we can update the points field by searching for the user name
- * @param bool true if you want to run the query immediatly. Default is false which means the query will be run on shut down. Note that if the previous paremeter is set to true, the query is run immediatly
+ * @param int $uid the id of the user
+ * @param float $points the number of points to add or subtract (if a negative value)
+ * @param float $forumrate the forum income rate
+ * @param float $grouprate the user group income rate
+ * @param bool $isstring if the uid is a string in case we don't have the uid we can update the points field by searching for the user name
+ * @param bool $immediate true if you want to run the query immediatly. Default is false which means the query will be run on shut down. Note that if the previous paremeter is set to true, the query is run immediatly
  * Note: some pages (by other plugins) do not run queries on shutdown so adding this to shutdown may not be good if you're not sure if it will run.
- *
+ * @return bool
  */
 function points_add(
     int $uid,
@@ -924,14 +924,12 @@ function points_update(): bool
 /**
  * Formats points according to the settings
  *
- * @param float the amount of points
+ * @param float $points the amount of points
  * @return string formated points
  *
  */
 function points_format(float $points): string
 {
-    global $mybb;
-
     return get_setting('main_curprefix') . my_number_format(
             round($points, (int)get_setting('main_decimal'))
         ) . get_setting('main_cursuffix');
@@ -940,10 +938,9 @@ function points_format(float $points): string
 /**
  * Get rules of a certain group or forum
  *
- * @param string the type of rule: 'forum' or 'group'
- * @param int the id of the group or forum
- * @return bool false if something went wrong
- *
+ * @param string $type the type of rule: 'forum' or 'group'
+ * @param int $id the id of the group or forum
+ * @return array false if something went wrong
  */
 function rules_get(string $type, int $id): array
 {
@@ -991,7 +988,7 @@ function rules_group_get(int $group_id): array
 /**
  * Get all rules
  *
- * @param string the type of rule: 'forum' or 'group'
+ * @param string $type the type of rule: 'forum' or 'group'
  * @return array containing all rules
  *
  */
@@ -1099,7 +1096,7 @@ function rules_get_group_rate(array $user = []): float
 /**
  * Rebuild the rules cache.
  *
- * @param array An array which will contain the rules once the function is run.
+ * @param array $rules An array which will contain the rules once the function is run.
  */
 function rules_rebuild_cache(array &$rules = []): bool
 {
@@ -1178,7 +1175,7 @@ function my_alerts_send(int $from_user_id, int $to_user_id, string $alert_code)
 /**
  * Get the user group data of the gid
  *
- * @param int the usergroup ID
+ * @param int $gid the usergroup ID
  * @return array the user data
  *
  */
@@ -1190,7 +1187,7 @@ function get_group(int $gid): array
         return [];
     }
 
-    $query = $db->simple_select('usergroups', '*', 'gid=\'' . intval($gid) . '\'');
+    $query = $db->simple_select('usergroups', '*', 'gid=\'' . $gid . '\'');
 
     if ($db->num_rows($query)) {
         return $db->fetch_array($query);
@@ -1202,10 +1199,10 @@ function get_group(int $gid): array
 /**
  * Find and replace a string in a particular template in global templates set
  *
- * @param string The name of the template
- * @param string The regular expression to match in the template
- * @param string The replacement string
- * @return bolean true if matched template name, false if not.
+ * @param string $title The name of the template
+ * @param string $find The regular expression to match in the template
+ * @param string $replace The replacement string
+ * @return bool true if matched template name, false if not.
  */
 
 function find_replace_template_sets(string $title, string $find, string $replace): bool
@@ -1244,12 +1241,11 @@ function find_replace_template_sets(string $title, string $find, string $replace
 /**
  * Create a new log entry
  *
- * @param string action taken
- * @param string extra data
- * @param username of who's executed the action
- * @param uid of who's executed the action
+ * @param string $action action taken
+ * @param string $data extra data
+ * @param string $username $username of who's executed the action
+ * @param int $uid $uid of who's executed the action
  * @return bool false if something went wrong
- *
  */
 function log_add(string $action, string $data = '', string $username = '', int $uid = 0): bool
 {
@@ -1281,7 +1277,7 @@ function log_add(string $action, string $data = '', string $username = '', int $
 /**
  * Removes all log entries by action
  *
- * @param array action taken
+ * @param array $action action taken
  *
  */
 function log_remove(array $action): bool
@@ -1302,7 +1298,7 @@ function log_remove(array $action): bool
 /**
  * Checks if a user has permissions or not.
  *
- * @param array|string Allowed usergroups (if set to 'all', every user has access; if set to '' no one has)
+ * @param array|string $groups_comma Allowed usergroups (if set to 'all', every user has access; if set to '' no one has)
  *
  */
 function check_permissions(string $groups_comma): bool
@@ -1428,8 +1424,8 @@ function users_update(): bool
 /**
  * Get the user data of a user name
  *
- * @param string the user name
- * @param string the fields to fetch
+ * @param string $username the user name
+ * @param string $fields the fields to fetch
  * @return array the user data
  *
  */
@@ -1472,7 +1468,7 @@ function users_get_group_permissions(int $user_id): array
 /**
  * Create and/or update setting group and settings. Taken from PluginLibrary
  *
- * @param string $name Internal unique group name and setting prefix.
+ * @param string $group_name
  * @param string $title Group title that will be shown to the admin.
  * @param string $description Group description that will show up in the group overview.
  * @param array $list The list of settings to be added to that group.
