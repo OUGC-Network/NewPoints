@@ -251,7 +251,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     if ($mybb->get_input('modal', 1)) {
         $code = $form;
-        $modal = eval(templates_get('modal', 1, 0));
+        $modal = eval(templates_get('modal', false));
         echo $modal;
         exit;
     }
