@@ -264,7 +264,7 @@ function plugin_uninstallation(): bool
 
     //rebuild_settings();
 
-    foreach (TABLES_DATA as $table_name => $table_data) {
+    foreach (TABLES_DATA as $table_name => $table_columns) {
         if ($db->table_exists($table_name)) {
             $db->drop_table($table_name);
         }
@@ -353,9 +353,9 @@ function db_verify_tables(array $tables_objects = TABLES_DATA): bool
 
     $collation = $db->build_create_table_collation();
 
-    foreach (db_tables($tables_objects) as $table_name => $table_data) {
+    foreach (db_tables($tables_objects) as $table_name => $table_columns) {
         if ($db->table_exists($table_name)) {
-            foreach ($table_data as $field_name => $field_data) {
+            foreach ($table_columns as $field_name => $field_data) {
                 if ($field_name == 'primary_key' || $field_name == 'unique_key') {
                     continue;
                 }
@@ -369,7 +369,7 @@ function db_verify_tables(array $tables_objects = TABLES_DATA): bool
         } else {
             $query_string = "CREATE TABLE IF NOT EXISTS `{$db->table_prefix}{$table_name}` (";
 
-            foreach ($table_data as $field_name => $field_data) {
+            foreach ($table_columns as $field_name => $field_data) {
                 if ($field_name == 'primary_key') {
                     $query_string .= "PRIMARY KEY (`{$field_data}`)";
                 } elseif ($field_name != 'unique_key') {
@@ -392,13 +392,13 @@ function db_verify_indexes(array $tables_objects = TABLES_DATA): bool
 {
     global $db;
 
-    foreach (db_tables($tables_objects) as $table_name => $table_data) {
+    foreach (db_tables($tables_objects) as $table_name => $table_columns) {
         if (!$db->table_exists($table_name)) {
             continue;
         }
 
-        if (isset($table_data['unique_key'])) {
-            foreach ($table_data['unique_key'] as $key_name => $key_value) {
+        if (isset($table_columns['unique_key'])) {
+            foreach ($table_columns['unique_key'] as $key_name => $key_value) {
                 if ($db->index_exists($table_name, $key_name)) {
                     continue;
                 }

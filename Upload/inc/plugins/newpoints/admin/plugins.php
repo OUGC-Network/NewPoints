@@ -173,8 +173,55 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
     rules_rebuild_cache();
 
+    $cache->update_attachtypes();
+
+    $cache->update_smilies();
+
+    $cache->update_posticons();
+
+    $cache->update_badwords();
+
+    $cache->update_usergroups();
+
+    $cache->update_forumpermissions();
+
+    $cache->update_stats();
+
+    $cache->update_statistics();
+
+    $cache->update_moderators();
+
+    $cache->update_awaitingactivation();
+
+    $cache->update_forums();
+
+    $cache->update_usertitles();
+
+    $cache->update_reportedcontent();
+
+    $cache->update_mycode();
+
+    $cache->update_mailqueue();
+
+    $cache->update_update_check();
+
+    $cache->update_default_theme();
+
+    $cache->update_tasks();
+
+    $cache->update_bannedips();
+
+    $cache->update_bannedemails();
+
+    $cache->update_spiders();
+
+    $cache->update_most_replied_threads();
+
+    $cache->update_most_viewed_threads();
+
     // Update plugin cache
     $plugins_cache['active'] = $active_plugins;
+
     $cache->update('newpoints_plugins', $plugins_cache);
 
     // Log admin action

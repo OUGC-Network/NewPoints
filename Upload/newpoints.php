@@ -49,9 +49,7 @@ const THIS_SCRIPT = 'newpoints.php';
 
 const NP_DISABLE_GUESTS = false;
 
-$templatelist = 'newpoints_withdraw_points_header_link, newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home';
-$templatelist .= ', newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics';
-$templatelist .= ', newpoints_donate_form, newpoints_donate';
+$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate';
 
 require_once './global.php';
 
@@ -78,9 +76,9 @@ $options = page_build_menu_options();
 
 $newpoints_menu = page_build_menu();
 
-run_hooks('start');
-
 add_breadcrumb($lang->newpoints, main_file_name());
+
+run_hooks('start');
 
 // Block guests here
 if (!$mybb->user['uid']) {
@@ -132,6 +130,8 @@ if (!$mybb->get_input('action')) {
 }
 
 if ($mybb->get_input('action') == 'stats') {
+    add_breadcrumb($lang->newpoints_statistics, \Newpoints\Core\url_handler_build(['action' => 'stats']));
+
     if (empty($mybb->usergroup['newpoints_can_see_stats'])) {
         error($lang->newpoints_stats_disabled);
     }

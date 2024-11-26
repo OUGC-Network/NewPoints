@@ -1130,6 +1130,10 @@ function rules_rebuild_cache(array &$rules = []): bool
  */
 function private_message_send(array $private_message_data, int $from_user_id = 0, bool $admin_override = false): bool
 {
+    global $session;
+    
+    $private_message_data['ipaddress'] = $private_message_data['ipaddress'] ?? $session->packedip;
+
     return send_pm($private_message_data, $from_user_id, $admin_override);
 }
 
