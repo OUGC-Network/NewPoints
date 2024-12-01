@@ -29,7 +29,6 @@
 
 declare(strict_types=1);
 
-// Disallow direct access to this file for security reasons
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\settings_add;

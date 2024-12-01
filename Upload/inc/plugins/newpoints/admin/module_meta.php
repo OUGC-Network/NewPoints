@@ -59,16 +59,11 @@ function newpoints_meta(): bool
             'link' => 'index.php?module=newpoints-log'
         ],
         25 => [
-            'id' => 'maintenance',
-            'title' => $lang->nav_maintenance,
-            'link' => 'index.php?module=newpoints-maintenance'
-        ],
-        30 => [
             'id' => 'forumrules',
             'title' => $lang->nav_forumrules,
             'link' => 'index.php?module=newpoints-forumrules'
         ],
-        35 => [
+        30 => [
             'id' => 'grouprules',
             'title' => $lang->nav_grouprules,
             'link' => 'index.php?module=newpoints-grouprules'
@@ -102,10 +97,6 @@ function newpoints_action_handler(string $current_action): string
         'log' => [
             'active' => 'log',
             'file' => 'log.php'
-        ],
-        'maintenance' => [
-            'active' => 'maintenance',
-            'file' => 'maintenance.php'
         ],
         'forumrules' => [
             'active' => 'forumrules',
@@ -141,7 +132,6 @@ function newpoints_admin_permissions(): array
         'plugins' => $lang->can_manage_plugins,
         'settings' => $lang->can_manage_settings,
         'log' => $lang->can_manage_log,
-        'maintenance' => $lang->can_manage_maintenance,
         'forumrules' => $lang->can_manage_forumrules,
         'grouprules' => $lang->can_manage_grouprules,
     ];

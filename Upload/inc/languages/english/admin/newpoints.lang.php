@@ -80,31 +80,12 @@ $l['newpoints_filter'] = 'Filters enabled:<br />{1}';
 $l['newpoints_username'] = 'Username';
 
 ///////////////// Maintenance
-$l['newpoints_maintenance'] = 'Maintenance';
-$l['newpoints_maintenance_description'] = 'Here you can find various maintenance tools.';
-$l['newpoints_recount'] = 'Recount Points';
-$l['newpoints_recount_per_page'] = 'Per page';
-$l['newpoints_recount_per_page_desc'] = 'Enter the number of users you want to recount per page.<br />Recount is based on the income settings.';
-$l['newpoints_reset'] = 'Reset Points';
-$l['newpoints_reset_per_page'] = 'Per page';
-$l['newpoints_reset_per_page_desc'] = 'Enter the number of users you want to reset per page.';
-$l['newpoints_recounted'] = 'You have successfully recounted users\'s money.';
-$l['newpoints_reset_action'] = 'You have successfully reset users\'s money.';
-$l['newpoints_reset_done'] = 'You have successfully reset users\'s money.';
-$l['newpoints_recount_done'] = 'Points recounted';
-$l['newpoints_recountconfirm'] = 'Are you sure you want to recount everyone\'s points?';
-$l['newpoints_reset_points'] = 'Points';
-$l['newpoints_reset_points_desc'] = 'Number of points everyone will be reset to.';
-$l['newpoints_edituser'] = 'Edit User';
-$l['newpoints_edituser_uid'] = 'User ID';
-$l['newpoints_edituser_uid_desc'] = 'Enter the user id of the user you want to edit.';
-$l['newpoints_maintenance_edituser'] = 'Edit User';
-$l['newpoints_maintenance_edituser_desc'] = 'Edit the points of a user.';
+$l['newpoints_recount'] = 'Recount User Newpoints';
+$l['newpoints_recount_desc'] = 'When this is run, the Newpoints amount for each user will be updated to reflect its current live value based on the income settings.';
+$l['newpoints_recount_success'] = ' The Newpoints amount for users have been rebuilt successfully.';
+$l['newpoints_reset'] = 'Reset User Newpoints';
+$l['newpoints_reset_desc'] = 'When this is run, the Newpoints amount for each user will be updated to reflect this value.';
 $l['newpoints_invalid_user'] = 'Invalid user.';
-$l['newpoints_edituser_points'] = 'Edit points';
-$l['newpoints_edituser_points_desc'] = 'Enter the number of points you want the selected user to have.';
-$l['newpoints_user_edited'] = 'The selected user has been edited successfully.';
-$l['newpoints_resetconfirm'] = 'Are you sure you want to reset everyone\'s money?';
 
 ///////////////// Stats
 $l['newpoints_stats'] = 'Statistics';

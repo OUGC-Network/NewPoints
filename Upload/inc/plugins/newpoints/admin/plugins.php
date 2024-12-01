@@ -32,7 +32,6 @@ declare(strict_types=1);
 use function Newpoints\Admin\db_verify_columns;
 use function Newpoints\Admin\db_verify_tables;
 use function Newpoints\Admin\plugin_library_load;
-use function Newpoints\Core\task_enable;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;

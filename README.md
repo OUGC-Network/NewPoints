@@ -30,7 +30,6 @@
 - [Usage](#usage)
     - [Plugins](#usage_plugins)
     - [Settings](#usage_settings)
-    - [Maintenance](#usage_maintenance)
     - [Forum Rules](#usage_forum_rules)
     - [Group Rules](#usage_group_rules)
 - [Plugins](#plugins)
@@ -262,8 +261,6 @@ The following is a description of the _Administrator Control Panel_ module form 
 ### Settings <a name="usage_settings"></a>
 
 ### Logs <a name="usage_log"></a>
-
-### Maintenance <a name="usage_maintenance"></a>
 
 ### Forum Rules <a name="usage_forum_rules"></a>
 

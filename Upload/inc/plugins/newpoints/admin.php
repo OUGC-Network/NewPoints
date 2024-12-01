@@ -31,25 +31,32 @@ declare(strict_types=1);
 
 namespace Newpoints\Admin;
 
-use PhpParser\Node\Expr\Cast\Bool_;
-
+use MyBB;
 use PluginLibrary;
-
 use stdClass;
 
+use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\language_load;
-
+use function Newpoints\Core\points_add_simple;
+use function Newpoints\Core\rules_get_all;
+use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\rules_rebuild_cache;
-
-use function Newpoints\Core\settings_add;
 use function Newpoints\Core\settings_rebuild;
-use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\task_delete;
 use function Newpoints\Core\task_disable;
 use function Newpoints\Core\task_enable;
 use function Newpoints\Core\templates_rebuild;
 
 use const Newpoints\Core\FIELDS_DATA;
+use const Newpoints\Core\INCOME_TYPE_POLL_NEW;
+use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
+use const Newpoints\Core\INCOME_TYPE_POST_MINIMUM_CHARACTERS;
+use const Newpoints\Core\INCOME_TYPE_POST_NEW;
+use const Newpoints\Core\INCOME_TYPE_POST_PER_CHARACTER;
+use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
+use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE_NEW;
+use const Newpoints\Core\INCOME_TYPE_THREAD_NEW;
+use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\TABLES_DATA;
 
 const PERMISSION_ENABLE = 1;
@@ -270,7 +277,6 @@ function permissions_update(int $action = PERMISSION_ENABLE): bool
     change_admin_permission('newpoints', 'plugins', $action);
     change_admin_permission('newpoints', 'settings', $action);
     change_admin_permission('newpoints', 'log', $action);
-    change_admin_permission('newpoints', 'maintenance', $action);
     change_admin_permission('newpoints', 'forumrules', $action);
     change_admin_permission('newpoints', 'grouprules', $action);
     change_admin_permission('newpoints', 'stats', $action);
@@ -540,4 +546,212 @@ function permission_delete(string $plugin_code): bool
     change_admin_permission('newpoints', 'newpoints_' . $plugin_code, -1);
 
     return true;
+}
+
+function recount_rebuild_newpoints_recount()
+{
+    global $db, $mybb, $lang;
+
+    $query = $db->simple_select('users', 'COUNT(*) as total_users');
+
+    $total_users = $db->fetch_field($query, 'total_users');
+
+    $page = $mybb->get_input('page', MyBB::INPUT_INT);
+
+    $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+
+    $start = ($page - 1) * $per_page;
+
+    $end = $start + $per_page;
+
+    $forum_rules = rules_get_all('forum');
+
+    $query = $db->simple_select(
+        'users',
+        'uid,usergroup,additionalgroups',
+        '',
+        ['order_by' => 'uid', 'order_dir' => 'asc', 'limit_start' => $start, 'limit' => $per_page]
+    );
+
+    while ($user_data = $db->fetch_array($query)) {
+        $points = 0;
+
+        $group_rate = rules_get_group_rate($user_data);
+
+        if (!$group_rate) {
+            continue;
+        }
+
+        $first_posts = [];
+
+        $threads_query = $db->simple_select(
+            'threads',
+            'firstpost,fid,poll',
+            "uid='" . $user_data['uid'] . "' AND visible=1"
+        );
+
+        while ($thread = $db->fetch_array($threads_query)) {
+            if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
+                continue;
+            }
+
+            if (!$forum_rules[$thread['fid']]) {
+                $forum_rules[$thread['fid']]['rate'] = 1;
+            }
+
+            if (empty($forum_rules[$thread['fid']]['rate'])) {
+                continue;
+            }
+
+            if (($character_count = my_strlen(
+                    $mybb->get_input('message')
+                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
+                $bonus = $character_count * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+            } else {
+                $bonus = 0;
+            }
+
+            $points += (get_income_value(
+                        INCOME_TYPE_THREAD_NEW
+                    ) + $bonus) * $forum_rules[$thread['fid']]['rate'];
+
+            if (!empty($thread['poll'])) {
+                $points += get_income_value(
+                        INCOME_TYPE_POLL_NEW
+                    ) * $forum_rules[$thread['fid']]['rate'];
+            }
+
+            $first_posts[] = (int)$thread['firstpost'];
+        }
+
+        $posts_query = $db->simple_select(
+            'posts',
+            'tid,fid,message',
+            "uid='{$user_data['uid']}' AND pid NOT IN('" . implode("','", $first_posts) . "') AND visible=1"
+        );
+
+        while ($post_data = $db->fetch_array($posts_query)) {
+            if (!get_income_value(INCOME_TYPE_POST_NEW)) {
+                continue;
+            }
+
+            if (!$forum_rules[$post_data['fid']]) {
+                $forum_rules[$post_data['fid']]['rate'] = 1;
+            }
+
+            if (empty($forum_rules[$post_data['fid']]['rate'])) {
+                continue;
+            }
+
+            if (($character_count = my_strlen($post_data['message'])) >= get_income_value(
+                    INCOME_TYPE_POST_MINIMUM_CHARACTERS
+                )) {
+                $bonus = $character_count * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+            } else {
+                $bonus = 0;
+            }
+
+            $points += (get_income_value(
+                        INCOME_TYPE_POST_NEW
+                    ) + $bonus) * $forum_rules[$post_data['fid']]['rate'];
+
+            $thread_data = get_thread($post_data['tid']);
+
+            if ((int)$thread_data['uid'] !== (int)$user_data['uid']) {
+                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                    points_add_simple(
+                        (int)$thread_data['uid'],
+                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                        (int)$post_data['fid']
+                    );
+                }
+            }
+        }
+
+        if (get_income_value(INCOME_TYPE_POLL_VOTE)) {
+            $votes = $db->fetch_field(
+                $db->simple_select('pollvotes', 'COUNT(*) AS votes', "uid='{$user_data['uid']}'"),
+                'votes'
+            );
+
+            $points += $votes * get_income_value(INCOME_TYPE_POLL_VOTE);
+        }
+
+        if (get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW)) {
+            $pms_sent = $db->fetch_field(
+                $db->simple_select(
+                    'privatemessages',
+                    'COUNT(*) AS numpms',
+                    "fromid='{$user_data['uid']}' AND toid!='{$user_data['uid']}' AND receipt!='1'"
+                ),
+                'numpms'
+            );
+
+            $points += $pms_sent * get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW);
+        }
+
+        $db->update_query(
+            'users',
+            [
+                'newpoints' => get_income_value(INCOME_TYPE_USER_REGISTRATION) + $points * $group_rate
+            ],
+            "uid='{$user_data['uid']}'"
+        );
+    }
+
+    check_proceed(
+        $total_users,
+        $end,
+        ++$page,
+        $per_page,
+        'newpoints_recount',
+        'do_recount_newpoints',
+        $lang->newpoints_recount_success
+    );
+}
+
+function recount_rebuild_newpoints_reset()
+{
+    global $db, $mybb, $lang;
+
+    $query = $db->simple_select('users', 'COUNT(*) as total_users');
+
+    $total_users = $db->fetch_field($query, 'total_users');
+
+    $page = $mybb->get_input('page', MyBB::INPUT_INT);
+
+    $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+
+    $start = ($page - 1) * $per_page;
+
+    $end = $start + $per_page;
+
+    $forum_rules = rules_get_all('forum');
+
+    $query = $db->simple_select(
+        'users',
+        'uid,usergroup,additionalgroups',
+        '',
+        ['order_by' => 'uid', 'order_dir' => 'asc', 'limit_start' => $start, 'limit' => $per_page]
+    );
+
+    while ($user_data = $db->fetch_array($query)) {
+        $user_id = (int)$user_data['uid'];
+
+        $db->update_query(
+            'users',
+            ['newpoints' => $mybb->get_input('newpoints_reset', MyBB::INPUT_FLOAT)],
+            "uid='{$user_id}'"
+        );
+    }
+
+    check_proceed(
+        $total_users,
+        $end,
+        ++$page,
+        $per_page,
+        'newpoints_reset',
+        'do_reset_newpoints',
+        $lang->newpoints_reset_success
+    );
 }

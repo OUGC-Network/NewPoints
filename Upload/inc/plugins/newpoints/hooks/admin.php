@@ -33,6 +33,7 @@ namespace Newpoints\Hooks\Admin;
 
 use FormContainer;
 use MyBB;
+use userDataHandler;
 
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
@@ -461,7 +462,7 @@ function admin_user_users_edit_graph(): bool
 
     echo '<div id="tab_newpoints">';
 
-    $form_container = new \FormContainer($lang->newpoints_users_title . ': ' . htmlspecialchars_uni($user['username']));
+    $form_container = new FormContainer($lang->newpoints_users_title . ': ' . htmlspecialchars_uni($user['username']));
 
     $hook_arguments = [
         'data_fields' => &$data_fields,
@@ -480,7 +481,7 @@ function admin_user_users_edit_graph(): bool
             $setting_language_string = 'newpoints_user_' . str_replace('newpoints_', '', $data_field_key);
         }
 
-        $value = $mybb->get_input($data_field_key, \MyBB::INPUT_INT);
+        $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
 
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
@@ -541,7 +542,7 @@ function admin_user_users_edit_start()
     return true;
 }
 
-function datahandler_user_validate(\userDataHandler $data_handler): \userDataHandler
+function datahandler_user_validate(userDataHandler $data_handler): userDataHandler
 {
     global $newpoints_user_update;
 
@@ -587,7 +588,7 @@ function datahandler_user_validate(\userDataHandler $data_handler): \userDataHan
     return $data_handler;
 }
 
-function datahandler_user_update(\userDataHandler $data_handler): \userDataHandler
+function datahandler_user_update(userDataHandler $data_handler): userDataHandler
 {
     $data_fields = FIELDS_DATA['users'];
 
@@ -609,4 +610,65 @@ function datahandler_user_update(\userDataHandler $data_handler): \userDataHandl
     }
 
     return $data_handler;
+}
+
+function admin_tools_recount_rebuild_output_list(): bool
+{
+    global $lang;
+    global $form_container, $form;
+
+    $form_container->output_cell(
+        "<label>{$lang->newpoints_recount}</label><div class=\"description\">{$lang->newpoints_recount_desc}</div>"
+    );
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_recount', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+    $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_recount_newpoints']));
+    $form_container->construct_row();
+
+    $form_container->output_cell(
+        "<label>{$lang->newpoints_reset}</label><div class=\"description\">{$lang->newpoints_reset_desc}</div>"
+    );
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_reset', 0, ['style' => 'width: 150px;', 'min' => 0])
+    );
+    $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_reset_newpoints']));
+    $form_container->construct_row();
+
+    return true;
+}
+
+function admin_tools_do_recount_rebuild(): bool
+{
+    global $mybb;
+
+    if (isset($mybb->input['do_recount_newpoints'])) {
+        if ($mybb->input['page'] == 1) {
+            log_admin_action('recount');
+        }
+
+        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+
+        if (!$per_page || $per_page <= 0) {
+            $mybb->input['newpoints_recount'] = 50;
+        }
+
+        \Newpoints\Admin\recount_rebuild_newpoints_recount();
+    }
+
+    if (isset($mybb->input['do_reset_newpoints'])) {
+        if ($mybb->input['page'] == 1) {
+            log_admin_action('reset');
+        }
+
+        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+
+        if (!$per_page || $per_page <= 0) {
+            $mybb->input['newpoints_recount'] = 50;
+        }
+
+        \Newpoints\Admin\recount_rebuild_newpoints_reset();
+    }
+
+    return true;
 }

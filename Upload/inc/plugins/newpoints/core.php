@@ -39,7 +39,6 @@ use Moderation;
 use PluginLibrary;
 use pluginSystem;
 use postParser;
-
 use ReflectionProperty;
 
 use const Newpoints\ROOT;

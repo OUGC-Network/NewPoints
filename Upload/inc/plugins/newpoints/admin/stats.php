@@ -30,7 +30,6 @@
 declare(strict_types=1);
 
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\points_format;
 use function Newpoints\Core\run_hooks;
 
 if (!defined('IN_MYBB')) {
@@ -67,7 +66,7 @@ if (!$mybb->get_input('action')) // view stats
 
     $table->construct_cell($lang->newpoints_error_gathering, ['colspan' => 4]);
     $table->construct_row();
-    
+
     $table->output($lang->newpoints_stats_richest_users);
 
     echo '<br />';

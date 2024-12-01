@@ -50,7 +50,6 @@ use const Newpoints\Core\INCOME_TYPE_POST_MINIMUM_CHARACTERS;
 use const Newpoints\Core\INCOME_TYPE_POST_NEW;
 use const Newpoints\Core\INCOME_TYPE_POST_PER_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
-use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE_NEW;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_THREAD_RATE_NEW;
 use const Newpoints\Core\INCOME_TYPE_THREAD_NEW;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
