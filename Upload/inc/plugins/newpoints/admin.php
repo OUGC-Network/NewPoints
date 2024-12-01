@@ -177,23 +177,7 @@ function plugin_installation(): bool
 
 function plugin_is_installed(): bool
 {
-    static $isInstalled = null;
-
-    if ($isInstalled === null) {
-        global $db;
-
-        $isInstalledEach = true;
-
-        foreach (db_tables() as $tableName => $tableData) {
-            $isInstalledEach = $db->table_exists($tableName) && $isInstalledEach;
-
-            break;
-        }
-
-        $isInstalled = $isInstalledEach;
-    }
-
-    return $isInstalled;
+    return db_verify_tables_exists();
 }
 
 function plugin_uninstallation(): bool
@@ -232,19 +216,9 @@ function plugin_uninstallation(): bool
     $cache->delete('newpoints_settings');
     $cache->delete('newpoints_plugins');
 
-    foreach (TABLES_DATA as $table_name => $table_columns) {
-        $db->drop_table($table_name);
-    }
+    db_drop_tables(TABLES_DATA);
 
-    foreach (FIELDS_DATA as $table_name => $table_columns) {
-        if ($db->table_exists($table_name)) {
-            foreach ($table_columns as $field_name => $field_data) {
-                if ($db->field_exists($field_name, $table_name)) {
-                    $db->drop_column($table_name, $field_name);
-                }
-            }
-        }
-    }
+    db_drop_columns(FIELDS_DATA);
 
     // Delete all templates
     $query = $db->simple_select('templategroups', 'prefix', "prefix='newpoints'");
@@ -263,22 +237,6 @@ function plugin_uninstallation(): bool
     }
 
     //rebuild_settings();
-
-    foreach (TABLES_DATA as $table_name => $table_columns) {
-        if ($db->table_exists($table_name)) {
-            $db->drop_table($table_name);
-        }
-    }
-
-    foreach (FIELDS_DATA as $table_name => $table_columns) {
-        if ($db->table_exists($table_name)) {
-            foreach ($table_columns as $field_name => $field_data) {
-                if ($db->field_exists($field_name, $table_name)) {
-                    $db->drop_column($table_name, $field_name);
-                }
-            }
-        }
-    }
 
     $PL->settings_delete('newpoints');
 
@@ -469,6 +427,74 @@ function db_verify_columns(array $fields_objects = FIELDS_DATA): bool
     return true;
 }
 
+function db_verify_tables_exists(array $tables_objects = TABLES_DATA): bool
+{
+    global $db;
+
+    $isInstalledEach = true;
+
+    foreach (db_tables($tables_objects) as $tableName => $tableData) {
+        $isInstalledEach = $db->table_exists($tableName) && $isInstalledEach;
+
+        break;
+    }
+
+    return $isInstalledEach;
+}
+
+function db_verify_columns_exists(array $fields_objects = FIELDS_DATA): bool
+{
+    global $db;
+
+    $isInstalledEach = true;
+
+    foreach ($fields_objects as $table_name => $table_columns) {
+        if (!$db->table_exists($table_name)) {
+            $isInstalledEach = false;
+
+            break;
+        }
+
+        foreach ($table_columns as $field_name => $field_data) {
+            if (!isset($field_data['type'])) {
+                continue;
+            }
+
+            $isInstalledEach = $db->field_exists($field_name, $table_name) && $isInstalledEach;
+        }
+    }
+
+    return $isInstalledEach;
+}
+
+function db_drop_tables(array $tables_objects = TABLES_DATA): bool
+{
+    global $db;
+
+    foreach ($tables_objects as $table_name => $table_columns) {
+        $db->drop_table($table_name);
+    }
+
+    return true;
+}
+
+function db_drop_columns(array $tables_objects = FIELDS_DATA): bool
+{
+    global $db;
+
+    foreach ($tables_objects as $table_name => $table_columns) {
+        if ($db->table_exists($table_name)) {
+            foreach ($table_columns as $field_name => $field_data) {
+                if ($db->field_exists($field_name, $table_name)) {
+                    $db->drop_column($table_name, $field_name);
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 function plugin_library_requirements(): stdClass
 {
     return (object)plugin_information()['pl'];
@@ -498,6 +524,20 @@ function plugin_library_load(): bool
 
         admin_redirect('index.php?module=config-plugins');
     }
+
+    return true;
+}
+
+function permission_enable(string $plugin_code): bool
+{
+    change_admin_permission('newpoints', 'newpoints_' . $plugin_code, 1);
+
+    return true;
+}
+
+function permission_delete(string $plugin_code): bool
+{
+    change_admin_permission('newpoints', 'newpoints_' . $plugin_code, -1);
 
     return true;
 }

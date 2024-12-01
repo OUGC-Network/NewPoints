@@ -40,6 +40,7 @@ use function Newpoints\Core\points_format;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
@@ -61,7 +62,9 @@ global $mybb, $plugins, $lang, $db, $templates;
 
 $mybb->input['action'] = $mybb->get_input('action');
 
-url_handler_set(main_file_name());
+$newpoints_file = main_file_name();
+
+url_handler_set($newpoints_file);
 
 run_hooks('begin');
 
@@ -76,7 +79,9 @@ $options = page_build_menu_options();
 
 $newpoints_menu = page_build_menu();
 
-add_breadcrumb($lang->newpoints, main_file_name());
+$newpoints_errors = '';
+
+add_breadcrumb($lang->newpoints, $newpoints_file);
 
 run_hooks('start');
 
@@ -130,7 +135,7 @@ if (!$mybb->get_input('action')) {
 }
 
 if ($mybb->get_input('action') == 'stats') {
-    add_breadcrumb($lang->newpoints_statistics, \Newpoints\Core\url_handler_build(['action' => 'stats']));
+    add_breadcrumb($lang->newpoints_statistics, url_handler_build(['action' => 'stats']));
 
     if (empty($mybb->usergroup['newpoints_can_see_stats'])) {
         error($lang->newpoints_stats_disabled);

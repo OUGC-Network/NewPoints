@@ -108,20 +108,20 @@ if ($mybb->get_input('action') == 'change') {
 
     $mybb->input['plugin'] = trim($mybb->get_input('plugin'));
 
-    $plugin_short_name = '';
+    $group_key = '';
 
     if ($mybb->get_input('plugin')) {
         $groupinfo = [];
 
         $groupinfo['plugin'] = $plugin = $mybb->get_input('plugin');
 
-        $plugin_short_name = str_replace('newpoints_', '', $plugin);
+        $group_key = str_replace('newpoints_', '', $plugin);
 
         // Cache settings
         $query = $db->simple_select(
             'newpoints_settings',
             '*',
-            "plugin='" . $db->escape_string($plugin_short_name) . "'",
+            "plugin='" . $db->escape_string($group_key) . "'",
             ['order_by' => 'disporder']
         );
 
@@ -139,11 +139,37 @@ if ($mybb->get_input('action') == 'change') {
 
             $groupinfo['title'] = $lang->$lang_var;
             $groupinfo['description'] = $lang->$lang_var . '_description';
-        } else {
-            $groupinfo = newpoints_get_plugininfo($groupinfo['plugin']);
+        } elseif ($groupinfo = newpoints_get_plugininfo($groupinfo['plugin'])) {
             $groupinfo['plugin'] = $plugin;
             $groupinfo['title'] = htmlspecialchars_uni($groupinfo['name']);
             $groupinfo['description'] = htmlspecialchars_uni($groupinfo['description']);
+        } else {
+            $setting_groups_objects = [];
+
+            $setting_groups_objects = run_hooks('admin_settings_commit_start', $setting_groups_objects);
+
+            if (!isset($setting_groups_objects[$plugin])) {
+                flash_message($lang->error_no_settings_found, 'error');
+                admin_redirect('index.php?module=newpoints-settings');
+            }
+
+            $groupinfo['plugin'] = $group_key = $plugin;
+
+            $group_lang_var = "setting_group_{$group_key}";
+
+            if (!empty($lang->{$group_lang_var})) {
+                $groupinfo['title'] = htmlspecialchars_uni($lang->{$group_lang_var});
+            } else {
+                $groupinfo['title'] = htmlspecialchars_uni($group_key);
+            }
+
+            $group_desc_lang_var = "setting_group_{$group_key}_desc";
+
+            if (!empty($lang->{$group_desc_lang_var})) {
+                $groupinfo['description'] = htmlspecialchars_uni($lang->{$group_desc_lang_var});
+            } else {
+                $groupinfo['description'] = '';
+            }
         }
 
         // Page header
@@ -175,7 +201,7 @@ if ($mybb->get_input('action') == 'change') {
 
     $form_container = new FormContainer($groupinfo['title']);
 
-    if (empty($cache_settings[$plugin_short_name])) {
+    if (empty($cache_settings[$group_key])) {
         $form_container->output_cell($lang->error_no_settings_found);
 
         $form_container->construct_row();
@@ -188,7 +214,7 @@ if ($mybb->get_input('action') == 'change') {
         $page->output_footer();
     }
 
-    foreach ($cache_settings[$plugin_short_name] as $setting) {
+    foreach ($cache_settings[$group_key] as $setting) {
         $options = '';
         $type = explode("\n", $setting['type']);
         $type[0] = trim($type[0]);
@@ -466,9 +492,7 @@ if ($mybb->get_input('action') == 'change') {
     $form->end();
 
     $page->output_footer();
-}
-
-if (!$mybb->get_input('action')) {
+} else {
     run_hooks('admin_settings_start');
 
     $page->add_breadcrumb_item($lang->newpoints_settings, 'index.php?module=newpoints-settings');
@@ -519,51 +543,109 @@ if (!$mybb->get_input('action')) {
         $active_plugins = $plugins_cache['active'];
     }
 
+    $setting_groups_objects = [];
+
+    $hook_arguments = [
+        'setting_groups_objects' => &$setting_groups_objects,
+        'active_plugins' => &$active_plugins
+    ];
+
+    $hook_arguments = run_hooks('admin_settings_intermediate', $hook_arguments);
+
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {
-            $group = newpoints_get_plugininfo($plugin);
+            $plugin_info = newpoints_get_plugininfo($plugin);
 
-            if ($group === false) {
+            if ($plugin_info === false) {
                 continue;
             }
 
-            $plugin_short_name = str_replace('newpoints_', '', $plugin);
+            $group_key = str_replace('newpoints_', '', $plugin);
 
-            $group['title'] = $group['name'];
-            $group['settingcount'] = $db->fetch_field(
+            $settings_count = $db->fetch_field(
                 $db->simple_select(
                     'newpoints_settings',
-                    'COUNT(sid) as settings',
-                    "plugin='" . $db->escape_string($plugin_short_name) . "'"
+                    'COUNT(sid) as settings_count',
+                    "plugin='{$db->escape_string($group_key)}'"
                 ),
-                'settings'
+                'settings_count'
             );
 
-            if (empty($group['settingcount'])) {
+            if (empty($settings_count)) {
                 continue;
-            } // skip setting group is we have no settings
+            }
 
-            $group_lang_var = "setting_group_{$group['name']}";
+            $group_lang_var = "setting_group_{$group_key}";
+
+            if (!empty($lang->{$group_lang_var})) {
+                $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
+            } else {
+                $group_title = htmlspecialchars_uni($group_key);
+            }
+
+            $group_lang_var_desc = "setting_group_{$group_key}_desc";
+
+            if (!empty($lang->{$group_lang_var_desc})) {
+                $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
+            } else {
+                $group_desc = htmlspecialchars_uni($plugin_info['description']);
+            }
+
+
+            $group_lang_var = "setting_group_{$group_key}";
+
             if (!empty($lang->$group_lang_var)) {
                 $group_title = htmlspecialchars_uni($lang->$group_lang_var);
             } else {
-                $group_title = htmlspecialchars_uni($group['title']);
-            }
-
-            $group_desc_lang_var = "setting_group_{$group['name']}_desc";
-            if (!empty($lang->$group_desc_lang_var)) {
-                $group_desc = htmlspecialchars_uni($lang->$group_desc_lang_var);
-            } else {
-                $group_desc = htmlspecialchars_uni($group['description']);
+                $group_title = htmlspecialchars_uni($plugin_info['name']);
             }
 
             $table->construct_cell(
                 "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=" . htmlspecialchars_uni(
                     $plugin
-                ) . "\">{$group_title}</a></strong> ({$group['settingcount']} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
+                ) . "\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
             );
             $table->construct_row();
         }
+    }
+
+    foreach ($setting_groups_objects as $group_key => $group_data) {
+        $settings_count = $db->fetch_field(
+            $db->simple_select(
+                'newpoints_settings',
+                'COUNT(sid) as settings_count',
+                "plugin='{$db->escape_string($group_key)}'"
+            ),
+            'settings_count'
+        );
+
+        if (empty($settings_count)) {
+            continue;
+        }
+
+        $group_lang_var = "setting_group_{$group_key}";
+
+        if (!empty($lang->{$group_lang_var})) {
+            $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
+        } else {
+            $group_title = htmlspecialchars_uni($group_key);
+        }
+
+        $group_lang_var_desc = "setting_group_{$group_key}_desc";
+
+        if (!empty($lang->{$group_lang_var_desc})) {
+            $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
+        } else {
+            $group_desc = '';
+        }
+
+        $table->construct_cell(
+            "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=" . htmlspecialchars_uni(
+                $group_key
+            ) . "\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
+        );
+
+        $table->construct_row();
     }
 
     $table->output($lang->board_settings);

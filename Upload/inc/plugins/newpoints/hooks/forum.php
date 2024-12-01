@@ -69,16 +69,34 @@ function global_start(): bool
         $templatelist .= ',';
     }
 
-    if (THIS_SCRIPT == 'showthread.php') {
-        $templatelist .= 'newpoints_postbit,newpoints_donate_inline';
-    } elseif (THIS_SCRIPT == 'member.php') {
-        $templatelist .= 'newpoints_profile,newpoints_donate_inline';
-    }
-
     load_set_guest_data();
 
-    // as plugins can't hook to global_start, we must allow them to hook to global_start
-    run_hooks('global_start');
+    $template_list = [
+        'showthread.php' => [
+            'newpoints_postbit',
+            'newpoints_donate_inline'
+        ],
+        'member.php' => [
+            'newpoints_profile',
+            'newpoints_donate_inline'
+        ]
+    ];
+
+    $template_list = run_hooks('global_start', $template_list);
+
+    foreach ($template_list as $script_name => $templates) {
+        if (!is_array($templates)) {
+            $templatelist .= ',' . $templates;
+
+            continue;
+        }
+
+        if (THIS_SCRIPT === $script_name) {
+            $templatelist .= ',' . implode(',', $templates);
+        }
+    }
+
+    $templatelist .= '';
 
     //users_update();
     return true;
@@ -928,34 +946,6 @@ function polls_vote_process(): bool
         get_income_value(INCOME_TYPE_POLL_VOTE),
         $fid
     );
-
-    return true;
-}
-
-function private_do_send_end(): bool
-{
-    global $pmhandler, $pminfo, $db, $mybb;
-
-    if (empty($mybb->user['uid'])) {
-        return false;
-    }
-
-    if (!get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW)) {
-        return false;
-    }
-
-    if (isset($pminfo['draftsaved'])) {
-        return false;
-    }
-
-    if ($mybb->user['uid'] == $pmhandler->data['toid']) {
-        return false;
-    }
-
-    $user_id = (int)$mybb->user['uid'];
-
-    // give points to the author of the PM
-    points_add_simple($user_id, get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW));
 
     return true;
 }

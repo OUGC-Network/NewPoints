@@ -38,6 +38,8 @@ if (!defined('IN_MYBB')) {
 }
 
 global $lang, $plugins, $page, $db, $mybb;
+global $form_container, $form;
+global $rule;
 
 language_load();
 
@@ -93,7 +95,7 @@ if (!$mybb->get_input('action')) // view forumrules
 
         $link = "<a href=\"" . $mybb->settings['bburl'] . '/' . get_forum_link(
                 $rule['fid']
-            ) . "\" target=\"_blank\">" . $forum['name'] . '</a>';
+            ) . "\" target=\"_blank\">" . ($forum['name'] ?? '') . '</a>';
         $table->construct_cell($link);
         $table->construct_cell(
             "<a href=\"index.php?module=newpoints-forumrules&amp;action=delete_rule&amp;rid={$rule['rid']}\" target=\"_self\">{$lang->newpoints_delete}</a> - <a href=\"index.php?module=newpoints-forumrules&amp;action=edit&amp;rid={$rule['rid']}\" target=\"_self\">{$lang->newpoints_edit}</a>",
@@ -134,6 +136,10 @@ if (!$mybb->get_input('action')) // view forumrules
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
             'fid' => $mybb->get_input('forum', MyBB::INPUT_INT)
         ];
+
+        if ($insert_data['fid'] < 0) {
+            $insert_data['fid'] = 0;
+        }
 
         $insert_data = run_hooks('admin_forumrules_add_insert', $insert_data);
 
@@ -210,6 +216,10 @@ if (!$mybb->get_input('action')) // view forumrules
             'rate' => $mybb->get_input('rate', MyBB::INPUT_FLOAT),
             'fid' => $mybb->get_input('forum', MyBB::INPUT_INT)
         ];
+
+        if ($update_query['fid'] < 0) {
+            $update_query['fid'] = 0;
+        }
 
         $update_query = run_hooks('admin_forumrules_edit_update', $update_query);
 

@@ -35,6 +35,7 @@ use AbstractPdoDbDriver;
 use DateTime;
 use DB_SQLite;
 use DirectoryIterator;
+use Moderation;
 use PluginLibrary;
 use pluginSystem;
 use postParser;
@@ -1131,7 +1132,7 @@ function rules_rebuild_cache(array &$rules = []): bool
 function private_message_send(array $private_message_data, int $from_user_id = 0, bool $admin_override = false): bool
 {
     global $session;
-    
+
     $private_message_data['ipaddress'] = $private_message_data['ipaddress'] ?? $session->packedip;
 
     return send_pm($private_message_data, $from_user_id, $admin_override);
@@ -1467,6 +1468,49 @@ function users_get_group_permissions(int $user_id): array
     return $user_group;
 }
 
+function group_permission_get_lowest(string $permission_key, int $user_id = 0): float
+{
+    if (!$user_id) {
+        global $mybb;
+
+        $user_id = (int)$mybb->user['uid'];
+    }
+
+    $user_data = get_user($user_id);
+
+    $group_ids = $user_data['usergroup'] ?? '';
+
+    if (!empty($user_data['usergroup'])) {
+        $group_ids .= ',' . $user_data['additionalgroups'];
+    }
+
+    foreach (explode(',', $group_ids) as $group_id) {
+        $group_permissions = usergroup_permissions($group_id);
+
+        if (!isset($group_permissions[$permission_key])) {
+            continue;
+        }
+
+        $group_value = (float)$group_permissions[$permission_key];
+
+        if (!isset($permission_value)) {
+            $permission_value = $group_value;
+
+            continue;
+        }
+
+        if ($group_value < $permission_value) {
+            $permission_value = $group_value;
+        }
+    }
+
+    if (isset($permission_value)) {
+        return $permission_value;
+    }
+
+    return 0;
+}
+
 /* --- Setting groups and settings: --- */
 
 /**
@@ -1556,8 +1600,7 @@ function settings(string $group_name, string $title, string $description, array 
 }
 
 function sanitize_array_integers(
-    array $items_object,
-    string $delimiter = ','
+    array $items_object
 ): array {
     foreach ($items_object as &$item_value) {
         $item_value = (int)$item_value;
@@ -1590,23 +1633,17 @@ function task_enable(
         include_once MYBB_ROOT . 'inc/functions_task.php';
 
         $new_task_data = [
+            'title' => $db->escape_string($title),
+            'description' => $db->escape_string($description),
             'file' => $db->escape_string($plugin_code),
             'minute' => 0,
             'hour' => 0,
             'day' => $db->escape_string('*'),
             'weekday' => 0,
             'month' => $db->escape_string('*'),
-            'enabled' => 0,
+            'enabled' => 1,
             'logging' => 1
         ];
-
-        if (!empty($title)) {
-            $new_task_data['title'] = $db->escape_string($title);
-        }
-
-        if (!empty($description)) {
-            $new_task_data['description'] = $db->escape_string($description);
-        }
 
         $new_task_data['nextrun'] = fetch_next_run($new_task_data);
 
@@ -1685,7 +1722,7 @@ function page_build_menu_options(): string
             if (isset($option['lang_string']) && isset($lang->{$option['lang_string']})) {
                 $option_name = $lang->{$option['lang_string']};
             } elseif (isset($option['action'])) {
-                $option_name = ucwords($option['action']);
+                $option_name = ucwords((string)$option['action']);
             }
 
             $option = run_hooks('menu_build_option', $option);
@@ -1760,6 +1797,49 @@ function get_income_value(string $income_type): float
     }
 
     return $income_value;
+}
+
+function post_parser(): postParser
+{
+    global $parser;
+
+    if (!($parser instanceof postParser)) {
+        require_once MYBB_ROOT . 'inc/class_parser.php';
+
+        $parser = new postParser();
+    }
+
+    return $parser;
+}
+
+function post_parser_parse_message(
+    string $message,
+    array $options = []
+): string {
+    return post_parser()->parse_message($message, array_merge([
+        'allow_html' => false,
+        'allow_mycode' => true,
+        'allow_smilies' => true,
+        'allow_imgcode' => true,
+        'allow_videocode' => true,
+        'filter_badwords' => true,
+        'shorten_urls' => true,
+        'highlight' => false,
+        'me_username' => ''
+    ], $options));
+}
+
+function moderation_object()
+{
+    static $moderation = null;
+
+    if (!($moderation instanceof Moderation)) {
+        require_once MYBB_ROOT . 'inc/class_moderation.php';
+
+        $moderation = new Moderation();
+    }
+
+    return $moderation;
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

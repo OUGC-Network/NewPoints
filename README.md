@@ -164,7 +164,7 @@ Follow the next steps in order to update your copy of this plugin.
 
 To display Newpoints data it is required that you edit the following template for each of your themes.
 
-1. Place `{$newpoints_user_balance_formatted}` or `{$GLOBALS['$newpoints_user_balance_formatted']}` in any template to
+1. Place `{$newpoints_user_balance_formatted}` or `{$GLOBALS['newpoints_user_balance_formatted']}` in any template to
    display the current user points.
 2. Place `{$newpoints_profile_user_balance_formatted}` or `{$GLOBALS['newpoints_profile_user_balance_formatted']}` in
    any `member_profile*` template to display the profile user points.

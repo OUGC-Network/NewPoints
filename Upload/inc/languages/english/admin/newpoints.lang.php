@@ -272,3 +272,7 @@ $l['newpoints_forums_post_lock_points'] = 'Minimum Points To Post<br /><small cl
 
 $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';
+
+$l['newpoints_users_tab'] = 'Newpoints';
+$l['newpoints_users_title'] = 'Newpoints Information';
+$l['newpoints_user_newpoints'] = 'Newpoints<br /><small class="input">Update the curren Newpoints for this user.</small><br />';

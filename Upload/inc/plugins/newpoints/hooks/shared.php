@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Shared;
 
+use PMDataHandler;
 use postDatahandler;
 
 use function Newpoints\Core\count_characters;
@@ -38,6 +39,7 @@ use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\points_add_simple;
 
 use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
+use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE_NEW;
 use const Newpoints\Core\INCOME_TYPE_THREAD_NEW;
 use const Newpoints\Core\POST_VISIBLE_STATUS_VISIBLE;
 use const Newpoints\Core\INCOME_TYPE_POST_NEW;
@@ -161,6 +163,21 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
         get_income_value(INCOME_TYPE_THREAD_NEW) + $bonus_income,
         (int)$thread['fid']
     );
+
+    return $data_handler;
+}
+
+function datahandler_pm_insert_end(PMDataHandler $data_handler): PMDataHandler
+{
+    if (
+        !empty($data_handler->pm_insert_data['fromid']) &&
+        get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW) &&
+        !in_array($data_handler->pm_insert_data['fromid'], array_column($data_handler->data['recipients'], 'uid'))
+    ) {
+        $user_id = (int)$data_handler->pm_insert_data['fromid'];
+
+        points_add_simple($user_id, get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW));
+    }
 
     return $data_handler;
 }

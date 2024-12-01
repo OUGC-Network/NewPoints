@@ -80,9 +80,7 @@ function admin_load(): bool
         return false;
     }
 
-    $action_file_path = ROOT . "/admin/{$action_file}";
-
-    require_once $action_file_path;
+    require_once ROOT . "/admin/{$action_file}";
 
     return true;
 }
@@ -239,23 +237,23 @@ function admin_user_groups_edit_graph(): bool
             $setting_language_string = str_replace('newpoints_', 'newpoints_user_groups_', $data_field_key);
         }
 
+        $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
                 $form_fields[] = $form->generate_check_box(
                     $data_field_key,
                     1,
-                    $lang->{$setting_language_string} ?? '',
-                    ['checked' => $mybb->get_input($data_field_key, MyBB::INPUT_INT)]
+                    $lang->{$setting_language_string},
+                    ['checked' => $value]
                 );
                 break;
             case FORM_TYPE_NUMERIC_FIELD:
-                $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
-
                 if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
                     $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
                 }
 
-                $form_fields[] = ($lang->{$setting_language_string} ?? '') . $form->generate_numeric_field(
+                $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                         $data_field_key,
                         $value,
                         [
@@ -361,15 +359,24 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
             $setting_language_string = str_replace('newpoints_', 'newpoints_forums_', $data_field_key);
         }
 
+        $value = (int)$forum_data[$data_field_key];
+
         switch ($data_field_data['formType']) {
+            case FORM_TYPE_CHECK_BOX:
+                $form_fields[] = $form->generate_check_box(
+                    $data_field_key,
+                    1,
+                    $lang->{$setting_language_string},
+                    ['checked' => $value]
+                );
+                break;
             case FORM_TYPE_NUMERIC_FIELD:
-                $value = (int)$forum_data[$data_field_key];
 
                 if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
                     $value = (float)$forum_data[$data_field_key];
                 }
 
-                $form_fields[] = ($lang->{$setting_language_string} ?? '') . $form->generate_numeric_field(
+                $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                         $data_field_key,
                         $value,
                         [
@@ -430,4 +437,176 @@ function admin_forum_management_edit_commit(): bool
     $mybb->cache->update_forums();
 
     return true;
+}
+
+function admin_user_users_edit_graph_tabs(array &$tabs): array
+{
+    global $lang;
+
+    language_load();
+
+    $tabs['newpoints'] = $lang->newpoints_users_tab;
+
+    return $tabs;
+}
+
+function admin_user_users_edit_graph(): bool
+{
+    global $mybb, $lang;
+    global $user, $form;
+
+    language_load();
+
+    $data_fields = FIELDS_DATA['users'];
+
+    echo '<div id="tab_newpoints">';
+
+    $form_container = new \FormContainer($lang->newpoints_users_title . ': ' . htmlspecialchars_uni($user['username']));
+
+    $hook_arguments = [
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('admin_user_users_edit_graph', $hook_arguments);
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType'])) {
+            continue;
+        }
+
+        $setting_language_string = $data_field_key;
+
+        if (strpos($data_field_key, 'newpoints_user_') !== 0) {
+            $setting_language_string = 'newpoints_user_' . str_replace('newpoints_', '', $data_field_key);
+        }
+
+        $value = $mybb->get_input($data_field_key, \MyBB::INPUT_INT);
+
+        switch ($data_field_data['formType']) {
+            case FORM_TYPE_CHECK_BOX:
+                $form_fields[] = $form->generate_check_box(
+                    $data_field_key,
+                    1,
+                    $lang->{$setting_language_string},
+                    ['checked' => $value]
+                );
+                break;
+            case FORM_TYPE_NUMERIC_FIELD:
+                if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
+                    $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+                }
+
+                $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
+                        $data_field_key,
+                        $value,
+                        [
+                            'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
+                            'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
+                        ]
+                    );
+                break;
+        }
+    }
+
+    if (empty($form_fields)) {
+        return false;
+    }
+
+    $hook_arguments = run_hooks('admin_user_users_edit_graph_intermediate', $hook_arguments);
+
+    $form_container->output_row(
+        $lang->newpoints_forums,
+        '',
+        "<div class=\"user_settings_bit\">" . implode(
+            "</div><div class=\"user_settings_bit\">",
+            $form_fields
+        ) . '</div>'
+    );
+
+    $hook_arguments = run_hooks('admin_user_users_edit_graph_end', $hook_arguments);
+
+    $form_container->end();
+
+    echo "</div>\n";
+
+    return true;
+}
+
+function admin_user_users_edit_start()
+{
+    global $newpoints_user_update;
+
+    $newpoints_user_update = true;
+
+    return true;
+}
+
+function datahandler_user_validate(\userDataHandler $data_handler): \userDataHandler
+{
+    global $newpoints_user_update;
+
+    if (empty($newpoints_user_update)) {
+        return $data_handler;
+    }
+
+    global $mybb;
+
+    $data_fields = FIELDS_DATA['users'];
+
+    $hook_arguments = [
+        'data_handler' => &$data_handler,
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('datahandler_user_validate', $hook_arguments);
+
+    $user_data = &$data_handler->data;
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType'])) {
+            continue;
+        }
+
+        switch ($data_field_data['formType']) {
+            case FORM_TYPE_CHECK_BOX:
+                $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+                break;
+            case FORM_TYPE_NUMERIC_FIELD:
+                if (!isset($mybb->input[$data_field_key])) {
+                    break;
+                }
+
+                if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
+                    $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+                } else {
+                    $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+                }
+        }
+    }
+
+    return $data_handler;
+}
+
+function datahandler_user_update(\userDataHandler $data_handler): \userDataHandler
+{
+    $data_fields = FIELDS_DATA['users'];
+
+    $hook_arguments = [
+        'data_handler' => &$data_handler,
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('datahandler_user_update', $hook_arguments);
+
+    $user_data = &$data_handler->data;
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType']) || !isset($user_data[$data_field_key])) {
+            continue;
+        }
+
+        $data_handler->user_update_data[$data_field_key] = $user_data[$data_field_key];
+    }
+
+    return $data_handler;
 }

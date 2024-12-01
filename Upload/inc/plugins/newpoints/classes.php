@@ -188,8 +188,12 @@ const FIELDS_DATA = [
         'newpoints' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
-            'unsigned' => true,
-            'default' => 0
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                'min' => '',
+                'step' => 0.01,
+            ]
         ],
     ],
     'usergroups' => [

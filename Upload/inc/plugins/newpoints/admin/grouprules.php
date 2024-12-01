@@ -39,6 +39,8 @@ if (!defined('IN_MYBB')) {
 }
 
 global $lang, $plugins, $page, $db, $mybb;
+global $form_container, $form;
+global $rule;
 
 language_load();
 
