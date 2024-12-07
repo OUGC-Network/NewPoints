@@ -184,7 +184,7 @@ function plugin_installation(): bool
 
 function plugin_is_installed(): bool
 {
-    return db_verify_tables_exists();
+    return db_verify_tables_exists() && db_verify_columns_exists(TABLES_DATA) && db_verify_columns_exists();
 }
 
 function plugin_uninstallation(): bool

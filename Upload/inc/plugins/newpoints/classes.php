@@ -291,6 +291,8 @@ const FORM_TYPE_CHECK_BOX = 'checkBox';
 
 const FORM_TYPE_NUMERIC_FIELD = 'numericField';
 
+const FORM_TYPE_PHP_CODE = 'phpFunction';
+
 const POST_VISIBLE_STATUS_DRAFT = -2;
 
 const POST_VISIBLE_STATUS_SOFT_DELETED = -1;

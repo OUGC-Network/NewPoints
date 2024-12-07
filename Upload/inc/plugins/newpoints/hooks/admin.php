@@ -35,6 +35,8 @@ use FormContainer;
 use MyBB;
 use userDataHandler;
 
+use function Newpoints\Admin\recount_rebuild_newpoints_recount;
+use function Newpoints\Admin\recount_rebuild_newpoints_reset;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\run_hooks;
@@ -42,6 +44,7 @@ use function Newpoints\Core\run_hooks;
 use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
 use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const Newpoints\Core\FORM_TYPE_PHP_CODE;
 use const Newpoints\ROOT;
 
 function admin_config_plugins_deactivate(): bool
@@ -506,6 +509,16 @@ function admin_user_users_edit_graph(): bool
                         ]
                     );
                 break;
+            case FORM_TYPE_PHP_CODE;
+                if (function_exists($data_field_data['functionName'])) {
+                    $form_fields[] = $data_field_data['functionName'](
+                        $data_field_key,
+                        $data_field_data,
+                        $value,
+                        $setting_language_string
+                    );
+                }
+                break;
         }
     }
 
@@ -653,7 +666,7 @@ function admin_tools_do_recount_rebuild(): bool
             $mybb->input['newpoints_recount'] = 50;
         }
 
-        \Newpoints\Admin\recount_rebuild_newpoints_recount();
+        recount_rebuild_newpoints_recount();
     }
 
     if (isset($mybb->input['do_reset_newpoints'])) {
@@ -667,7 +680,7 @@ function admin_tools_do_recount_rebuild(): bool
             $mybb->input['newpoints_recount'] = 50;
         }
 
-        \Newpoints\Admin\recount_rebuild_newpoints_reset();
+        recount_rebuild_newpoints_reset();
     }
 
     return true;

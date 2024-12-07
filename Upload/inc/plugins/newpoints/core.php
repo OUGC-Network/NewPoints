@@ -873,6 +873,13 @@ function points_add(
     return true;
 }
 
+function points_substract(
+    int $uid,
+    float $points
+): bool {
+    return points_add($uid, -$points, 1, 1, false, true);
+}
+
 function points_add_simple(
     int $user_id,
     float $points,
@@ -1044,7 +1051,7 @@ function rate_group_get(int $group_id)
     return isset($group_rules['rate']) ? (float)$group_rules['rate'] : 1;
 }
 
-function rules_get_group_rate(array $user = []): float
+function rules_get_group_rate(array $user = [], string $rate_key = 'newpoints_rate'): float
 {
     global $mybb;
 
@@ -1067,8 +1074,8 @@ function rules_get_group_rate(array $user = []): float
     foreach (explode(',', $user_groups) as $group_id) {
         $group_data = $groups_cache[(int)$group_id] ?? [];
 
-        if (!empty($group_data['newpoints_rate'])) {
-            $rate_values[] = (float)$group_data['newpoints_rate'];
+        if (!empty($group_data[$rate_key])) {
+            $rate_values[] = (float)$group_data[$rate_key];
         }
     }
 
@@ -1839,6 +1846,61 @@ function moderation_object()
     }
 
     return $moderation;
+}
+
+function plugins_version_get(string $plugin_code): int
+{
+    global $cache;
+
+    $plugins_list = $cache->read('newpoints_plugins_versions');
+
+    if (!$plugins_list) {
+        $plugins_list = [];
+    }
+
+    if (isset($plugins_list[$plugin_code])) {
+        return (int)$plugins_list[$plugin_code];
+    }
+
+    return 0;
+}
+
+function plugins_version_update(string $plugin_code, int $version): bool
+{
+    global $cache;
+
+    $plugins_list = (array)$cache->read('newpoints_plugins_versions');
+
+    if (isset($plugins_list[$plugin_code])) {
+        unset($plugins_list[$plugin_code]);
+    }
+
+    if (!empty($plugins_list)) {
+        $cache->update('newpoints_plugins_versions', $plugins_list);
+    } else {
+        $cache->delete('newpoints_plugins_versions');
+    }
+
+    return true;
+}
+
+function plugins_version_delete(string $plugin_code): bool
+{
+    global $cache;
+
+    $plugins_list = (array)$cache->read('newpoints_plugins_versions');
+
+    if (isset($plugins_list[$plugin_code])) {
+        unset($plugins_list[$plugin_code]);
+    }
+
+    if (!empty($plugins_list)) {
+        $cache->update('newpoints_plugins_versions', $plugins_list);
+    } else {
+        $cache->delete('newpoints_plugins_versions');
+    }
+
+    return true;
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

@@ -71,6 +71,8 @@ function global_start(): bool
     load_set_guest_data();
 
     $template_list = [
+        'newpoints.php' => [
+        ],
         'showthread.php' => [
             'newpoints_postbit',
             'newpoints_donate_inline'

@@ -50,7 +50,7 @@ const THIS_SCRIPT = 'newpoints.php';
 
 const NP_DISABLE_GUESTS = false;
 
-$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate';
+$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate, newpoints_option_selected';
 
 require_once './global.php';
 
@@ -92,9 +92,9 @@ if (!$mybb->user['uid']) {
 
 // no action=home
 if (!$mybb->get_input('action')) {
-    run_hooks('home_start');
-
     $income_settings = '';
+
+    run_hooks('home_start');
 
     // get income settings' titles, descriptions and its value
     $query = $db->simple_select('newpoints_settings', '*', 'plugin=\'income\'');
@@ -123,11 +123,38 @@ if (!$mybb->get_input('action')) {
         $income_settings .= eval(templates_get('home_income_row'));
     }
 
-    run_hooks('home_end', $income_settings);
+    $latest_transactions = [];
+
+    $income_setting_params = [
+        'newpoints_allowance' => [
+            'points' => (float)$mybb->usergroup['newpoints_allowance'],
+            //'rate' => (float)$mybb->usergroup['newpoints_allowance'],
+            'time' => (int)$mybb->usergroup['newpoints_allowance_period']
+        ],
+    ];
+
+    run_hooks('home_end');
+
+    foreach ($income_setting_params as $income_key => $income_setting) {
+        $setting['title'] = $lang->{"setting_{$income_key}"};
+
+        $setting['description'] = $lang->sprintf(
+            $lang->{"setting_{$income_key}_desc"},
+            !empty($income_setting['time']) ? my_number_format($income_setting['time'] / 60) : 0
+        );
+
+        $value = points_format($income_setting['points']);
+
+        $income_settings .= eval(templates_get('home_income_row'));
+    }
+
+    var_dump($income_setting_params, );
+
+    $latest_transactions = implode(' ', $latest_transactions);
 
     $income_settings = eval(templates_get('home_income_table'));
 
-    $lang->newpoints_home_desc = $lang->sprintf($lang->newpoints_home_desc, $income_settings);
+    $newpoints_home_desc = $lang->newpoints_home_desc;
 
     $page = eval(templates_get('home'));
 
@@ -145,6 +172,8 @@ if ($mybb->get_input('action') == 'stats') {
     $bgcolor = alt_trow();
 
     $fields = ['uid', 'username', 'newpoints', 'usergroup', 'displaygroup'];
+
+    $statistics_items = [];
 
     run_hooks('stats_start');
 
@@ -224,6 +253,8 @@ if ($mybb->get_input('action') == 'stats') {
         $no_results = $lang->newpoints_noresults;
         $last_donations = eval(templates_get('no_results'));
     }
+
+    $statistics_items = implode(' ', $statistics_items);
 
     $page = eval(templates_get('statistics'));
 

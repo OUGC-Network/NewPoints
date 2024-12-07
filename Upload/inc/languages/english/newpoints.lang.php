@@ -102,3 +102,6 @@ $l['newpoints_search_user'] = 'Search for an user..';
 
 $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';
+
+$l['setting_newpoints_allowance'] = 'Allowance';
+$l['setting_newpoints_allowance_desc'] = 'Amount of points received every {1} minutes.';
