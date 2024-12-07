@@ -36,6 +36,7 @@ use DateTime;
 use DB_SQLite;
 use DirectoryIterator;
 use Moderation;
+use MyBB;
 use PluginLibrary;
 use pluginSystem;
 use postParser;
@@ -1901,6 +1902,69 @@ function plugins_version_delete(string $plugin_code): bool
     }
 
     return true;
+}
+
+function page_build_cancel_confirmation(
+    string $form_input_name,
+    int $form_input_value,
+    string $table_text,
+    string $form_view_name
+): string {
+    global $mybb, $lang;
+    global $headerinclude, $header, $footer, $theme;
+    global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons;
+
+    $page_title = $table_title = $lang->newpoints_page_confirm_table_cancel_title;
+
+    $button_text = $lang->newpoints_page_confirm_table_cancel_button;
+
+    add_breadcrumb($page_title);
+
+    $mybb->get_input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
+
+    $confirm_contents = eval(templates_get('page_confirm_cancel'));
+
+    $newpoints_content = eval(templates_get('page_confirm'));
+
+    $page_contents = eval(templates_get('page'));
+
+    output_page($page_contents);
+
+    exit;
+}
+
+function page_build_purchase_confirmation(
+    string $table_description,
+    string $form_input_name,
+    int $form_input_value,
+    string $form_view_name = '',
+    string $extra_rows = ''
+): string {
+    global $mybb, $lang;
+    global $headerinclude, $header, $footer, $theme;
+    global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons;
+
+    $page_title = $table_title = $lang->newpoints_page_confirm_table_purchase_title;
+
+    $button_text = $lang->newpoints_page_confirm_table_purchase_button;
+
+    add_breadcrumb($page_title);
+
+    $mybb->get_input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
+
+    $confirm_contents = eval(templates_get('page_confirm_purchase'));
+
+    $newpoints_content = eval(templates_get('page_confirm'));
+
+    if ($newpoints_pagination) {
+        $newpoints_pagination = eval(templates_get('page_pagination'));
+    }
+
+    $page_contents = eval(templates_get('page'));
+
+    output_page($page_contents);
+
+    exit;
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

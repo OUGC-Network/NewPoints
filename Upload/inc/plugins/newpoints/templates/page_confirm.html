@@ -1,0 +1,23 @@
+<form action="{$mybb->settings['bburl']}/{$newpoints_file}" method="post">
+    <input type="hidden" name="action" value="{$action_name}"/>
+    <input type="hidden" name="my_post_key" value="{$mybb->post_code}"/>
+    <input type="hidden" name="{$form_input_name}" value="{$form_input_value}"/>
+    <input type="hidden" name="confirm" value="1"/>
+    <input type="hidden" name="view" value="{$form_view_name}"/>
+    <input type="hidden" name="manage" value="{$mybb->get_input['manage']}"/>
+    <table border="0" cellspacing="{$theme['borderwidth']}" cellpadding="{$theme['tablespace']}"
+           class="tborder">
+        <tr>
+            <td class="thead" colspan="2">
+                <strong>{$table_title}</strong>
+            </td>
+        </tr>
+        {$confirm_contents}
+        <tr>
+            <td class="tfoot" colspan="2" align="center">
+                <input type="submit" class="button" value="{$button_text}">
+            </td>
+        </tr>
+    </table>
+    <br/>
+</form>

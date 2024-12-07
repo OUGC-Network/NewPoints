@@ -228,6 +228,8 @@ $l['setting_newpoints_income_pageview'] = 'Per Page View';
 $l['setting_newpoints_income_pageview_desc'] = 'Amount of points received everytime a user views a page.';
 $l['setting_newpoints_income_visit'] = 'Per Visit';
 $l['setting_newpoints_income_visit_desc'] = 'Amount of points received everytime a user visits the forum. ("visits"=new MyBB session (expires after 15 minutes))';
+$l['setting_newpoints_income_visit_minutes'] = 'Visit Time';
+$l['setting_newpoints_income_visit_minutes_desc'] = 'Time in minutes that the user must wait to receive the points again.';
 $l['setting_newpoints_income_referral'] = 'Per Referral';
 $l['setting_newpoints_income_referral_desc'] = 'Amount of points received everytime a user is referred. (the referred user is who receives the points)';
 

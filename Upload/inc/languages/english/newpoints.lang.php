@@ -105,3 +105,9 @@ $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';
 
 $l['setting_newpoints_allowance'] = 'Allowance';
 $l['setting_newpoints_allowance_desc'] = 'Amount of points received every {1} minutes.';
+
+$l['newpoints_page_confirm_table_cancel_title'] = 'Confirm Cancel';
+$l['newpoints_page_confirm_table_cancel_button'] = 'Cancel Order';
+
+$l['newpoints_page_confirm_table_purchase_title'] = 'Confirm Purchase';
+$l['newpoints_page_confirm_table_purchase_button'] = 'Purchase';
