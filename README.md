@@ -44,7 +44,10 @@
 
 ## 🚀 About <a name = "about"></a>
 
-NewPoints is the best points system for MyBB. Efficient, feature rich and easy to use.
+NewPoints is a flexible and feature-packed points system that rewards your users for activities like posting and
+interacting. It includes essential features like stats tracking, a built-in donation system, and customizable earning
+options. With extensive permissions and settings, you have full control over how points are earned and spent. Engage
+your community, drive participation, and create a more rewarding forum experience with NewPoints today!
 
 [Go up to Table of Contents](#table_of_contents)
 

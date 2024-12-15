@@ -31,13 +31,21 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Shared;
 
+use MyBB;
 use PMDataHandler;
 use postDatahandler;
+use userDataHandler;
 
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\points_add_simple;
+use function Newpoints\Core\run_hooks;
 
+use function Newpoints\Core\user_can_get_points;
+
+use const Newpoints\Core\FIELDS_DATA;
+use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
+use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
 use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE_NEW;
 use const Newpoints\Core\INCOME_TYPE_THREAD_NEW;
@@ -64,8 +72,6 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
         return $data_handler;
     }
 
-    $forum_id = (int)$post['fid'];
-
     $bonus_income = 0;
 
     if (($character_count = count_characters($post['message'])) >= get_income_value(
@@ -74,13 +80,23 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
         $bonus_income = $character_count * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
     }
 
-    points_add_simple(
-        $post_user_id,
-        $income_setting_new_post + $bonus_income,
-        $forum_id
-    );
+    $forum_id = (int)$post['fid'];
+
+    if (user_can_get_points($post_user_id, $forum_id)) {
+        points_add_simple(
+            $post_user_id,
+            $income_setting_new_post + $bonus_income,
+            $forum_id
+        );
+    }
 
     $thread = get_thread($post['tid']);
+
+    $thread_user_id = (int)$thread['uid'];
+
+    if (!user_can_get_points($thread_user_id, $forum_id)) {
+        return $data_handler;
+    }
 
     // we are the thread author so no points for new reply
     if ((int)$thread['uid'] === $post_user_id || !get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
@@ -88,7 +104,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
     }
 
     points_add_simple(
-        (int)$thread['uid'],
+        $thread_user_id,
         get_income_value(INCOME_TYPE_POST_PER_REPLY),
         $forum_id
     );
@@ -122,11 +138,19 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
 
     $bonus_income = ($new_character_count - $old_character_count) * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
 
+    $post_user_id = (int)$post['uid'];
+
+    $forum_id = (int)$post['fid'];
+
+    if (!user_can_get_points($post_user_id, $forum_id)) {
+        return $data_handler;
+    }
+
     if (!empty($bonus_income)) {
         points_add_simple(
-            (int)$post['uid'],
+            $post_user_id,
             $bonus_income,
-            (int)$data_handler->data['fid']
+            $forum_id
         );
     }
 
@@ -157,11 +181,19 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
         $bonus_income = $character_count * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
     }
 
+    $thread_user_id = (int)$thread['uid'];
+
+    $forum_id = (int)$thread['fid'];
+
+    if (!user_can_get_points($thread_user_id, $forum_id)) {
+        return $data_handler;
+    }
+
     // give points to the author of the new thread
     points_add_simple(
-        (int)$thread['uid'],
+        $thread_user_id,
         get_income_value(INCOME_TYPE_THREAD_NEW) + $bonus_income,
-        (int)$thread['fid']
+        $forum_id
     );
 
     return $data_handler;
@@ -176,7 +208,81 @@ function datahandler_pm_insert_end(PMDataHandler $data_handler): PMDataHandler
     ) {
         $user_id = (int)$data_handler->pm_insert_data['fromid'];
 
+        if (!user_can_get_points($user_id)) {
+            return $data_handler;
+        }
+
         points_add_simple($user_id, get_income_value(INCOME_TYPE_PRIVATE_MESSAGE_NEW));
+    }
+
+    return $data_handler;
+}
+
+function datahandler_user_validate(userDataHandler $data_handler): userDataHandler
+{
+    global $newpoints_user_update;
+
+    if (empty($newpoints_user_update)) {
+        return $data_handler;
+    }
+
+    global $mybb;
+
+    $data_fields = FIELDS_DATA['users'];
+
+    $hook_arguments = [
+        'data_handler' => &$data_handler,
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('datahandler_user_validate', $hook_arguments);
+
+    $user_data = &$data_handler->data;
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType'])) {
+            continue;
+        }
+
+        switch ($data_field_data['formType']) {
+            case FORM_TYPE_CHECK_BOX:
+                $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+                break;
+            case FORM_TYPE_NUMERIC_FIELD:
+                if (!isset($mybb->input[$data_field_key])) {
+                    break;
+                }
+
+                if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
+                    $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+                } else {
+                    $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
+                }
+        }
+    }
+
+    return $data_handler;
+}
+
+function datahandler_user_update(userDataHandler $data_handler): userDataHandler
+{
+    $data_fields = FIELDS_DATA['users'];
+
+    $hook_arguments = [
+        'data_handler' => &$data_handler,
+        'data_fields' => &$data_fields,
+    ];
+
+    $hook_arguments = run_hooks('datahandler_user_update', $hook_arguments);
+
+    $user_data = &$data_handler->data;
+
+    foreach ($data_fields as $data_field_key => $data_field_data) {
+        if (!isset($data_field_data['formType']) || !isset($user_data[$data_field_key])) {
+            continue;
+        }
+
+        $data_handler->user_update_data[$data_field_key] = $user_data[$data_field_key];
     }
 
     return $data_handler;

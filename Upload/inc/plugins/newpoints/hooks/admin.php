@@ -33,7 +33,6 @@ namespace Newpoints\Hooks\Admin;
 
 use FormContainer;
 use MyBB;
-use userDataHandler;
 
 use function Newpoints\Admin\recount_rebuild_newpoints_recount;
 use function Newpoints\Admin\recount_rebuild_newpoints_reset;
@@ -443,6 +442,38 @@ function admin_forum_management_edit_commit(): bool
     return true;
 }
 
+function admin_forum_management_permission_groups(array &$groups): array
+{
+    language_load();
+
+    foreach (FIELDS_DATA['forumpermissions'] as $column_name => $column_data) {
+        $groups[$column_name] = 'newpoints';
+    }
+
+    return $groups;
+}
+
+function admin_forum_management_permissions_commit(): bool
+{
+    global $mybb;
+
+    if (!isset($mybb->input['permissions'])) {
+        return false;
+    }
+
+    global $update_array;
+
+    foreach (FIELDS_DATA['forumpermissions'] as $column_name => $column_data) {
+        if (isset($mybb->input['permissions'][$column_name])) {
+            $update_array[$column_name] = 1;
+        } else {
+            $update_array[$column_name] = 0;
+        }
+    }
+
+    return true;
+}
+
 function admin_user_users_edit_graph_tabs(array &$tabs): array
 {
     global $lang;
@@ -553,76 +584,6 @@ function admin_user_users_edit_start()
     $newpoints_user_update = true;
 
     return true;
-}
-
-function datahandler_user_validate(userDataHandler $data_handler): userDataHandler
-{
-    global $newpoints_user_update;
-
-    if (empty($newpoints_user_update)) {
-        return $data_handler;
-    }
-
-    global $mybb;
-
-    $data_fields = FIELDS_DATA['users'];
-
-    $hook_arguments = [
-        'data_handler' => &$data_handler,
-        'data_fields' => &$data_fields,
-    ];
-
-    $hook_arguments = run_hooks('datahandler_user_validate', $hook_arguments);
-
-    $user_data = &$data_handler->data;
-
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (!isset($data_field_data['formType'])) {
-            continue;
-        }
-
-        switch ($data_field_data['formType']) {
-            case FORM_TYPE_CHECK_BOX:
-                $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
-                break;
-            case FORM_TYPE_NUMERIC_FIELD:
-                if (!isset($mybb->input[$data_field_key])) {
-                    break;
-                }
-
-                if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
-                    $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
-                } else {
-                    $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
-                }
-        }
-    }
-
-    return $data_handler;
-}
-
-function datahandler_user_update(userDataHandler $data_handler): userDataHandler
-{
-    $data_fields = FIELDS_DATA['users'];
-
-    $hook_arguments = [
-        'data_handler' => &$data_handler,
-        'data_fields' => &$data_fields,
-    ];
-
-    $hook_arguments = run_hooks('datahandler_user_update', $hook_arguments);
-
-    $user_data = &$data_handler->data;
-
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (!isset($data_field_data['formType']) || !isset($user_data[$data_field_key])) {
-            continue;
-        }
-
-        $data_handler->user_update_data[$data_field_key] = $user_data[$data_field_key];
-    }
-
-    return $data_handler;
 }
 
 function admin_tools_recount_rebuild_output_list(): bool

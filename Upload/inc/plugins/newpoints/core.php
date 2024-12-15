@@ -64,12 +64,18 @@ function language_load(string $plugin = '', bool $forceUserArea = false, bool $s
         isset($lang->newpoints) || $lang->load('newpoints', $forceUserArea, $suppressError);
     } elseif ($plugin === 'module_meta') {
         isset($lang->nav_plugins) || $lang->load('newpoints_module_meta', $forceUserArea, $suppressError);
-    } elseif (!isset($lang->{"newpoints_{$plugin}"})) {
-        $lang->set_path(MYBB_ROOT . 'inc/plugins/newpoints/languages');
+    } else {
+        if (my_strpos($plugin, 'newpoints_') === 0) {
+            $plugin = str_replace('newpoints_', '', $plugin);
+        }
 
-        $lang->load("newpoints_{$plugin}", $forceUserArea, $suppressError);
+        if (!isset($lang->{"newpoints_{$plugin}"})) {
+            $lang->set_path(MYBB_ROOT . 'inc/plugins/newpoints/languages');
 
-        $lang->set_path(MYBB_ROOT . 'inc/languages');
+            $lang->load("newpoints_{$plugin}", $forceUserArea, $suppressError);
+
+            $lang->set_path(MYBB_ROOT . 'inc/languages');
+        }
     }
 
     return true;
@@ -105,6 +111,10 @@ function add_hooks(string $namespace): bool
 
 function run_hooks(string $hook_name = '', &$hook_arguments = '')
 {
+    if (get_setting('disablePlugins') !== false) {
+        return $hook_arguments;
+    }
+
     global $plugins;
 
     if ($plugins instanceof pluginSystem) {
@@ -355,12 +365,8 @@ function templates_get(
         $file_path = $plugin_path . "/templates/{$template_name}.html";
 
         if (file_exists($file_path)) {
-            $template_contents = file_get_contents($file_path);
-        } else {
-            $template_contents = '';
+            $templates->cache[templates_get_name($template_name, $plugin_prefix)] = file_get_contents($file_path);
         }
-
-        $templates->cache[templates_get_name($template_name, $plugin_prefix)] = $template_contents;
     } elseif (my_strpos($template_name, '/') !== false) {
         $template_name = substr($template_name, strpos($template_name, '/') + 1);
     }
@@ -448,12 +454,6 @@ function settings_remove(array $settings, string $newpoints_prefix = 'newpoints_
     }
 
     global $db;
-
-    if ($newpoints_prefix) {
-        $settings = array_map(function ($setting_name) use ($newpoints_prefix) {
-            return "{$newpoints_prefix}{$setting_name}";
-        }, $settings);
-    }
 
     $settings = array_map([$db, 'escape_string'], $settings);
 
@@ -557,6 +557,10 @@ function settings_add(
 
     if ($name == '' || $plugin == '' || $title == '' || $description == '' || $options_code == '') {
         return false;
+    }
+
+    if (my_strpos($plugin, 'newpoints_') !== false) {
+        //$plugin = 'newpoints_' . $plugin;
     }
 
     $setting = [
@@ -788,11 +792,11 @@ function settings_rebuild(): bool
     if ($settings_list) {
         foreach ($settings_list as $setting_group => $settings_data) {
             if (empty($lang->{"setting_group_newpoints_{$setting_group}"})) {
-                $lang->{"setting_group_newpoints_{$setting_group}"} = $setting_group;
+                //$lang->{"setting_group_newpoints_{$setting_group}"} = $setting_group;
             }
 
             if (empty($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
-                $lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
+                //$lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
             }
 
             settings(
@@ -875,10 +879,10 @@ function points_add(
 }
 
 function points_substract(
-    int $uid,
+    int $user_id,
     float $points
 ): bool {
-    return points_add($uid, -$points, 1, 1, false, true);
+    return points_add($user_id, -abs($points), 1, 1, false, true);
 }
 
 function points_add_simple(
@@ -1226,27 +1230,35 @@ function find_replace_template_sets(string $title, string $find, string $replace
 		SELECT template, tid FROM ' . $db->table_prefix . "templates WHERE title='$title' AND sid=-1
 	"
     );
+
+    $update = [];
+
     while ($template = $db->fetch_array($query)) {
         if ($template['template']) // Custom template exists for this group
         {
             if (!preg_match($find, $template['template'])) {
                 return false;
             }
+
             $newtemplate = preg_replace($find, $replace, $template['template']);
+
             $template['template'] = $newtemplate;
+
             $update[] = $template;
         }
     }
 
-    if (is_array($update)) {
+    if (!empty($update)) {
         foreach ($update as $template) {
             $updatetemp = [
                 'template' => $db->escape_string($template['template']),
                 'dateline' => TIME_NOW
             ];
+
             $db->update_query('templates', $updatetemp, "tid='" . $template['tid'] . "'");
         }
     }
+
     return true;
 }
 
@@ -1355,6 +1367,10 @@ function load_set_guest_data(): bool
 
 function plugins_load(): bool
 {
+    if (get_setting('disablePlugins') !== false) {
+        return false;
+    }
+
     global $cache, $newpoints_plugins;
 
     isset($newpoints_plugins) || $newpoints_plugins = '';
@@ -1543,12 +1559,9 @@ function settings(string $group_name, string $title, string $description, array 
         "plugin='{$group_name}'"
     );
 
-    // Create and/or update settings.
     foreach ($list as $key => $setting) {
-        // Prefix all keys with group name.
         $key = "newpoints_{$group_name}_{$key}";
 
-        // Filter valid entries.
         $setting = array_intersect_key(
             $setting,
             [
@@ -1559,16 +1572,16 @@ function settings(string $group_name, string $title, string $description, array 
             ]
         );
 
-        // Escape input values.
         $setting = array_map([$db, 'escape_string'], (array)$setting);
 
         isset($display_order) || $display_order = 0;
 
         $setting = array_merge(
             [
-                'description' => '',
+                'description' => $description,
+                'title' => $title,
                 'type' => 'yesno',
-                'value' => '0',
+                'value' => 0,
                 'disporder' => ++$display_order
             ],
             $setting
@@ -1578,20 +1591,17 @@ function settings(string $group_name, string $title, string $description, array 
 
         $setting['plugin'] = $group_name;
 
-        // Check if the setting already exists.
         $query = $db->simple_select(
             'newpoints_settings',
             'sid',
             "plugin='{$group_name}' AND name='{$setting['name']}'"
         );
 
-        if ($row = $db->fetch_array($query)) {
-            // It exists, update it, but keep value intact.
+        if ($sid = (int)$db->fetch_field($query, 'sid')) {
             unset($setting['value']);
 
-            $db->update_query('newpoints_settings', $setting, "sid='{$row['sid']}'");
+            $db->update_query('newpoints_settings', $setting, "sid='{$sid}'");
         } else {
-            // It doesn't exist, create it.
             $db->insert_query('newpoints_settings', $setting);
         }
     }
@@ -1688,14 +1698,14 @@ function page_build_menu_options(): string
         ];
 
         if (!empty($mybb->usergroup['newpoints_can_see_stats'])) {
-            $menu_items[10] = [
+            $menu_items[get_setting('stats_menu_order')] = [
                 'action' => 'stats',
                 'lang_string' => 'newpoints_statistics',
             ];
         }
 
         if (!empty($mybb->usergroup['newpoints_can_donate'])) {
-            $menu_items[20] = [
+            $menu_items[get_setting('donations_menu_order')] = [
                 'action' => 'donate',
                 'lang_string' => 'newpoints_donate',
             ];
@@ -1965,6 +1975,42 @@ function page_build_purchase_confirmation(
     output_page($page_contents);
 
     exit;
+}
+
+function user_get_forum_permissions(int $forum_id, int $user_id): array
+{
+    return forum_permissions($forum_id, $user_id);
+}
+
+function user_can_get_points(int $user_id, int $forum_id = 0): bool
+{
+    global $mybb, $post, $lang, $charset;
+
+    $user_data = get_user($user_id);
+
+    if (empty($user_data['uid'])) {
+        return false;
+    }
+
+    if ($forum_id) {
+        $forum_permissions = user_get_forum_permissions($forum_id, $user_id);
+
+        return !empty($forum_permissions['newpoints_can_get_points']);
+    }
+
+    if ($user_id === (int)$mybb->user['uid']) {
+        $group_permissions = $mybb->usergroup;
+    } else {
+        if (!isset($user_data['usergroup'])) {
+            $user_groups = 1;
+        } else {
+            $user_groups = $user_data['usergroup'] . ',' . $user_data['additionalgroups'];
+        }
+
+        $group_permissions = usergroup_permissions($user_groups);
+    }
+
+    return !empty($group_permissions['newpoints_can_get_points']);
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

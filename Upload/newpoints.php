@@ -148,8 +148,6 @@ if (!$mybb->get_input('action')) {
         $income_settings .= eval(templates_get('home_income_row'));
     }
 
-    var_dump($income_setting_params, );
-
     $latest_transactions = implode(' ', $latest_transactions);
 
     $income_settings = eval(templates_get('home_income_table'));

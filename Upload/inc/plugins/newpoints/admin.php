@@ -47,6 +47,8 @@ use function Newpoints\Core\task_disable;
 use function Newpoints\Core\task_enable;
 use function Newpoints\Core\templates_rebuild;
 
+use function Newpoints\Core\user_can_get_points;
+
 use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\INCOME_TYPE_POLL_NEW;
 use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
@@ -657,10 +659,12 @@ function recount_rebuild_newpoints_recount()
 
             $thread_data = get_thread($post_data['tid']);
 
-            if ((int)$thread_data['uid'] !== (int)$user_data['uid']) {
+            $thread_user_id = (int)$thread_data['uid'];
+
+            if ($thread_user_id !== (int)$user_data['uid'] && user_can_get_points($thread_user_id)) {
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     points_add_simple(
-                        (int)$thread_data['uid'],
+                        $thread_user_id,
                         get_income_value(INCOME_TYPE_POST_PER_REPLY),
                         (int)$post_data['fid']
                     );

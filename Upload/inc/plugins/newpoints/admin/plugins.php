@@ -281,11 +281,12 @@ if (!$mybb->get_input('action')) // view plugins
             }
 
             $plugininfo = $infofunc();
-            if ($plugininfo['website']) {
+
+            if (!empty($plugininfo['website'])) {
                 $plugininfo['name'] = "<a href=\"" . $plugininfo['website'] . "\">" . $plugininfo['name'] . '</a>';
             }
 
-            if ($plugininfo['authorsite']) {
+            if (!empty($plugininfo['authorsite'])) {
                 $plugininfo['author'] = "<a href=\"" . $plugininfo['authorsite'] . "\">" . $plugininfo['author'] . '</a>';
             }
 
@@ -451,23 +452,28 @@ function newpoints_get_plugins(): array
     return $plugins_list;
 }
 
-function newpoints_iscompatible($plugininfo): bool
+function newpoints_iscompatible($plugin_info): bool
 {
-    if (!is_array($plugininfo)) {
-        require_once MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugininfo . '.php';
-        $infofunc = $plugininfo . '_info';
-        if (!function_exists($infofunc)) {
+    if (!is_array($plugin_info)) {
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugin_info . '.php';
+
+        $plugin_function = $plugin_info . '_info';
+
+        if (!function_exists($plugin_function)) {
             return false;
         }
 
-        $plugininfo = $infofunc();
+        $plugin_info = $plugin_function();
     }
 
-    // No compatibility set or compatibility=* - assume compatible
-    if (!$plugininfo['compatibility'] || $plugininfo['compatibility'] == '*') {
+    if (empty($plugin_info['compatibility']) || $plugin_info['compatibility'] === '*') {
         return true;
     }
-    $compatibility = explode(',', $plugininfo['compatibility']);
+
+    $compatibility = explode(',', $plugin_info['compatibility']);
+
+    $is_compatible = false;
+
     foreach ($compatibility as $version) {
         $version = trim($version);
         $version = str_replace('*', '.+', preg_quote($version));
@@ -476,9 +482,11 @@ function newpoints_iscompatible($plugininfo): bool
         $newpoints_version_code = NEWPOINTS_VERSION_CODE;
 
         if (preg_match("#{$version}#i", (string)$newpoints_version_code)) {
-            return true;
+            $is_compatible = true;
+
+            break;
         }
     }
 
-    return false;
+    return $is_compatible;
 }

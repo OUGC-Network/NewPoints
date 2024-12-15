@@ -197,6 +197,12 @@ const FIELDS_DATA = [
         ],
     ],
     'usergroups' => [
+        'newpoints_can_get_points' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 1,
+            'formType' => 'checkBox'
+        ],
         'newpoints_can_see_page' => [
             'type' => 'TINYINT',
             'unsigned' => true,
@@ -251,7 +257,15 @@ const FIELDS_DATA = [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0
-        ],
+        ]
+    ],
+    'forumpermissions' => [
+        'newpoints_can_get_points' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 1,
+            'formType' => 'checkBox'
+        ]
     ],
     'forums' => [
         'newpoints_rate' => [

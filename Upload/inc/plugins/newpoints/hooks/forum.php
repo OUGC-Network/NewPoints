@@ -43,6 +43,8 @@ use function Newpoints\Core\points_format;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 
+use function Newpoints\Core\user_can_get_points;
+
 use const Newpoints\Core\INCOME_TYPE_PAGE_VIEW;
 use const Newpoints\Core\INCOME_TYPE_POLL_NEW;
 use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
@@ -105,13 +107,17 @@ function global_start(): bool
 
 function global_end(): bool
 {
-    global $db, $mybb, $cache, $groupscache, $userupdates;
+    global $mybb;
 
     if (empty($mybb->user['uid'])) {
         return false;
     }
 
     $user_id = (int)$mybb->user['uid'];
+
+    if (empty($mybb->usergroup['newpoints_can_get_points'])) {
+        return false;
+    }
 
     if (get_income_value(INCOME_TYPE_PAGE_VIEW)) {
         points_add_simple(
@@ -236,6 +242,14 @@ function xmlhttp_edit_post_end(): bool
         return false;
     }
 
+    $post_user_id = (int)$post['uid'];
+
+    $user_data = get_user($post_user_id);
+
+    if (!user_can_get_points($post_user_id)) {
+        return false;
+    }
+
     if (!get_income_value(INCOME_TYPE_POST_PER_CHARACTER)) {
         return false;
     }
@@ -274,7 +288,7 @@ function xmlhttp_edit_post_end(): bool
     }
 
     if (!empty($bonus_income)) {
-        points_add_simple((int)$mybb->user['uid'], $bonus_income, (int)$post['fid']);
+        points_add_simple((int)$user_data['uid'], $bonus_income, (int)$post['fid']);
     }
 
     return true;
@@ -318,15 +332,21 @@ function class_moderation_delete_post_start(int $pid): int
         if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
             $thread_user_id = (int)$thread['uid'];
 
-            points_add_simple(
-                $thread_user_id,
-                -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                $fid
-            );
+            if (user_can_get_points($thread_user_id)) {
+                points_add_simple(
+                    $thread_user_id,
+                    -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                    $fid
+                );
+            }
         }
     }
 
     $post_user_id = (int)$post['uid'];
+
+    if (!user_can_get_points($post_user_id)) {
+        return $pid;
+    }
 
     // remove points from the poster
     points_add_simple(
@@ -373,15 +393,21 @@ function class_moderation_soft_delete_posts(array $pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add_simple(
-                        $thread_user_id,
-                        -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $fid
-                    );
+                    if (user_can_get_points($thread_user_id)) {
+                        points_add_simple(
+                            $thread_user_id,
+                            -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            $fid
+                        );
+                    }
                 }
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // remove points from the poster
             points_add_simple(
@@ -430,15 +456,21 @@ function class_moderation_restore_posts($pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add_simple(
-                        $thread_user_id,
-                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $fid
-                    );
+                    if (user_can_get_points($thread_user_id)) {
+                        points_add_simple(
+                            $thread_user_id,
+                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            $fid
+                        );
+                    }
                 }
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // give points to the author of the post
             points_add_simple(
@@ -482,6 +514,10 @@ function class_moderation_approve_threads(array $tids): array
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // add points to the poster
             points_add_simple(
@@ -530,15 +566,21 @@ function class_moderation_approve_posts(array $pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add_simple(
-                        $thread_user_id,
-                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $fid
-                    );
+                    if (user_can_get_points($thread_user_id)) {
+                        points_add_simple(
+                            $thread_user_id,
+                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            $fid
+                        );
+                    }
                 }
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // give points to the author of the post
             points_add_simple(
@@ -582,6 +624,10 @@ function class_moderation_unapprove_threads(array $tids): array
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // add points to the poster
             points_add_simple(
@@ -630,15 +676,21 @@ function class_moderation_unapprove_posts(array $pids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add_simple(
-                        $thread_user_id,
-                        -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $fid
-                    );
+                    if (user_can_get_points($thread_user_id)) {
+                        points_add_simple(
+                            $thread_user_id,
+                            -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            $fid
+                        );
+                    }
                 }
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // give points to the author of the post
             points_add_simple(
@@ -688,6 +740,10 @@ function class_moderation_delete_thread(int $tid): int
     }
 
     $thread_user_id = (int)$thread['uid'];
+
+    if (!user_can_get_points($thread_user_id)) {
+        return $tid;
+    }
 
     if ($thread['poll'] != 0) {
         // if this thread has a poll, remove points from the author of the thread
@@ -757,15 +813,21 @@ function class_moderation_soft_delete_threads(array $tids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add_simple(
-                        $thread_user_id,
-                        -get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $fid
-                    );
+                    if (user_can_get_points($thread_user_id)) {
+                        points_add_simple(
+                            $thread_user_id,
+                            -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            $fid
+                        );
+                    }
                 }
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($thread_user_id)) {
+                continue;
+            }
 
             // remove points from the poster
             points_add_simple(
@@ -814,15 +876,21 @@ function class_moderation_restore_threads(array $tids): array
                 if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
-                    points_add_simple(
-                        $thread_user_id,
-                        get_income_value(INCOME_TYPE_POST_PER_REPLY),
-                        $fid
-                    );
+                    if (user_can_get_points($thread_user_id)) {
+                        points_add_simple(
+                            $thread_user_id,
+                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            $fid
+                        );
+                    }
                 }
             }
 
             $post_user_id = (int)$post['uid'];
+
+            if (!user_can_get_points($post_user_id)) {
+                continue;
+            }
 
             // give points to the author of the post
             points_add_simple(
@@ -851,6 +919,10 @@ function polls_do_newpoll_process(): bool
     $fid = (int)$fid;
 
     $user_id = (int)$mybb->user['uid'];
+
+    if (!user_can_get_points($user_id)) {
+        return false;
+    }
 
     // give points to the author of the new polls
     points_add_simple(
@@ -881,6 +953,10 @@ function class_moderation_delete_poll(int $pid): int
 
     $poll_user_id = (int)$poll['uid'];
 
+    if (!user_can_get_points($poll_user_id)) {
+        return $pid;
+    }
+
     // remove points from the author by deleting the poll
     points_add_simple(
         $poll_user_id,
@@ -899,10 +975,12 @@ function member_do_register_end(): bool
     if (get_income_value(INCOME_TYPE_USER_REGISTRATION)) {
         $user_id = (int)$user_info['uid'];
 
-        points_add_simple(
-            $user_id,
-            get_income_value(INCOME_TYPE_USER_REGISTRATION)
-        );
+        if (user_can_get_points($user_id)) {
+            points_add_simple(
+                $user_id,
+                get_income_value(INCOME_TYPE_USER_REGISTRATION)
+            );
+        }
     }
 
     if (get_income_value(INCOME_TYPE_USER_REFERRAL)) {
@@ -918,6 +996,10 @@ function member_do_register_end(): bool
         }
 
         $user_id = (int)$user['uid'];
+
+        if (!user_can_get_points($user_id)) {
+            return false;
+        }
 
         points_add_simple($user_id, get_income_value(INCOME_TYPE_USER_REFERRAL));
     }
@@ -940,6 +1022,10 @@ function polls_vote_process(): bool
     $fid = (int)$fid;
 
     $user_id = (int)$mybb->user['uid'];
+
+    if (!user_can_get_points($user_id)) {
+        return false;
+    }
 
     // give points to us as we're voting in a poll
     points_add_simple(
@@ -966,6 +1052,10 @@ function ratethread_process(): bool
     $fid = (int)$fid;
 
     $user_id = (int)$mybb->user['uid'];
+
+    if (!user_can_get_points($user_id)) {
+        return false;
+    }
 
     // give points us, as we're rating a thread
     points_add_simple(

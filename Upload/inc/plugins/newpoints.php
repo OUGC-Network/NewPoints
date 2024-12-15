@@ -176,7 +176,7 @@ function newpoints_rebuild_templates(): bool
 
 function newpoints_remove_settings(string $settings): bool
 {
-    return settings_remove(explode(',', $settings));
+    return settings_remove(explode(',', str_replace("'", '', $settings)));
 }
 
 function newpoints_add_setting(

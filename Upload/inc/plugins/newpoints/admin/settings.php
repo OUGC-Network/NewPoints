@@ -134,7 +134,7 @@ if ($mybb->get_input('action') == 'change') {
             $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
         }
 
-        if (in_array($plugin, ['income', 'main', 'donations'], true)) {
+        if (in_array($plugin, ['income', 'main', 'donations', 'stats'], true)) {
             $lang_var = 'setting_group_newpoints_' . $mybb->get_input('plugin');
 
             $groupinfo['title'] = $lang->$lang_var;
@@ -469,11 +469,11 @@ if ($mybb->get_input('action') == 'change') {
         // Do we have a custom language variable for this title or description?
         $title_lang = 'setting_' . $setting['name'];
         $desc_lang = $title_lang . '_desc';
-        if ($lang->$title_lang) {
-            $setting['title'] = $lang->$title_lang;
+        if (!empty($lang->{$title_lang})) {
+            $setting['title'] = $lang->{$title_lang};
         }
-        if ($lang->$desc_lang) {
-            $setting['description'] = $lang->$desc_lang;
+        if (!empty($lang->{$desc_lang})) {
+            $setting['description'] = $lang->{$desc_lang};
         }
         $form_container->output_row(
             htmlspecialchars_uni($setting['title']),
@@ -517,9 +517,10 @@ if ($mybb->get_input('action') == 'change') {
     $page->output_nav_tabs($sub_tabs, 'newpoints_settings');
 
     $table = new Table();
+
     $table->construct_header($lang->setting_groups);
 
-    foreach (['income', 'main', 'donations'] as $core_group) {
+    foreach (['income', 'main', 'donations', 'stats'] as $core_group) {
         $settingcount = $db->fetch_field(
             $db->simple_select('newpoints_settings', 'COUNT(sid) as settings', "plugin='{$core_group}'"),
             'settings'

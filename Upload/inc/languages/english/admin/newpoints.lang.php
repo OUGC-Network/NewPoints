@@ -28,7 +28,7 @@
  ****************************************************************************/
 
 $l['newpoints'] = 'NewPoints';
-$l['newpoints_description'] = 'NewPoints is a complex but efficient points system for MyBB.';
+$l['newpoints_description'] = 'NewPoints plugin for MyBB - A complex but efficient points system for MyBB.';
 $l['newpoints_submit_button'] = 'Submit';
 $l['newpoints_reset_button'] = 'Reset';
 $l['newpoints_error'] = 'An unknown error has occurred.';
@@ -184,6 +184,13 @@ $l['setting_newpoints_donations_send_private_message'] = 'Send a PM on donate?';
 $l['setting_newpoints_donations_send_private_message_desc'] = 'Do you want it to automatically send a new private message to a user receiving a donation?';
 $l['setting_newpoints_donations_stats_latest'] = 'Last Donations';
 $l['setting_newpoints_donations_stats_latest_desc'] = 'Number of last donations to show.';
+$l['setting_newpoints_donations_menu_order'] = 'Menu Order';
+$l['setting_newpoints_donations_menu_order_desc'] = 'Order in the Newpoints menu item.';
+
+$l['setting_group_newpoints_stats'] = 'Stats';
+$l['setting_group_newpoints_stats_desc'] = 'These settings are related to the stats page.';
+$l['setting_newpoints_stats_menu_order'] = 'Menu Order';
+$l['setting_newpoints_stats_menu_order_desc'] = 'Order in the Newpoints menu item.';
 
 $l['setting_group_newpoints_main'] = 'Main';
 $l['setting_group_newpoints_main_desc'] = 'These settings come with NewPoints by default.';
@@ -240,6 +247,7 @@ $l['newpoints_confirmation_plugin_uninstallation'] = 'Are you sure you wish to u
 
 $l['newpoints_groups_tab'] = 'Newpoints';
 $l['newpoints_groups_users'] = 'Users Configuration';
+$l['newpoints_user_groups_can_get_points'] = 'Can get points?';
 $l['newpoints_user_groups_can_see_page'] = 'Can see main page?';
 $l['newpoints_user_groups_can_see_stats'] = 'Can see the stats page?';
 $l['newpoints_user_groups_can_donate'] = 'Can donate points?';
@@ -259,3 +267,6 @@ $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';
 $l['newpoints_users_tab'] = 'Newpoints';
 $l['newpoints_users_title'] = 'Newpoints Information';
 $l['newpoints_user_newpoints'] = 'Newpoints<br /><small class="input">Update the curren Newpoints for this user.</small><br />';
+
+$l['group_newpoints'] = 'Newpoints';
+$l['newpoints_field_newpoints_can_get_points'] = 'Can get points posting in this forum?';
