@@ -134,7 +134,7 @@ if ($mybb->get_input('action') == 'change') {
             $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
         }
 
-        if (in_array($plugin, ['income', 'main', 'donations', 'stats'], true)) {
+        if (in_array($plugin, ['main', 'donations', 'stats'], true)) {
             $lang_var = 'setting_group_newpoints_' . $mybb->get_input('plugin');
 
             $groupinfo['title'] = $lang->$lang_var;
@@ -520,7 +520,7 @@ if ($mybb->get_input('action') == 'change') {
 
     $table->construct_header($lang->setting_groups);
 
-    foreach (['income', 'main', 'donations', 'stats'] as $core_group) {
+    foreach (['main', 'donations', 'stats'] as $core_group) {
         $settingcount = $db->fetch_field(
             $db->simple_select('newpoints_settings', 'COUNT(sid) as settings', "plugin='{$core_group}'"),
             'settings'

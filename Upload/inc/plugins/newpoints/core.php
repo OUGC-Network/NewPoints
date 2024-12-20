@@ -1409,20 +1409,20 @@ function users_update(): bool
 
     foreach ($user_groups as $user_group_data) {
         if (
-            empty($user_group_data['newpoints_allowance']) ||
-            empty($user_group_data['newpoints_allowance_period']) ||
-            $user_group_data['newpoints_allowance_last_stamp'] > (TIME_NOW - $user_group_data['newpoints_allowance_period'])
+            empty($user_group_data['newpoints_income_user_allowance']) ||
+            empty($user_group_data['newpoints_income_user_allowance_minutes']) ||
+            $user_group_data['newpoints_income_user_allowance_last_stamp'] > (TIME_NOW - $user_group_data['newpoints_income_user_allowance_minutes'] * 60)
         ) {
             continue;
         }
 
-        $amount = (float)$user_group_data['newpoints_allowance'];
+        $amount = (float)$user_group_data['newpoints_income_user_allowance'];
 
         $group_id = (int)$user_group_data['gid'];
 
         $where_clauses = ["`usergroup`='{$group_id}'"];
 
-        if (empty($user_group_data['newpoints_allowance_primary_only'])) {
+        if (empty($user_group_data['newpoints_income_user_allowance_primary_only'])) {
             switch ($db->type) {
                 case 'pgsql':
                 case 'sqlite':
@@ -1441,7 +1441,11 @@ function users_update(): bool
             true
         );
 
-        $db->update_query('usergroups', ['newpoints_allowance_last_stamp' => TIME_NOW], "gid='{$group_id}'");
+        $db->update_query(
+            'usergroups',
+            ['newpoints_income_user_allowance_last_stamp' => TIME_NOW],
+            "gid='{$group_id}'"
+        );
     }
 
     $cache->update_usergroups();
@@ -1767,53 +1771,53 @@ function main_file_name(): string
     return (string)get_setting('main_file');
 }
 
+function get_income_types(): array
+{
+    $income_types = INCOME_TYPES;
+
+    $income_types = run_hooks('income_types', $income_types);
+
+    foreach ($income_types as $income_type => $income_params) {
+        if (!defined('\Newpoints\Core\INCOME_TYPE_' . strtoupper($income_type))) {
+            _dump('INCOME_TYPE_' . strtoupper($income_type), $income_type);
+            define('INCOME_TYPE_' . strtoupper($income_type), $income_type);
+        }
+    }
+
+    return $income_types;
+}
+
 function get_income_value(string $income_type): float
 {
+    global $mybb;
+
     $income_value = 1;
 
+    $global_setting_key = 'income_' . $income_type;
+
+    $group_setting_key = 'newpoints_income_' . $income_type;
+
     switch ($income_type) {
-        case INCOME_TYPE_POST_NEW:
-            $income_value = (float)get_setting('income_newpost');
-            break;
-        case INCOME_TYPE_POST_MINIMUM_CHARACTERS:
-            $income_value = (float)get_setting('income_minchar');
-            break;
-        case INCOME_TYPE_POST_PER_CHARACTER:
-            $income_value = (float)get_setting('income_perchar');
-            break;
-        case INCOME_TYPE_POST_PER_REPLY:
-            $income_value = (float)get_setting('income_perreply');
-            break;
+        case INCOME_TYPE_THREAD:
+        case INCOME_TYPE_THREAD_REPLY:
+        case INCOME_TYPE_THREAD_RATE:
+        case INCOME_TYPE_POST:
+        case INCOME_TYPE_POST_CHARACTER:
         case INCOME_TYPE_PAGE_VIEW:
-            $income_value = (float)get_setting('income_pageview');
-            break;
         case INCOME_TYPE_VISIT:
-            $income_value = (float)get_setting('income_visit');
-            break;
-        case INCOME_TYPE_VISIT_MINUTES:
-            $income_value = (float)get_setting('income_visit_minutes');
-            break;
-        case INCOME_TYPE_THREAD_NEW:
-            $income_value = (float)get_setting('income_newthread');
-            break;
-        case INCOME_TYPE_POLL_NEW:
-            $income_value = (float)get_setting('income_newpoll');
-            break;
-        case INCOME_TYPE_USER_REGISTRATION:
-            $income_value = (float)get_setting('income_newreg');
-            break;
-        case INCOME_TYPE_USER_REFERRAL:
-            $income_value = (float)get_setting('income_referral');
-            break;
+        case INCOME_TYPE_POLL:
         case INCOME_TYPE_POLL_VOTE:
-            $income_value = (float)get_setting('income_pervote');
-            break;
-        case INCOME_TYPE_PRIVATE_MESSAGE_NEW:
-            $income_value = (float)get_setting('income_pmsent');
+        case INCOME_TYPE_USER_ALLOWANCE:
+        case INCOME_TYPE_USER_REGISTRATION:
+        case INCOME_TYPE_USER_REFERRAL:
+        case INCOME_TYPE_PRIVATE_MESSAGE:
+            $income_value = get_setting($global_setting_key) !== false ? get_setting(
+                $global_setting_key
+            ) : $mybb->usergroup[$group_setting_key];
             break;
     }
 
-    return $income_value;
+    return (float)$income_value;
 }
 
 function post_parser(): postParser

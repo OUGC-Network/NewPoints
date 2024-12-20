@@ -79,6 +79,8 @@ defined('IN_MYBB') || die('Direct initialization of this file is not allowed.');
 // You can uncomment the lines below to avoid storing some settings in the DB
 define('Newpoints\Core\SETTINGS', [
     //'main_file' => 'newpoints.php',
+    //'disablePlugins' => true
+    //'income_post' => 10,
 ]);
 
 define('Newpoints\Core\DEBUG', false);
@@ -302,3 +304,15 @@ function reload_newpoints_settings(): bool
 settings_load_init();
 
 plugins_load();
+
+global $groupzerolesser, $grouppermbyswitch, $fpermfields;
+
+$groupzerolesser[] = 'newpoints_income_post_minimum_characters';
+
+$grouppermbyswitch['newpoints_income_post_minimum_characters'] = 'newpoints_can_get_points';
+
+$groupzerolesser[] = 'newpoints_income_visit_minutes';
+
+$grouppermbyswitch['newpoints_income_visit_minutes'] = 'newpoints_can_get_points';
+
+$fpermfields[] = 'newpoints_can_get_points';

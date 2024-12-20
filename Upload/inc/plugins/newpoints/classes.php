@@ -231,7 +231,7 @@ const FIELDS_DATA = [
                 'step' => 0.01,
             ]
         ],
-        'newpoints_allowance' => [
+        'newpoints_income_thread' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
             'default' => 0,
@@ -241,22 +241,158 @@ const FIELDS_DATA = [
                 'step' => 0.01,
             ]
         ],
-        'newpoints_allowance_period' => [
+        'newpoints_income_thread_reply' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_thread_rate' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_post' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_post_minimum_characters' => [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0,
-            'formType' => 'numericField'
+            'formType' => 'numericField',
         ],
-        'newpoints_allowance_primary_only' => [
+        'newpoints_income_post_character' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_page_view' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_visit' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_visit_minutes' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_poll' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_poll_vote' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_user_allowance' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_user_allowance_minutes' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+        ],
+        'newpoints_income_user_allowance_primary_only' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,
             'formType' => 'checkBox'
         ],
-        'newpoints_allowance_last_stamp' => [
+        'newpoints_income_user_allowance_last_stamp' => [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0
+        ],
+        'newpoints_income_user_registration' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_user_referral' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
+        ],
+        'newpoints_income_private_message' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'min' => 0,
+                'step' => 0.01,
+            ]
         ]
     ],
     'forumpermissions' => [
@@ -315,30 +451,44 @@ const POST_VISIBLE_STATUS_UNAPPROVED = 0;
 
 const POST_VISIBLE_STATUS_VISIBLE = 1;
 
-const INCOME_TYPE_POST_NEW = 'newpost';
+const INCOME_TYPES = [
+    'thread' => [],
+    'thread_reply' => [],
+    'thread_rate' => [],
+    'post' => ['post_minimum_characters' => 'numeric'],
+    'post_character' => [],
+    'page_view' => [],
+    'visit' => ['visit_minutes' => 'numeric'],
+    'poll' => [],
+    'poll_vote' => [],
+    'user_allowance' => [],
+    'user_registration' => [],
+    'user_referral' => [],
+    'private_message' => [],
+];
 
-const INCOME_TYPE_POST_MINIMUM_CHARACTERS = 'minchar';
+const INCOME_TYPE_THREAD = 'thread';
 
-const INCOME_TYPE_POST_PER_CHARACTER = 'perchar';
+const INCOME_TYPE_THREAD_REPLY = 'thread_reply';
 
-const INCOME_TYPE_POST_PER_REPLY = 'perreply';
+const INCOME_TYPE_THREAD_RATE = 'thread_rate';
 
-const INCOME_TYPE_THREAD_NEW = 'newthread';
+const INCOME_TYPE_POST = 'post';
 
-const INCOME_TYPE_PAGE_VIEW = 'pageview';
+const INCOME_TYPE_POST_CHARACTER = 'post_character';
+
+const INCOME_TYPE_PAGE_VIEW = 'page_view';
 
 const INCOME_TYPE_VISIT = 'visit';
 
-const INCOME_TYPE_VISIT_MINUTES = 'visit_minutes';
+const INCOME_TYPE_POLL = 'poll';
 
-const INCOME_TYPE_POLL_NEW = 'newpoll';
+const INCOME_TYPE_POLL_VOTE = 'poll_vote';
 
-const INCOME_TYPE_POLL_VOTE = 'pervote';
+const INCOME_TYPE_USER_ALLOWANCE = 'user_allowance';
 
-const INCOME_TYPE_USER_REGISTRATION = 'newreg';
+const INCOME_TYPE_USER_REGISTRATION = 'user_registration';
 
-const INCOME_TYPE_USER_REFERRAL = 'referral';
+const INCOME_TYPE_USER_REFERRAL = 'user_referral';
 
-const INCOME_TYPE_PRIVATE_MESSAGE_NEW = 'pmsent';
-
-const INCOME_TYPE_PRIVATE_THREAD_RATE_NEW = 'perrate';
+const INCOME_TYPE_PRIVATE_MESSAGE = 'private_message';

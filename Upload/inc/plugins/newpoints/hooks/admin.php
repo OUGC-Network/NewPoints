@@ -36,6 +36,7 @@ use MyBB;
 
 use function Newpoints\Admin\recount_rebuild_newpoints_recount;
 use function Newpoints\Admin\recount_rebuild_newpoints_reset;
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\run_hooks;
@@ -220,11 +221,13 @@ function admin_user_groups_edit_graph(): bool
 
     $form_container = new FormContainer($lang->newpoints_groups_tab);
 
-    $form_fields = [];
+    $form_fields = $form_fields_rate = $form_fields_income = [];
 
     $hook_arguments = [
         'data_fields' => &$data_fields,
-        'form_fields' => &$form_fields
+        'form_fields' => &$form_fields,
+        'form_fields_rate' => &$form_fields_rate,
+        'form_fields_income' => &$form_fields_income
     ];
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
@@ -232,6 +235,12 @@ function admin_user_groups_edit_graph(): bool
     foreach ($data_fields as $data_field_key => $data_field_data) {
         if (!isset($data_field_data['formType'])) {
             continue;
+        }
+
+        if (my_strpos($data_field_key, 'newpoints_income') === 0) {
+            if (get_setting(str_replace('newpoints_', '', $data_field_key)) !== false) {
+                continue;
+            }
         }
 
         $setting_language_string = $data_field_key;
@@ -244,41 +253,108 @@ function admin_user_groups_edit_graph(): bool
 
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
-                $form_fields[] = $form->generate_check_box(
-                    $data_field_key,
-                    1,
-                    $lang->{$setting_language_string},
-                    ['checked' => $value]
-                );
+
+                if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
+                    $form_fields_rate[] = $form->generate_check_box(
+                        $data_field_key,
+                        1,
+                        $lang->{$setting_language_string},
+                        ['checked' => $value]
+                    );
+                } elseif (my_strpos($data_field_key, 'newpoints_income') === 0) {
+                    $form_fields_income[] = $form->generate_check_box(
+                        $data_field_key,
+                        1,
+                        $lang->{$setting_language_string},
+                        ['checked' => $value]
+                    );
+                } else {
+                    $form_fields[] = $form->generate_check_box(
+                        $data_field_key,
+                        1,
+                        $lang->{$setting_language_string},
+                        ['checked' => $value]
+                    );
+                }
+
                 break;
             case FORM_TYPE_NUMERIC_FIELD:
                 if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
                     $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
                 }
 
-                $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
-                        $data_field_key,
-                        $value,
-                        [
-                            'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
-                            'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                        ]
-                    );
+                if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
+                    $form_fields_rate[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
+                            $data_field_key,
+                            $value,
+                            [
+                                'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
+                                'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
+                            ]
+                        );
+                } elseif (my_strpos($data_field_key, 'newpoints_income') === 0) {
+                    $form_fields_income[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
+                            $data_field_key,
+                            $value,
+                            [
+                                'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
+                                'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
+                            ]
+                        );
+                } else {
+                    $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
+                            $data_field_key,
+                            $value,
+                            [
+                                'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
+                                'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
+                            ]
+                        );
+                }
+
                 break;
         }
     }
 
-    if (empty($form_fields)) {
+    if (empty($form_fields) && empty($form_fields_rate) && empty($form_fields_income)) {
         return false;
     }
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_intermediate', $hook_arguments);
 
-    $form_container->output_row(
-        $lang->newpoints_groups_users,
-        '',
-        '<div class="group_settings_bit">' . implode('</div><div class="group_settings_bit">', $form_fields) . '</div>'
-    );
+    if (!empty($form_fields)) {
+        $form_container->output_row(
+            $lang->newpoints_groups_users,
+            '',
+            '<div class="group_settings_bit">' . implode(
+                '</div><div class="group_settings_bit">',
+                $form_fields
+            ) . '</div>'
+        );
+    }
+
+    if (!empty($form_fields_rate)) {
+        $form_container->output_row(
+            $lang->newpoints_groups_users_rate,
+            '',
+            '<div class="group_settings_bit">' . implode(
+                '</div><div class="group_settings_bit">',
+                $form_fields_rate
+            ) . '</div>'
+        );
+    }
+
+    if (!empty($form_fields_income)) {
+        $form_container->output_row(
+            $lang->newpoints_groups_users_income,
+            '',
+            '<div class="group_settings_bit">' . implode(
+                '</div><div class="group_settings_bit">',
+                $form_fields_income
+            ) . '</div>'
+        );
+    }
+
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $hook_arguments);
 

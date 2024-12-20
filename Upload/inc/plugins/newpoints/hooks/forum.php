@@ -42,22 +42,20 @@ use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
-
 use function Newpoints\Core\user_can_get_points;
+use function Newpoints\Core\users_get_group_permissions;
 
 use const Newpoints\Core\INCOME_TYPE_PAGE_VIEW;
-use const Newpoints\Core\INCOME_TYPE_POLL_NEW;
+use const Newpoints\Core\INCOME_TYPE_POLL;
 use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
-use const Newpoints\Core\INCOME_TYPE_POST_MINIMUM_CHARACTERS;
-use const Newpoints\Core\INCOME_TYPE_POST_NEW;
-use const Newpoints\Core\INCOME_TYPE_POST_PER_CHARACTER;
-use const Newpoints\Core\INCOME_TYPE_POST_PER_REPLY;
-use const Newpoints\Core\INCOME_TYPE_PRIVATE_THREAD_RATE_NEW;
-use const Newpoints\Core\INCOME_TYPE_THREAD_NEW;
+use const Newpoints\Core\INCOME_TYPE_POST;
+use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
+use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
+use const Newpoints\Core\INCOME_TYPE_THREAD_RATE;
+use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\INCOME_TYPE_VISIT;
-use const Newpoints\Core\INCOME_TYPE_VISIT_MINUTES;
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
@@ -127,7 +125,7 @@ function global_end(): bool
     }
 
     if (get_income_value(INCOME_TYPE_VISIT)) {
-        if ((TIME_NOW - $mybb->user['lastactive']) > get_income_value(INCOME_TYPE_VISIT_MINUTES) * 60) {
+        if ((TIME_NOW - $mybb->user['lastactive']) > $mybb->usergroup['newpoints_income_visit_minutes'] * 60) {
             points_add_simple(
                 $user_id,
                 get_income_value(INCOME_TYPE_VISIT)
@@ -250,7 +248,7 @@ function xmlhttp_edit_post_end(): bool
         return false;
     }
 
-    if (!get_income_value(INCOME_TYPE_POST_PER_CHARACTER)) {
+    if (!get_income_value(INCOME_TYPE_POST_CHARACTER)) {
         return false;
     }
 
@@ -283,7 +281,7 @@ function xmlhttp_edit_post_end(): bool
     // let's see if the number of characters in the post is greater than the minimum characters
     if ($new_character_count !== $old_character_count) {
         $bonus_income = ($new_character_count - $old_character_count) * get_income_value(
-                INCOME_TYPE_POST_PER_CHARACTER
+                INCOME_TYPE_POST_CHARACTER
             );
     }
 
@@ -302,7 +300,7 @@ function class_moderation_delete_post_start(int $pid): int
         return $pid;
     }
 
-    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POST)) {
         return $pid;
     }
 
@@ -313,36 +311,38 @@ function class_moderation_delete_post_start(int $pid): int
         return $pid;
     }
 
+    $post_user_id = (int)$post['uid'];
+
     $fid = (int)$fid;
 
     $thread = get_thread($post['tid']);
+
+    $user_group_permissions = users_get_group_permissions($post_user_id);
 
     // calculate points per character bonus
     // let's see if the number of characters in the post is greater than the minimum characters
     if (($charcount = count_characters(
             $post['message']
-        )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-        $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+        )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+        $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
     } else {
         $bonus = 0;
     }
 
     if ($thread['uid'] != $post['uid']) {
         // we are not the thread started so remove points from him/her
-        if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+        if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
             $thread_user_id = (int)$thread['uid'];
 
             if (user_can_get_points($thread_user_id)) {
                 points_add_simple(
                     $thread_user_id,
-                    -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                    -get_income_value(INCOME_TYPE_THREAD_REPLY),
                     $fid
                 );
             }
         }
     }
-
-    $post_user_id = (int)$post['uid'];
 
     if (!user_can_get_points($post_user_id)) {
         return $pid;
@@ -351,7 +351,7 @@ function class_moderation_delete_post_start(int $pid): int
     // remove points from the poster
     points_add_simple(
         $post_user_id,
-        -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
+        -get_income_value(INCOME_TYPE_POST) - (float)$bonus,
         $fid
     );
 
@@ -366,7 +366,7 @@ function class_moderation_soft_delete_posts(array $pids): array
         return $pids;
     }
 
-    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POST)) {
         return $pids;
     }
 
@@ -377,12 +377,16 @@ function class_moderation_soft_delete_posts(array $pids): array
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -390,20 +394,18 @@ function class_moderation_soft_delete_posts(array $pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from him/her
-                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     if (user_can_get_points($thread_user_id)) {
                         points_add_simple(
                             $thread_user_id,
-                            -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            -get_income_value(INCOME_TYPE_THREAD_REPLY),
                             $fid
                         );
                     }
                 }
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -412,7 +414,7 @@ function class_moderation_soft_delete_posts(array $pids): array
             // remove points from the poster
             points_add_simple(
                 $post_user_id,
-                -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
+                -get_income_value(INCOME_TYPE_POST) - (float)$bonus,
                 $fid
             );
         }
@@ -429,7 +431,7 @@ function class_moderation_restore_posts($pids): array
         return $pids;
     }
 
-    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POST)) {
         return $pids;
     }
 
@@ -440,12 +442,16 @@ function class_moderation_restore_posts($pids): array
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -453,20 +459,18 @@ function class_moderation_restore_posts($pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
-                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     if (user_can_get_points($thread_user_id)) {
                         points_add_simple(
                             $thread_user_id,
-                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            get_income_value(INCOME_TYPE_THREAD_REPLY),
                             $fid
                         );
                     }
                 }
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -475,7 +479,7 @@ function class_moderation_restore_posts($pids): array
             // give points to the author of the post
             points_add_simple(
                 $post_user_id,
-                get_income_value(INCOME_TYPE_POST_NEW) + (float)$bonus,
+                get_income_value(INCOME_TYPE_POST) + (float)$bonus,
                 $fid
             );
         }
@@ -492,7 +496,7 @@ function class_moderation_approve_threads(array $tids): array
         return $tids;
     }
 
-    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
+    if (!get_income_value(INCOME_TYPE_THREAD)) {
         return $tids;
     }
 
@@ -503,17 +507,19 @@ function class_moderation_approve_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -522,7 +528,7 @@ function class_moderation_approve_threads(array $tids): array
             // add points to the poster
             points_add_simple(
                 $post_user_id,
-                get_income_value(INCOME_TYPE_THREAD_NEW) + (float)$bonus,
+                get_income_value(INCOME_TYPE_THREAD) + (float)$bonus,
                 $fid
             );
         }
@@ -539,7 +545,7 @@ function class_moderation_approve_posts(array $pids): array
         return $pids;
     }
 
-    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POST)) {
         return $pids;
     }
 
@@ -550,12 +556,16 @@ function class_moderation_approve_posts(array $pids): array
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -563,20 +573,18 @@ function class_moderation_approve_posts(array $pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
-                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     if (user_can_get_points($thread_user_id)) {
                         points_add_simple(
                             $thread_user_id,
-                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            get_income_value(INCOME_TYPE_THREAD_REPLY),
                             $fid
                         );
                     }
                 }
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -585,7 +593,7 @@ function class_moderation_approve_posts(array $pids): array
             // give points to the author of the post
             points_add_simple(
                 $post_user_id,
-                get_income_value(INCOME_TYPE_POST_NEW) + (float)$bonus,
+                get_income_value(INCOME_TYPE_POST) + (float)$bonus,
                 $fid
             );
         }
@@ -602,7 +610,7 @@ function class_moderation_unapprove_threads(array $tids): array
         return $tids;
     }
 
-    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
+    if (!get_income_value(INCOME_TYPE_THREAD)) {
         return $tids;
     }
 
@@ -613,17 +621,19 @@ function class_moderation_unapprove_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -632,7 +642,7 @@ function class_moderation_unapprove_threads(array $tids): array
             // add points to the poster
             points_add_simple(
                 $post_user_id,
-                -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
+                -get_income_value(INCOME_TYPE_THREAD) - (float)$bonus,
                 $fid
             );
         }
@@ -649,7 +659,7 @@ function class_moderation_unapprove_posts(array $pids): array
         return $pids;
     }
 
-    if (!get_income_value(INCOME_TYPE_POST_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POST)) {
         return $pids;
     }
 
@@ -660,12 +670,16 @@ function class_moderation_unapprove_posts(array $pids): array
             $post = get_post((int)$pid);
             $thread = get_thread($post['tid']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -673,20 +687,18 @@ function class_moderation_unapprove_posts(array $pids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from them
-                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     if (user_can_get_points($thread_user_id)) {
                         points_add_simple(
                             $thread_user_id,
-                            -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            -get_income_value(INCOME_TYPE_THREAD_REPLY),
                             $fid
                         );
                     }
                 }
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -695,7 +707,7 @@ function class_moderation_unapprove_posts(array $pids): array
             // give points to the author of the post
             points_add_simple(
                 $post_user_id,
-                -get_income_value(INCOME_TYPE_POST_NEW) - (float)$bonus,
+                -get_income_value(INCOME_TYPE_POST) - (float)$bonus,
                 $fid
             );
         }
@@ -712,7 +724,7 @@ function class_moderation_delete_thread(int $tid): int
         return $tid;
     }
 
-    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
+    if (!get_income_value(INCOME_TYPE_THREAD)) {
         return $tid;
     }
 
@@ -729,17 +741,19 @@ function class_moderation_delete_thread(int $tid): int
     // get post of the thread
     $post = get_post($thread['firstpost']);
 
+    $thread_user_id = (int)$thread['uid'];
+
+    $user_group_permissions = users_get_group_permissions($thread_user_id);
+
     // calculate points per character bonus
     // let's see if the number of characters in the thread is greater than the minimum characters
     if (($charcount = count_characters(
             $post['message']
-        )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-        $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+        )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+        $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
     } else {
         $bonus = 0;
     }
-
-    $thread_user_id = (int)$thread['uid'];
 
     if (!user_can_get_points($thread_user_id)) {
         return $tid;
@@ -750,7 +764,7 @@ function class_moderation_delete_thread(int $tid): int
 
         points_add_simple(
             $thread_user_id,
-            -get_income_value(INCOME_TYPE_POLL_NEW),
+            -get_income_value(INCOME_TYPE_POLL),
             $fid
         );
     }
@@ -764,14 +778,14 @@ function class_moderation_delete_thread(int $tid): int
 
     points_add_simple(
         $thread_user_id,
-        -(float)($thread['replies'] * get_income_value(INCOME_TYPE_POST_PER_REPLY)),
+        -(float)($thread['replies'] * get_income_value(INCOME_TYPE_THREAD_REPLY)),
         $fid
     );
 
     // take out points from the author of the thread
     points_add_simple(
         $thread_user_id,
-        -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
+        -get_income_value(INCOME_TYPE_THREAD) - (float)$bonus,
         $fid
     );
 
@@ -786,7 +800,7 @@ function class_moderation_soft_delete_threads(array $tids): array
         return $tids;
     }
 
-    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
+    if (!get_income_value(INCOME_TYPE_THREAD)) {
         return $tids;
     }
 
@@ -797,12 +811,16 @@ function class_moderation_soft_delete_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -810,20 +828,18 @@ function class_moderation_soft_delete_threads(array $tids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so remove points from him/her
-                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     if (user_can_get_points($thread_user_id)) {
                         points_add_simple(
                             $thread_user_id,
-                            -get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            -get_income_value(INCOME_TYPE_THREAD_REPLY),
                             $fid
                         );
                     }
                 }
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($thread_user_id)) {
                 continue;
@@ -832,7 +848,7 @@ function class_moderation_soft_delete_threads(array $tids): array
             // remove points from the poster
             points_add_simple(
                 $post_user_id,
-                -get_income_value(INCOME_TYPE_THREAD_NEW) - (float)$bonus,
+                -get_income_value(INCOME_TYPE_THREAD) - (float)$bonus,
                 $fid
             );
         }
@@ -849,7 +865,7 @@ function class_moderation_restore_threads(array $tids): array
         return $tids;
     }
 
-    if (!get_income_value(INCOME_TYPE_THREAD_NEW)) {
+    if (!get_income_value(INCOME_TYPE_THREAD)) {
         return $tids;
     }
 
@@ -860,12 +876,16 @@ function class_moderation_restore_threads(array $tids): array
             $thread = get_thread($tid);
             $post = get_post((int)$thread['firstpost']);
 
+            $post_user_id = (int)$post['uid'];
+
+            $user_group_permissions = users_get_group_permissions($post_user_id);
+
             // calculate points per character bonus
             // let's see if the number of characters in the post is greater than the minimum characters
             if (($charcount = count_characters(
                     $post['message']
-                )) >= get_income_value(INCOME_TYPE_POST_MINIMUM_CHARACTERS)) {
-                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_PER_CHARACTER);
+                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                $bonus = $charcount * get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
@@ -873,20 +893,18 @@ function class_moderation_restore_threads(array $tids): array
             // the post author != thread author?
             if ($thread['uid'] != $post['uid']) {
                 // we are not the thread started so give points to them
-                if (get_income_value(INCOME_TYPE_POST_PER_REPLY)) {
+                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
                     $thread_user_id = (int)$thread['uid'];
 
                     if (user_can_get_points($thread_user_id)) {
                         points_add_simple(
                             $thread_user_id,
-                            get_income_value(INCOME_TYPE_POST_PER_REPLY),
+                            get_income_value(INCOME_TYPE_THREAD_REPLY),
                             $fid
                         );
                     }
                 }
             }
-
-            $post_user_id = (int)$post['uid'];
 
             if (!user_can_get_points($post_user_id)) {
                 continue;
@@ -895,7 +913,7 @@ function class_moderation_restore_threads(array $tids): array
             // give points to the author of the post
             points_add_simple(
                 $post_user_id,
-                get_income_value(INCOME_TYPE_THREAD_NEW) + (float)$bonus,
+                get_income_value(INCOME_TYPE_THREAD) + (float)$bonus,
                 $fid
             );
         }
@@ -912,7 +930,7 @@ function polls_do_newpoll_process(): bool
         return false;
     }
 
-    if (!get_income_value(INCOME_TYPE_POLL_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POLL)) {
         return false;
     }
 
@@ -927,7 +945,7 @@ function polls_do_newpoll_process(): bool
     // give points to the author of the new polls
     points_add_simple(
         $user_id,
-        get_income_value(INCOME_TYPE_POLL_NEW),
+        get_income_value(INCOME_TYPE_POLL),
         $fid
     );
 
@@ -942,7 +960,7 @@ function class_moderation_delete_poll(int $pid): int
         return $pid;
     }
 
-    if (!get_income_value(INCOME_TYPE_POLL_NEW)) {
+    if (!get_income_value(INCOME_TYPE_POLL)) {
         return $pid;
     }
 
@@ -960,7 +978,7 @@ function class_moderation_delete_poll(int $pid): int
     // remove points from the author by deleting the poll
     points_add_simple(
         $poll_user_id,
-        -get_income_value(INCOME_TYPE_POLL_NEW),
+        -get_income_value(INCOME_TYPE_POLL),
         $fid
     );
 
@@ -1045,7 +1063,7 @@ function ratethread_process(): bool
         return false;
     }
 
-    if (!get_income_value(INCOME_TYPE_PRIVATE_THREAD_RATE_NEW)) {
+    if (!get_income_value(INCOME_TYPE_THREAD_RATE)) {
         return false;
     }
 
@@ -1060,7 +1078,7 @@ function ratethread_process(): bool
     // give points us, as we're rating a thread
     points_add_simple(
         $user_id,
-        get_income_value(INCOME_TYPE_PRIVATE_THREAD_RATE_NEW),
+        get_income_value(INCOME_TYPE_THREAD_RATE),
         $fid
     );
 

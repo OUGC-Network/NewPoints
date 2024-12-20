@@ -29,6 +29,8 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Core\get_income_types;
+use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_add;
@@ -96,54 +98,48 @@ if (!$mybb->get_input('action')) {
 
     run_hooks('home_start');
 
-    // get income settings' titles, descriptions and its value
-    $query = $db->simple_select('newpoints_settings', '*', 'plugin=\'income\'');
-    while ($setting = $db->fetch_array($query)) {
-        $lang_var = 'setting_' . $setting['name'];
-        $lang_var_desc = $lang_var . '_desc';
-        if (!empty($lang->{$lang_var})) {
-            $setting['title'] = $lang->{$lang_var};
-        }
+    $income_amount = $lang->sprintf(
+        $lang->newpoints_income_amount,
+        get_setting('main_curname')
+    );
 
-        $income_amount = $lang->sprintf(
-            $lang->newpoints_income_amount,
-            get_setting('main_curname')
-        );
-
-        if (!empty($lang->{$lang_var_desc})) {
-            $setting['description'] = $lang->{$lang_var_desc};
-        }
-
-        if ($setting['name'] == 'newpoints_income_minchar') {
-            $value = $setting['value'] . ' ' . $lang->newpoints_chars;
-        } else {
-            $value = points_format((float)$setting['value']);
-        }
-
-        $income_settings .= eval(templates_get('home_income_row'));
-    }
 
     $latest_transactions = [];
 
-    $income_setting_params = [
-        'newpoints_allowance' => [
-            'points' => (float)$mybb->usergroup['newpoints_allowance'],
-            //'rate' => (float)$mybb->usergroup['newpoints_allowance'],
-            'time' => (int)$mybb->usergroup['newpoints_allowance_period']
-        ],
-    ];
+    $income_setting_params = [];
+
+    foreach (get_income_types() as $income_type => $income_params) {
+        $income_setting_params["newpoints_income_{$income_type}"] = [];
+
+        foreach ($income_params as $param_key => $param_type) {
+            switch ($param_type) {
+                case 'numeric':
+                    $income_setting_params["newpoints_income_{$income_type}"][$param_key] = my_number_format(
+                        $mybb->usergroup["newpoints_income_{$param_key}"]
+                    );
+                    break;
+            }
+        }
+    }
 
     run_hooks('home_end');
 
     foreach ($income_setting_params as $income_key => $income_setting) {
-        $setting['title'] = $lang->{"setting_{$income_key}"};
+        $setting['title'] = $lang->{"{$income_key}"};
 
-        $setting['description'] = $lang->sprintf(
-            $lang->{"setting_{$income_key}_desc"},
-            !empty($income_setting['time']) ? my_number_format($income_setting['time'] / 60) : 0
-        );
+        $setting['description'] = $lang->{"{$income_key}_desc"};
 
-        $value = points_format($income_setting['points']);
+        $i = 1;
+
+        foreach ($income_setting as $value) {
+            $setting['description'] = str_replace("{{$i}}", $value, $setting['description']);
+
+            ++$i;
+        }
+
+        $constant_name = my_strtoupper(str_replace('newpoints_income_', 'INCOME_TYPE_', $income_key));
+
+        $value = points_format(get_income_value(constant('\Newpoints\Core\\' . $constant_name)));
 
         $income_settings .= eval(templates_get('home_income_row'));
     }
@@ -285,8 +281,11 @@ if ($mybb->get_input('action') == 'stats') {
 
     if ($mybb->get_input('modal', 1)) {
         $code = $form;
+
         $modal = eval(templates_get('modal', false));
+
         echo $modal;
+
         exit;
     }
 
