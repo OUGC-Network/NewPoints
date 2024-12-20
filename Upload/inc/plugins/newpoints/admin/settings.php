@@ -43,6 +43,20 @@ language_load();
 
 $lang->load('config_settings', false, true);
 
+$sub_tabs['newpoints_settings'] = [
+    'title' => $lang->newpoints_settings,
+    'link' => 'index.php?module=newpoints-settings',
+    'description' => $lang->newpoints_settings_description
+];
+
+if ($mybb->get_input('action') == 'change') {
+    $sub_tabs['newpoints_settings_change'] = [
+        'title' => $lang->newpoints_settings_change,
+        'link' => 'index.php?module=newpoints-settings&amp;action=change',
+        'description' => $lang->newpoints_settings_change_description
+    ];
+}
+
 // Change settings for a specified group.
 if ($mybb->get_input('action') == 'change') {
     run_hooks('admin_settings_change');
@@ -175,18 +189,6 @@ if ($mybb->get_input('action') == 'change') {
         // Page header
         $page->add_breadcrumb_item($groupinfo['title']);
         $page->output_header($lang->board_settings . " - {$groupinfo['title']}");
-
-        $sub_tabs['newpoints_settings'] = [
-            'title' => $lang->newpoints_settings,
-            'link' => 'index.php?module=newpoints-settings',
-            'description' => $lang->newpoints_settings_description
-        ];
-
-        $sub_tabs['newpoints_settings_change'] = [
-            'title' => $lang->newpoints_settings_change,
-            'link' => 'index.php?module=newpoints-settings&amp;action=change',
-            'description' => $lang->newpoints_settings_change_description
-        ];
 
         $page->output_nav_tabs($sub_tabs, 'newpoints_settings_change');
 
@@ -501,18 +503,6 @@ if ($mybb->get_input('action') == 'change') {
     if (isset($message)) {
         $page->output_inline_message($message);
     }
-
-    $sub_tabs['newpoints_settings'] = [
-        'title' => $lang->newpoints_settings,
-        'link' => 'index.php?module=newpoints-settings',
-        'description' => $lang->newpoints_settings_description
-    ];
-
-    $sub_tabs['newpoints_settings_change'] = [
-        'title' => $lang->newpoints_settings_change,
-        'link' => 'index.php?module=newpoints-settings&amp;action=change',
-        'description' => $lang->newpoints_settings_change
-    ];
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_settings');
 
