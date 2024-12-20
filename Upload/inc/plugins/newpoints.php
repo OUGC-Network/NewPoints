@@ -305,14 +305,20 @@ settings_load_init();
 
 plugins_load();
 
-global $groupzerolesser, $grouppermbyswitch, $fpermfields;
+(function () {
+    global $groupzerolesser, $grouppermbyswitch, $fpermfields;
 
-$groupzerolesser[] = 'newpoints_income_post_minimum_characters';
+    foreach (
+        [
+            'newpoints_rate_subtraction',
+            'newpoints_income_post_minimum_characters',
+            'newpoints_income_visit_minutes'
+        ] as $group_permission_key
+    ) {
+        $groupzerolesser[] = $group_permission_key;
 
-$grouppermbyswitch['newpoints_income_post_minimum_characters'] = 'newpoints_can_get_points';
+        $grouppermbyswitch[$group_permission_key] = 'newpoints_can_get_points';
+    }
 
-$groupzerolesser[] = 'newpoints_income_visit_minutes';
-
-$grouppermbyswitch['newpoints_income_visit_minutes'] = 'newpoints_can_get_points';
-
-$fpermfields[] = 'newpoints_can_get_points';
+    $fpermfields[] = 'newpoints_can_get_points';
+})();

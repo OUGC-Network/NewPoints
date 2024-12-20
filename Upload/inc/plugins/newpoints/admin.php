@@ -40,7 +40,6 @@ use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
-use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\task_delete;
@@ -243,6 +242,22 @@ function plugin_activation(): bool
         }
 
         $db->drop_column('usergroups', 'newpoints_allowance_last_stamp');
+    }
+
+    if ($db->field_exists('newpoints_rate', 'usergroups')) {
+        $query = $db->simple_select('usergroups', 'gid, newpoints_rate');
+
+        while ($group = $db->fetch_array($query)) {
+            $group_id = (int)$group['gid'];
+
+            $db->update_query(
+                'usergroups',
+                ['newpoints_rate_addition' => (float)$group['newpoints_rate']],
+                "gid='{$group_id}'"
+            );
+        }
+
+        $db->drop_column('usergroups', 'newpoints_rate');
     }
 
     /*~*~* RUN UPDATES END *~*~*/
@@ -686,13 +701,13 @@ function recount_rebuild_newpoints_recount()
     while ($user_data = $db->fetch_array($query)) {
         $points = 0;
 
-        $group_rate = rules_get_group_rate($user_data);
+        $user_id = (int)$user_data['uid'];
 
-        if (!$group_rate) {
+        $user_group_permissions = users_get_group_permissions($user_id);
+
+        if (empty($user_group_permissions['newpoints_rate_addition'])) {
             continue;
         }
-
-        $user_id = (int)$user_data['uid'];
 
         $first_posts = [];
 
@@ -701,8 +716,6 @@ function recount_rebuild_newpoints_recount()
             'firstpost,fid,poll',
             "uid='" . $user_id . "' AND visible=1"
         );
-
-        $user_group_permissions = users_get_group_permissions($user_id);
 
         while ($thread = $db->fetch_array($threads_query)) {
             if (!get_income_value(INCOME_TYPE_THREAD)) {
@@ -809,7 +822,9 @@ function recount_rebuild_newpoints_recount()
         $db->update_query(
             'users',
             [
-                'newpoints' => get_income_value(INCOME_TYPE_USER_REGISTRATION) + $points * $group_rate
+                'newpoints' => get_income_value(
+                        INCOME_TYPE_USER_REGISTRATION
+                    ) + $points * $user_group_permissions['newpoints_rate_addition']
             ],
             "uid='{$user_id}'"
         );

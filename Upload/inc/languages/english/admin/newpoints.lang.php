@@ -225,7 +225,8 @@ $l['newpoints_user_groups_can_see_page'] = 'Can see main page?';
 $l['newpoints_user_groups_can_see_stats'] = 'Can see the stats page?';
 $l['newpoints_user_groups_can_donate'] = 'Can donate points?';
 
-$l['newpoints_user_groups_rate'] = 'Group Rate<br /><small class="input">The income rate for this group. Default is <code>1</code>.</small><br />';
+$l['newpoints_user_groups_rate_addition'] = 'Group Rate for Additions<br /><small class="input">The income rate for this group, used when adding points to users (i.e: income earnings). Default is <code>1</code>.</small><br />';
+$l['newpoints_user_groups_rate_subtraction'] = 'Group Rate for Subtraction <code style="color: darkorange;">This works as a percentage. So "0" = user does not pay anything "100" = users pay full price, "200" = user pays twice the price, etc.</code><br /><small class="input">The income rate for this group, used when subtracting points from users (i.e: selling, purchasing, etc). Default is <code>100</code>.</small><br />';
 
 $l['newpoints_user_groups_income_thread'] = 'New Thread<br /><small class="input">Amount of points received for each new thread.</small><br />';
 $l['newpoints_user_groups_income_thread_reply'] = 'New Thread Reply<br /><small class="input">Amount of points received for each reply to a thread.</small><br />';

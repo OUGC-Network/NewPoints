@@ -251,6 +251,24 @@ function admin_user_groups_edit_graph(): bool
 
         $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
 
+        $formOptions = [];
+
+        if (isset($data_field_data['formOptions']['min'])) {
+            $formOptions['min'] = $data_field_data['formOptions']['min'];
+        } else {
+            $formOptions['min'] = 0;
+        }
+
+        if (isset($data_field_data['formOptions']['step'])) {
+            $formOptions['step'] = $data_field_data['formOptions']['step'];
+        } else {
+            $formOptions['step'] = 1;
+        }
+
+        if (isset($data_field_data['formOptions']['max'])) {
+            $formOptions['max'] = $data_field_data['formOptions']['max'];
+        }
+
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
 
@@ -287,28 +305,19 @@ function admin_user_groups_edit_graph(): bool
                     $form_fields_rate[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                             $data_field_key,
                             $value,
-                            [
-                                'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
-                                'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                            ]
+                            $formOptions
                         );
                 } elseif (my_strpos($data_field_key, 'newpoints_income') === 0) {
                     $form_fields_income[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                             $data_field_key,
                             $value,
-                            [
-                                'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
-                                'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                            ]
+                            $formOptions
                         );
                 } else {
                     $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                             $data_field_key,
                             $value,
-                            [
-                                'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
-                                'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                            ]
+                            $formOptions
                         );
                 }
 
@@ -440,6 +449,24 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
         $value = (int)$forum_data[$data_field_key];
 
+        $formOptions = [];
+
+        if (isset($data_field_data['formOptions']['min'])) {
+            $formOptions['min'] = $data_field_data['formOptions']['min'];
+        } else {
+            $formOptions['min'] = 0;
+        }
+
+        if (isset($data_field_data['formOptions']['step'])) {
+            $formOptions['step'] = $data_field_data['formOptions']['step'];
+        } else {
+            $formOptions['step'] = 1;
+        }
+
+        if (isset($data_field_data['formOptions']['max'])) {
+            $formOptions['max'] = $data_field_data['formOptions']['max'];
+        }
+
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
                 $form_fields[] = $form->generate_check_box(
@@ -458,10 +485,7 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
                 $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                         $data_field_key,
                         $value,
-                        [
-                            'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
-                            'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                        ]
+                        $formOptions
                     );
                 break;
         }
@@ -593,6 +617,24 @@ function admin_user_users_edit_graph(): bool
 
         $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
 
+        $formOptions = [];
+
+        if (isset($data_field_data['formOptions']['min'])) {
+            $formOptions['min'] = $data_field_data['formOptions']['min'];
+        } else {
+            $formOptions['min'] = 0;
+        }
+
+        if (isset($data_field_data['formOptions']['step'])) {
+            $formOptions['step'] = $data_field_data['formOptions']['step'];
+        } else {
+            $formOptions['step'] = 1;
+        }
+
+        if (isset($data_field_data['formOptions']['max'])) {
+            $formOptions['max'] = $data_field_data['formOptions']['max'];
+        }
+
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
                 $form_fields[] = $form->generate_check_box(
@@ -610,10 +652,7 @@ function admin_user_users_edit_graph(): bool
                 $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
                         $data_field_key,
                         $value,
-                        [
-                            'min' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['min'] ?? 0) : 0,
-                            'step' => isset($data_field_data['formOptions']) ? ($data_field_data['formOptions']['step'] ?? 1) : 1,
-                        ]
+                        $formOptions
                     );
                 break;
             case FORM_TYPE_PHP_CODE;

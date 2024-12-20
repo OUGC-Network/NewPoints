@@ -792,10 +792,12 @@ function settings_rebuild(): bool
     if ($settings_list) {
         foreach ($settings_list as $setting_group => $settings_data) {
             if (empty($lang->{"setting_group_newpoints_{$setting_group}"})) {
+            if (!isset($lang->{"setting_group_newpoints_{$setting_group}"})) {
                 //$lang->{"setting_group_newpoints_{$setting_group}"} = $setting_group;
             }
 
             if (empty($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
+            if (!isset($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
                 //$lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
             }
 
@@ -900,13 +902,20 @@ function points_add_simple(
         }
     }
 
-    $group_rate = rules_get_group_rate(get_user($user_id));
+    $user_group_permissions = users_get_group_permissions($user_id);
 
-    if (!$group_rate) {
+    if (empty($user_group_permissions['newpoints_rate_addition'])) {
         return false;
     }
 
-    return points_add($user_id, $points, $forum_rate, $group_rate, false, true);
+    return points_add(
+        $user_id,
+        $points,
+        $forum_rate,
+        (float)$user_group_permissions['newpoints_rate_addition'],
+        false,
+        true
+    );
 }
 
 function points_update(): bool
@@ -1060,7 +1069,7 @@ function rate_group_get(int $group_id)
     return isset($group_rules['rate']) ? (float)$group_rules['rate'] : 1;
 }
 
-function rules_get_group_rate(array $user = [], string $rate_key = 'newpoints_rate'): float
+function rules_get_group_rate(array $user = [], string $rate_key = 'newpoints_rate_addition'): float
 {
     global $mybb;
 

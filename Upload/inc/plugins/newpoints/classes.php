@@ -221,7 +221,7 @@ const FIELDS_DATA = [
             'default' => 0,
             'formType' => 'checkBox'
         ],
-        'newpoints_rate' => [
+        'newpoints_rate_addition' => [
             'type' => 'DECIMAL',
             'size' => '16,2',
             'default' => 1,
@@ -229,6 +229,15 @@ const FIELDS_DATA = [
             'formOptions' => [
                 //'min' => 0,
                 'step' => 0.01,
+            ]
+        ],
+        'newpoints_rate_subtraction' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 100,
+            'formType' => 'numericField',
+            'formOptions' => [
+                //'max' => 100,
             ]
         ],
         'newpoints_income_thread' => [

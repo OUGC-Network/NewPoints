@@ -92,7 +92,7 @@ if (!$mybb->get_input('action')) // view grouprules
             ) . '</small>'
         );
 
-        $group = get_group($rule['gid']);
+        $group = get_group((int)$rule['gid']);
 
         $table->construct_cell(htmlspecialchars_uni($group['title']));
         $table->construct_cell(
