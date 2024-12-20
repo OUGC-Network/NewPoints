@@ -942,9 +942,13 @@ function points_update(): bool
  */
 function points_format(float $points): string
 {
-    return get_setting('main_curprefix') . my_number_format(
-            round($points, (int)get_setting('main_decimal'))
-        ) . get_setting('main_cursuffix');
+    $currency_prefix = get_setting('main_cursuffix');
+
+    $points_formatted = my_number_format(round($points, (int)get_setting('main_decimal')));
+
+    $currency_suffix = get_setting('main_curprefix');
+
+    return eval(templates_get('points_format', false));
 }
 
 /**

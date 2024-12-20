@@ -71,6 +71,9 @@ function global_start(): bool
     load_set_guest_data();
 
     $template_list = [
+        'global' => [
+            'points_format',
+        ],
         'newpoints.php' => [
         ],
         'showthread.php' => [
@@ -92,7 +95,7 @@ function global_start(): bool
             continue;
         }
 
-        if (THIS_SCRIPT === $script_name) {
+        if ($script_name === 'global' || $script_name === THIS_SCRIPT) {
             $templatelist .= ',' . implode(',', $templates);
         }
     }
