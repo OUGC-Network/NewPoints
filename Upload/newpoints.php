@@ -34,19 +34,19 @@ use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_add;
+use function Newpoints\Core\log_delete;
+use function Newpoints\Core\log_get;
 use function Newpoints\Core\main_file_name;
 use function Newpoints\Core\page_build_menu;
 use function Newpoints\Core\page_build_menu_options;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\private_message_send;
-use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
-use function Newpoints\Core\users_get_group_permissions;
 
 const IN_MYBB = 1;
 
@@ -54,7 +54,7 @@ const THIS_SCRIPT = 'newpoints.php';
 
 const NP_DISABLE_GUESTS = false;
 
-$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate, newpoints_option_selected';
+$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate, newpoints_option_selected, newpoints_logs_table_row, newpoints_logs_table, newpoints_logs_button_manage, newpoints_input_select_option, newpoints_input_select, newpoints_logs_filter_table, newpoints_page';
 
 require_once './global.php';
 
@@ -398,6 +398,242 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     redirect($link, $lang->sprintf($lang->newpoints_donated, points_format($amount)));
+} elseif ($mybb->get_input('action') == 'logs') {
+    $url_params = ['action' => 'logs'];
+
+    $is_manage_page = false;
+
+    $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
+
+    if ($mybb->input['manage']) {
+        $url_params['manage'] = 1;
+
+        $is_manage_page = true;
+    }
+
+    add_breadcrumb(
+        $lang->newpoints_logs_page_breadcrumb,
+        $mybb->settings['bburl'] . '/' . url_handler_build($url_params)
+    );
+
+    $page_url = url_handler_build($url_params);
+
+    $is_moderator = is_member(get_setting('logs_manage_groups'));
+
+    $per_page = (int)get_setting('logs_per_page');
+
+    if ($per_page < 1) {
+        $per_page = 10;
+    }
+
+    $errors = $where_clauses = [];
+
+    if ($mybb->request_method && $is_moderator && $is_manage_page) {
+        if ($mybb->get_input('view') === 'delete') {
+            $log_id = $mybb->get_input('log_id', MyBB::INPUT_INT);
+
+            $log_data = log_get($log_id);
+
+            if ($log_data) {
+                log_delete($log_id);
+
+                redirect($page_url, $lang->newpoints_logs_page_success_log_deleted);
+            } else {
+                $errors[] = $lang->newpoints_logs_page_errors_no_logs_selected;
+            }
+        }
+    }
+
+    $filters = $mybb->get_input('filter', MyBB::INPUT_ARRAY);
+
+    $filter_user_name = '';
+
+    if ($is_moderator && $is_manage_page && isset($filters['username'])) {
+        $user_data = get_user_by_username($filters['username']);
+
+        if (empty($user_data['uid'])) {
+            $errors[] = $lang->newpoints_logs_page_errors_invalid_user_name;
+        } else {
+            $user_id = (int)$user_data['uid'];
+
+            $where_clauses[] = "l.uid='{$user_id}'";
+
+            $url_params['filter[username]'] = $filters['username'];
+
+            $filter_user_name = htmlspecialchars_uni($filters['username']);
+        }
+    }
+
+    if (isset($filters['actions'])) {
+        $filter_actions = array_map([$db, 'escape_string'], $filters['actions']);
+
+        $filter_actions = implode("','", $filter_actions);
+
+        $where_clauses[] = "action IN ('{$filter_actions}')";
+
+        foreach ($filters['actions'] as $action) {
+            $url_params["filter[actions][{$action}]"] = $action;
+        }
+    }
+
+    if ($errors) {
+        $newpoints_errors = inline_error($errors);
+    }
+
+    $query = $db->simple_select('newpoints_log l', 'COUNT(lid) as total_logs', implode(' AND ', $where_clauses));
+
+    $total_logs = (int)$db->fetch_field($query, 'total_logs');
+
+    $current_page = $mybb->get_input('page', MyBB::INPUT_INT);
+
+    $pages = $total_logs / $per_page;
+
+    $pages = ceil($pages);
+
+    if ($current_page > $pages || $current_page <= 0) {
+        $current_page = 1;
+    }
+
+    if ($current_page) {
+        $limit_start = ($current_page - 1) * $per_page;
+    } else {
+        $limit_start = 0;
+
+        $current_page = 1;
+    }
+
+    $newpoints_pagination = $newpoints_buttons = '';
+
+    if ($total_logs > $per_page) {
+        $newpoints_pagination = multipage(
+            $total_logs,
+            $per_page,
+            $current_page,
+            url_handler_build($url_params)
+        );
+
+        if ($newpoints_pagination) {
+            $newpoints_pagination = eval(templates_get('page_pagination'));
+        }
+    }
+
+    $query = $db->simple_select(
+        "newpoints_log l LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)",
+        'l.lid, l.action, l.points, l.date, l.log_primary_id, l.log_secondary_id, l.log_tertiary_id, u.uid, u.username, u.usergroup, u.displaygroup',
+        implode(' AND ', $where_clauses),
+        ['order_by' => 'date', 'order_dir' => 'desc', 'limit' => $per_page, 'limit_start' => $limit_start]
+    );
+
+    $alternative_background = alt_trow(true);
+
+    $logs_rows = '';
+
+    $column_span = 7;
+
+    $thead_user = $thead_options = '';
+
+    if ($is_moderator && $is_manage_page) {
+        $column_span += 2;
+
+        $thead_user = eval(templates_get('logs_table_thead_user'));
+
+        $delete_url = url_handler_build(array_merge($url_params, ['view' => 'delete']));
+
+        $thead_options = eval(templates_get('logs_table_thead_delete'));
+    }
+
+    while ($log_data = $db->fetch_array($query)) {
+        $log_id = (int)$log_data['lid'];
+
+        $log_id = my_number_format($log_id);
+
+        $log_action = htmlspecialchars_uni($log_data['action']);
+
+        $log_points = points_format((float)$log_data['points']);
+
+        $log_date = my_date('normal', $log_data['date']);
+
+        $log_primary = $log_secondary = $log_tertiary = '-';
+
+        run_hooks('logs_log_row');
+
+        $column_user = $column_options = '';
+
+        if ($is_moderator && $is_manage_page) {
+            $user_name = '';
+
+            if (!empty($log_data['uid'])) {
+                $user_name = build_profile_link(
+                    format_name(
+                        htmlspecialchars_uni($log_data['username']),
+                        $log_data['usergroup'],
+                        $log_data['displaygroup']
+                    ),
+                    $log_data['uid']
+                );
+            }
+
+            $column_user = eval(templates_get('logs_table_row_user'));
+
+            $column_options = eval(templates_get('logs_table_row_delete'));
+        }
+
+        $logs_rows .= eval(templates_get('logs_table_row'));
+
+        $alternative_background = alt_trow();
+    }
+
+    if (!$logs_rows) {
+        $logs_rows = eval(templates_get('logs_table_empty'));
+    }
+
+    $page_title = $lang->newpoints_logs_page_title;
+
+    $newpoints_content = eval(templates_get('logs_table'));
+
+    $action_types = [];
+
+    $query = $db->simple_select('newpoints_log', 'action', '', ['group_by' => 'action']);
+
+    while ($action = $db->fetch_field($query, 'action')) {
+        $action_types[htmlspecialchars_uni($action)] = htmlspecialchars_uni($action);
+    }
+
+    if ($is_moderator && !$is_manage_page) {
+        $manage_url = url_handler_build(array_merge($url_params, ['manage' => 1]));
+
+        $newpoints_buttons = eval(templates_get('logs_button_manage'));
+    }
+
+    run_hooks('logs_end');
+
+    $actions_select = (function () use ($action_types, $filters): string {
+        $select_name = 'filter[actions][]';
+
+        $select_options = '';
+
+        $select_multiple = 'multiple="multiple"';
+
+        foreach ($action_types as $option_value => $option_name) {
+            $selected_element = '';
+
+            if (isset($filters['actions']) && in_array($option_value, $filters['actions'])) {
+                $selected_element = 'selected="selected"';
+            }
+
+            $select_options .= eval(templates_get('input_select_option'));
+        }
+
+        return eval(templates_get('input_select'));
+    })();
+
+    $newpoints_additional = eval(templates_get('logs_filter_table'));
+
+    $page_contents = eval(templates_get('page'));
+
+    output_page($page_contents);
+
+    exit;
 }
 
 run_hooks('terminate');

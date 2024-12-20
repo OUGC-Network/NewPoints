@@ -154,7 +154,7 @@ function url_handler_build(array $urlAppend = [], bool $fetchImportUrl = false, 
     global $PL;
 
     if (!($PL instanceof PluginLibrary)) {
-        $PL || require_once PLUGINLIBRARY;
+        require_once PLUGINLIBRARY;
     }
 
     if ($fetchImportUrl === false) {
@@ -1280,22 +1280,33 @@ function find_replace_template_sets(string $title, string $find, string $replace
  *
  * @param string $action action taken
  * @param string $data extra data
- * @param string $username $username of who's executed the action
- * @param int $uid $uid of who's executed the action
+ * @param string $user_name $username of who's executed the action
+ * @param int $user_id $uid of who's executed the action
  * @return bool false if something went wrong
  */
-function log_add(string $action, string $data = '', string $username = '', int $uid = 0): bool
-{
-    global $db, $mybb;
-
+function log_add(
+    string $action,
+    string $data = '',
+    string $user_name = '',
+    int $user_id = 0,
+    float $points = 0,
+    int $primary_id = 0,
+    int $secondary_id = 0,
+    int $tertiary_id = 0
+): bool {
     if (!$action) {
         return false;
     }
 
-    if ($username == '' || $uid == 0) {
-        $username = $mybb->user['username'];
-        $uid = $mybb->user['uid'];
+    global $mybb;
+
+    if (empty($user_name) || empty($user_id)) {
+        $user_name = $mybb->user['username'];
+
+        $user_id = (int)$mybb->user['uid'];
     }
+
+    global $db;
 
     $db->insert_query(
         'newpoints_log',
@@ -1303,8 +1314,12 @@ function log_add(string $action, string $data = '', string $username = '', int $
             'action' => $db->escape_string($action),
             'data' => $db->escape_string($data),
             'date' => TIME_NOW,
-            'uid' => intval($uid),
-            'username' => $db->escape_string($username)
+            'uid' => $user_id,
+            'username' => $db->escape_string($user_name),
+            'points' => $points,
+            'log_primary_id' => $primary_id,
+            'log_secondary_id' => $secondary_id,
+            'log_tertiary_id' => $tertiary_id
         ]
     );
 
@@ -1730,6 +1745,11 @@ function page_build_menu_options(): string
 
         $menu_items = run_hooks('default_menu', $menu_items);
 
+        $menu_items[] = [
+            'action' => 'logs',
+            'lang_string' => 'newpoints_logs',
+        ];
+
         $alternative_background = alt_trow(true);
 
         $options = '';
@@ -2028,6 +2048,28 @@ function user_can_get_points(int $user_id, int $forum_id = 0): bool
     }
 
     return !empty($group_permissions['newpoints_can_get_points']);
+}
+
+function log_get(int $log_id): array
+{
+    global $db;
+
+    $query = $db->simple_select('newpoints_log', '*', "lid='{$log_id}'", ['limit' => 1]);
+
+    if (!$db->num_rows($query)) {
+        return [];
+    }
+
+    return (array)$db->fetch_array($query);
+}
+
+function log_delete(int $log_id): bool
+{
+    global $db;
+
+    $db->delete_query('newpoints_log', "lid='{$log_id}'");
+
+    return true;
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

@@ -103,6 +103,27 @@ const TABLES_DATA = [
             'size' => 100,
             'default' => ''
         ],
+        'points' => [
+            'type' => 'DECIMAL',
+            'size' => '16,2',
+            'default' => 0
+        ],
+        'log_primary_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'log_secondary_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'log_tertiary_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+
     ],
     'newpoints_forumrules' => [
         'rid' => [

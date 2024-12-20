@@ -209,6 +209,13 @@ $l['setting_newpoints_main_group_rate_primary_only_desc'] = 'If you set this to 
 $l['setting_newpoints_main_file'] = 'Main File Name';
 $l['setting_newpoints_main_file_desc'] = 'If you rename the main Newpoints file, update this setting. Default: <code>newpoints.php</code>';
 
+$l['setting_group_newpoints_logs'] = 'Logs';
+$l['setting_group_newpoints_logs_desc'] = 'These settings are related to logs.';
+$l['setting_newpoints_logs_manage_groups'] = 'Manage Groups';
+$l['setting_newpoints_logs_manage_groups_desc'] = 'Select the groups that can manage the logs.';
+$l['setting_newpoints_logs_per_page'] = 'Logs';
+$l['setting_newpoints_logs_per_page_desc'] = 'Number of logs to show per page in the logs page.';
+
 $l['newpoints_confirmation_plugin_activation'] = 'Are you sure you wish to activate this plugin?';
 $l['newpoints_confirmation_plugin_deactivation'] = 'Are you sure you wish to deactivate this plugin?';
 $l['newpoints_confirmation_plugin_installation'] = 'Are you sure you wish to install this plugin?';

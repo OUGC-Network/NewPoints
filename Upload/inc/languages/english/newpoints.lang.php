@@ -61,11 +61,14 @@ $l['newpoints_date'] = 'Date';
 $l['newpoints_not_enough_points'] = 'You don\'t have enough points. Required: {1}';
 $l['newpoints_amount_paid'] = 'Amount Paid';
 $l['newpoints_source'] = 'Source';
+
 $l['newpoints_home_desc'] = 'NewPoints is a complex points system for MyBB software.';
 $l['newpoints_home_description_primary'] = 'There are some options on the menu on the left that you can use.';
 $l['newpoints_home_description_header'] = 'How do you earn points?';
 $l['newpoints_home_description_secondary'] = '';
 $l['newpoints_home_description_footer'] = 'Contact your administrator if you have any questions.<br />This software was written by <strong>Pirata Nervo</strong> for <a href="https://mybb.com">MyBB</a>.';
+$l['newpoints_home_user_rate_description'] = 'Your rate for earning points is <code>{1}</code> and your rate for spending points is <code>{2}</code>.';
+
 $l['newpoints_action'] = 'Action';
 $l['newpoints_chars'] = 'Chars';
 $l['newpoints_max_donations_control'] = 'You have reached the maximum of {1} over the last 15 minutes. Please wait before making a new one.';
@@ -110,3 +113,30 @@ $l['newpoints_page_confirm_table_cancel_button'] = 'Cancel Order';
 
 $l['newpoints_page_confirm_table_purchase_title'] = 'Confirm Purchase';
 $l['newpoints_page_confirm_table_purchase_button'] = 'Purchase';
+
+$l['newpoints_buttons_delete'] = 'Delete';
+$l['newpoints_buttons_manage'] = 'Manage';
+
+// Logs
+$l['newpoints_logs_page_title'] = 'Logs';
+$l['newpoints_logs_page_breadcrumb'] = 'Logs';
+$l['newpoints_logs_page_table_title'] = 'Logs';
+$l['newpoints_logs_page_table_id'] = 'ID';
+$l['newpoints_logs_page_table_action'] = 'Action';
+$l['newpoints_logs_page_table_points'] = 'Points';
+$l['newpoints_logs_page_table_action_user'] = 'User';
+$l['newpoints_logs_page_table_action_primary'] = 'Primary';
+$l['newpoints_logs_page_table_action_secondary'] = 'Secondary';
+$l['newpoints_logs_page_table_action_tertiary'] = 'Tertiary';
+$l['newpoints_logs_page_table_action_date'] = 'Date';
+$l['newpoints_logs_page_table_action_options'] = 'Options';
+$l['newpoints_logs_page_table_action_options_delete'] = 'Delete';
+$l['newpoints_logs_page_table_empty'] = 'There are no logs to display.';
+
+$l['newpoints_logs_page_filter_table_title'] = 'Filter';
+$l['newpoints_logs_page_filter_table_actions'] = 'Actions';
+$l['newpoints_logs_page_filter_table_user'] = 'User';
+
+$l['newpoints_logs_page_errors_invalid_user_name'] = 'You have entered an invalid user name.';
+$l['newpoints_logs_page_errors_no_logs_selected'] = 'You have selected an invalid log.';
+$l['newpoints_logs_page_success_log_deleted'] = 'The selected log was successfully deleted.<br /><br />You will now be redirected back to the previous page.';

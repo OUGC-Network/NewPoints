@@ -1,0 +1,10 @@
+{
+  "manage_groups": {
+    "type": "groupselect",
+    "value": 4
+  },
+  "per_page": {
+    "type": "numeric",
+    "value": 10
+  }
+}

@@ -1,0 +1,10 @@
+<td class="{$alternative_background}" align="center">
+    <form action="{$mybb->settings['bburl']}/{$delete_url}" method="post">
+        <input type="hidden" name="action" value="logs"/>
+        <input type="hidden" name="my_post_key" value="{$mybb->post_code}">
+        <input type="hidden" name="log_id" value="{$log_id}">
+        <input type="hidden" name="manage" value="{$mybb->input['manage']}"/>
+        <input type="hidden" name="view" value="delete"/>
+        <input type="submit" class="button" name="submit" value="{$lang->newpoints_buttons_delete}">
+    </form>
+</td>

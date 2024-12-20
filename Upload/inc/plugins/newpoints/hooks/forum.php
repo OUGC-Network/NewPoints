@@ -73,8 +73,8 @@ function global_start(): bool
 
     $template_list = [
         'global' => [
-            'header_menu',
-            'points_format',
+            'newpoints_header_menu',
+            'newpoints_points_format',
         ],
         'newpoints.php' => [
         ],
@@ -196,6 +196,8 @@ function postbit(array &$post): array
 
     language_load();
 
+    $newpoints_file = main_file_name();
+
     $currency = get_setting('main_curname');
 
     $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
@@ -237,6 +239,8 @@ function member_profile_end(): bool
     global $newpoints_profile_user_balance_formatted;
 
     language_load();
+
+    $newpoints_file = main_file_name();
 
     $currency = get_setting('main_curname');
 
