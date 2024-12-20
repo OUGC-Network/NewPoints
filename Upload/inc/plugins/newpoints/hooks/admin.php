@@ -427,11 +427,12 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
     $data_fields = FIELDS_DATA['forums'];
 
-    $form_fields = [];
+    $form_fields = $form_fields_rate = [];
 
     $hook_arguments = [
         'data_fields' => &$data_fields,
-        'form_fields' => &$form_fields
+        'form_fields' => &$form_fields,
+        'form_fields_rate' => &$form_fields_rate
     ];
 
     $hook_arguments = run_hooks('admin_formcontainer_end_start', $hook_arguments);
@@ -469,12 +470,21 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
         switch ($data_field_data['formType']) {
             case FORM_TYPE_CHECK_BOX:
-                $form_fields[] = $form->generate_check_box(
-                    $data_field_key,
-                    1,
-                    $lang->{$setting_language_string},
-                    ['checked' => $value]
-                );
+                if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
+                    $form_fields_rate[] = $form->generate_check_box(
+                        $data_field_key,
+                        1,
+                        $lang->{$setting_language_string},
+                        ['checked' => $value]
+                    );
+                } else {
+                    $form_fields[] = $form->generate_check_box(
+                        $data_field_key,
+                        1,
+                        $lang->{$setting_language_string},
+                        ['checked' => $value]
+                    );
+                }
                 break;
             case FORM_TYPE_NUMERIC_FIELD:
 
@@ -482,29 +492,50 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
                     $value = (float)$forum_data[$data_field_key];
                 }
 
-                $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
-                        $data_field_key,
-                        $value,
-                        $formOptions
-                    );
+                if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
+                    $form_fields_rate[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
+                            $data_field_key,
+                            $value,
+                            $formOptions
+                        );
+                } else {
+                    $form_fields[] = $lang->{$setting_language_string} . $form->generate_numeric_field(
+                            $data_field_key,
+                            $value,
+                            $formOptions
+                        );
+                }
                 break;
         }
     }
 
-    if (empty($form_fields)) {
+    if (empty($form_fields) && empty($form_fields_rate)) {
         return $current_hook_arguments;
     }
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_intermediate', $hook_arguments);
 
-    $current_hook_arguments['this']->output_row(
-        $lang->newpoints_forums,
-        '',
-        "<div class=\"forum_settings_bit\">" . implode(
-            "</div><div class=\"forum_settings_bit\">",
-            $form_fields
-        ) . '</div>'
-    );
+    if (!empty($form_fields)) {
+        $current_hook_arguments['this']->output_row(
+            $lang->newpoints_forums,
+            '',
+            "<div class=\"forum_settings_bit\">" . implode(
+                "</div><div class=\"forum_settings_bit\">",
+                $form_fields
+            ) . '</div>'
+        );
+    }
+
+    if (!empty($form_fields_rate)) {
+        $current_hook_arguments['this']->output_row(
+            $lang->newpoints_forums_rates,
+            '',
+            "<div class=\"forum_settings_bit\">" . implode(
+                "</div><div class=\"forum_settings_bit\">",
+                $form_fields_rate
+            ) . '</div>'
+        );
+    }
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $hook_arguments);
 

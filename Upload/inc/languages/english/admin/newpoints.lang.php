@@ -80,11 +80,11 @@ $l['newpoints_filter'] = 'Filters enabled:<br />{1}';
 $l['newpoints_username'] = 'Username';
 
 ///////////////// Maintenance
-$l['newpoints_recount'] = 'Recount User Newpoints';
-$l['newpoints_recount_desc'] = 'When this is run, the Newpoints amount for each user will be updated to reflect its current live value based on the income settings.';
-$l['newpoints_recount_success'] = ' The Newpoints amount for users have been rebuilt successfully.';
-$l['newpoints_reset'] = 'Reset User Newpoints';
-$l['newpoints_reset_desc'] = 'When this is run, the Newpoints amount for each user will be updated to reflect this value.';
+$l['newpoints_recount'] = 'Recount User NewPoints';
+$l['newpoints_recount_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect its current live value based on the income settings.';
+$l['newpoints_recount_success'] = ' The NewPoints amount for users have been rebuilt successfully.';
+$l['newpoints_reset'] = 'Reset User NewPoints';
+$l['newpoints_reset_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect this value.';
 $l['newpoints_invalid_user'] = 'Invalid user.';
 
 ///////////////// Stats
@@ -185,12 +185,12 @@ $l['setting_newpoints_donations_send_private_message_desc'] = 'Do you want it to
 $l['setting_newpoints_donations_stats_latest'] = 'Last Donations';
 $l['setting_newpoints_donations_stats_latest_desc'] = 'Number of last donations to show.';
 $l['setting_newpoints_donations_menu_order'] = 'Menu Order';
-$l['setting_newpoints_donations_menu_order_desc'] = 'Order in the Newpoints menu item.';
+$l['setting_newpoints_donations_menu_order_desc'] = 'Order in the NewPoints menu item.';
 
 $l['setting_group_newpoints_stats'] = 'Stats';
 $l['setting_group_newpoints_stats_desc'] = 'These settings are related to the stats page.';
 $l['setting_newpoints_stats_menu_order'] = 'Menu Order';
-$l['setting_newpoints_stats_menu_order_desc'] = 'Order in the Newpoints menu item.';
+$l['setting_newpoints_stats_menu_order_desc'] = 'Order in the NewPoints menu item.';
 
 $l['setting_group_newpoints_main'] = 'Main';
 $l['setting_group_newpoints_main_desc'] = 'These settings come with NewPoints by default.';
@@ -207,7 +207,7 @@ $l['setting_newpoints_main_stats_richestusers_desc'] = 'Maximum number of riches
 $l['setting_newpoints_main_group_rate_primary_only'] = 'Group Rate For Primary Group Only';
 $l['setting_newpoints_main_group_rate_primary_only_desc'] = 'If you set this to yes, group rate rules will be calculated using only the primary user group. If you turn this off, all group rate rules wil be pondered and the closest value to <code>1</code> will always be used.';
 $l['setting_newpoints_main_file'] = 'Main File Name';
-$l['setting_newpoints_main_file_desc'] = 'If you rename the main Newpoints file, update this setting. Default: <code>newpoints.php</code>';
+$l['setting_newpoints_main_file_desc'] = 'If you rename the main NewPoints file, update this setting. Default: <code>newpoints.php</code>';
 
 $l['setting_group_newpoints_logs'] = 'Logs';
 $l['setting_group_newpoints_logs_desc'] = 'These settings are related to logs.';
@@ -221,7 +221,7 @@ $l['newpoints_confirmation_plugin_deactivation'] = 'Are you sure you wish to dea
 $l['newpoints_confirmation_plugin_installation'] = 'Are you sure you wish to install this plugin?';
 $l['newpoints_confirmation_plugin_uninstallation'] = 'Are you sure you wish to uninstall this plugin?';
 
-$l['newpoints_groups_tab'] = 'Newpoints';
+$l['newpoints_groups_tab'] = 'NewPoints';
 
 $l['newpoints_groups_users'] = 'Users Configuration';
 $l['newpoints_groups_users_rate'] = 'Rate Configuration';
@@ -253,17 +253,19 @@ $l['newpoints_user_groups_income_user_registration'] = 'New Registration<br /><s
 $l['newpoints_user_groups_income_user_referral'] = 'New Referral<br /><small class="input">Amount of points received for each user referred to the forum.</small><br />';
 $l['newpoints_user_groups_income_private_message'] = 'New Private Message<br /><small class="input">Amount of points received for each private message sent.</small><br />';
 
-$l['newpoints_forums'] = 'Newpoints';
+$l['newpoints_forums'] = 'NewPoints Configuration';
 $l['newpoints_forums_rate'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
 $l['newpoints_forums_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
 $l['newpoints_forums_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
 
+$l['newpoints_forums_rates'] = 'NewPoints Rates Configuration';
+
 $l['newpoints_task_ran'] = 'Backup NewPoints task ran';
 $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';
 
-$l['newpoints_users_tab'] = 'Newpoints';
-$l['newpoints_users_title'] = 'Newpoints Information';
-$l['newpoints_user_newpoints'] = 'Newpoints<br /><small class="input">Update the curren Newpoints for this user.</small><br />';
+$l['newpoints_users_tab'] = 'NewPoints';
+$l['newpoints_users_title'] = 'NewPoints Information';
+$l['newpoints_user_newpoints'] = 'NewPoints<br /><small class="input">Update the curren NewPoints for this user.</small><br />';
 
-$l['group_newpoints'] = 'Newpoints';
+$l['group_newpoints'] = 'NewPoints';
 $l['newpoints_field_newpoints_can_get_points'] = 'Can get points posting in this forum?';
