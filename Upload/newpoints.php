@@ -40,11 +40,13 @@ use function Newpoints\Core\page_build_menu_options;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\private_message_send;
+use function Newpoints\Core\rules_get_group_rate;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
+use function Newpoints\Core\users_get_group_permissions;
 
 const IN_MYBB = 1;
 
@@ -103,7 +105,6 @@ if (!$mybb->get_input('action')) {
         get_setting('main_curname')
     );
 
-
     $latest_transactions = [];
 
     $income_setting_params = [];
@@ -121,6 +122,16 @@ if (!$mybb->get_input('action')) {
             }
         }
     }
+
+    $user_group_rate_addition = (float)$mybb->usergroup['newpoints_rate_addition'];
+
+    $user_group_rate_subtraction = $mybb->usergroup['newpoints_rate_subtraction'] / 100;
+
+    $user_rate_description = $lang->sprintf(
+        $lang->newpoints_home_user_rate_description,
+        $user_group_rate_addition,
+        $user_group_rate_subtraction
+    );
 
     run_hooks('home_end');
 
