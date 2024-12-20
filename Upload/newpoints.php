@@ -405,7 +405,9 @@ if ($mybb->get_input('action') == 'stats') {
 
     $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
 
-    if ($mybb->input['manage']) {
+    $is_moderator = is_member(get_setting('logs_manage_groups'));
+
+    if ($mybb->input['manage'] && $is_moderator) {
         $url_params['manage'] = 1;
 
         $is_manage_page = true;
@@ -417,8 +419,6 @@ if ($mybb->get_input('action') == 'stats') {
     );
 
     $page_url = url_handler_build($url_params);
-
-    $is_moderator = is_member(get_setting('logs_manage_groups'));
 
     $per_page = (int)get_setting('logs_per_page');
 
@@ -456,12 +456,18 @@ if ($mybb->get_input('action') == 'stats') {
         } else {
             $user_id = (int)$user_data['uid'];
 
-            $where_clauses[] = "l.uid='{$user_id}'";
+            $where_clauses['user'] = "l.uid='{$user_id}'";
 
             $url_params['filter[username]'] = $filters['username'];
 
             $filter_user_name = htmlspecialchars_uni($filters['username']);
         }
+    }
+
+    $current_user_id = (int)$mybb->user['uid'];
+
+    if (!isset($where_clauses['user']) && !$is_manage_page) {
+        $where_clauses['user'] = "l.uid='{$current_user_id}'";
     }
 
     if (isset($filters['actions'])) {
