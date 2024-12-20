@@ -28,6 +28,9 @@
  ****************************************************************************/
 
 $l['newpoints'] = 'NewPoints';
+
+$l['newpoints_header_menu'] = 'NewPoints';
+
 $l['newpoints_home'] = 'Home';
 $l['newpoints_menu'] = 'Menu';
 $l['newpoints_donate'] = 'Donate';

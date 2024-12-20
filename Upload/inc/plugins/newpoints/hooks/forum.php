@@ -38,6 +38,7 @@ use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
+use function Newpoints\Core\main_file_name;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\templates_get;
@@ -72,6 +73,7 @@ function global_start(): bool
 
     $template_list = [
         'global' => [
+            'header_menu',
             'points_format',
         ],
         'newpoints.php' => [
@@ -103,6 +105,26 @@ function global_start(): bool
     $templatelist .= '';
 
     //users_update();
+    return true;
+}
+
+function global_intermediate(): bool
+{
+    global $mybb;
+    global $newpoints_header_menu;
+
+    $newpoints_header_menu = '';
+
+    if (!empty($mybb->user['uid'])) {
+        global $lang;
+
+        $newpoints_file = main_file_name();
+
+        language_load();
+
+        $newpoints_header_menu = eval(templates_get('header_menu'));
+    }
+
     return true;
 }
 

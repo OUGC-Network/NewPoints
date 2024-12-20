@@ -177,6 +177,8 @@ To display Newpoints data it is required that you edit the following template fo
    post user Newpoints details.
 6. Place `{$newpoints_profile}` after `{$warning_level}`in the `member_profile` template to display the profile user
    Newpoints details.
+7. Place `{$newpoints_header_menu}` after `{menu_calenda}`in the `header` template to display a link to the NewPoints
+   main page.
 
 [Go up to Table of Contents](#table_of_contents)
 

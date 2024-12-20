@@ -1782,9 +1782,9 @@ function get_income_types(): array
     $income_types = run_hooks('income_types', $income_types);
 
     foreach ($income_types as $income_type => $income_params) {
-        if (!defined('\Newpoints\Core\INCOME_TYPE_' . strtoupper($income_type))) {
-            _dump('INCOME_TYPE_' . strtoupper($income_type), $income_type);
-            define('INCOME_TYPE_' . strtoupper($income_type), $income_type);
+        if (!defined('\Newpoints\Core\INCOME_TYPE_' . my_strtoupper($income_type))) {
+            //_dump('INCOME_TYPE_' . strtoupper($income_type), $income_type);
+            define('\Newpoints\Core\INCOME_TYPE_' . my_strtoupper($income_type), my_strtolower($income_type));
         }
     }
 
