@@ -868,7 +868,7 @@ function points_add(
     return true;
 }
 
-function points_substract(
+function points_subtract(
     int $user_id,
     float $points
 ): bool {
@@ -898,7 +898,7 @@ function points_add_simple(
 
     return points_add(
         $user_id,
-        $points,
+        abs($points),
         $forum_rate,
         (float)$user_group_permissions['newpoints_rate_addition'],
         false,

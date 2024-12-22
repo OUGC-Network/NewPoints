@@ -41,6 +41,7 @@ use function Newpoints\Core\page_build_menu;
 use function Newpoints\Core\page_build_menu_options;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
+use function Newpoints\Core\points_subtract;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
@@ -92,8 +93,9 @@ add_breadcrumb($lang->newpoints, $newpoints_file);
 
 run_hooks('start');
 
+$current_user_id = (int)$mybb->user['uid'];
+
 // Block guests here
-if (!$mybb->user['uid']) {
     error_no_permission();
 }
 
@@ -111,6 +113,8 @@ if (!$mybb->get_input('action')) {
     $latest_transactions = [];
 
     $income_setting_params = [];
+
+    run_hooks('home_intermediate');
 
     foreach (get_income_types() as $income_type => $income_params) {
         $income_setting_params["newpoints_income_{$income_type}"] = [];
@@ -291,7 +295,7 @@ if ($mybb->get_input('action') == 'stats') {
         $user['username'] = '';
     }
 
-    if ($uid == $mybb->user['uid'] || $user['username'] == $mybb->user['username']) {
+    if ($uid == $current_user_id || $user['username'] == $mybb->user['username']) {
         error($lang->newpoints_cant_donate_self);
     }
 
@@ -329,7 +333,7 @@ if ($mybb->get_input('action') == 'stats') {
             'COUNT(*) as donations',
             'action=\'donation\' AND date>' . (constant(
                     'TIME_NOW'
-                ) - (int)get_setting('donations_flood_minutes') * 60 * 60) . ' AND uid=' . (int)$mybb->user['uid']
+                ) - (int)get_setting('donations_flood_minutes') * 60 * 60) . ' AND uid=' . $current_user_id
         );
         $totaldonations = (int)$db->fetch_field($q, 'donations');
         if ($totaldonations >= (int)get_setting('donations_flood_limit')) {
@@ -351,16 +355,18 @@ if ($mybb->get_input('action') == 'stats') {
         error($lang->newpoints_invalid_user);
     }
 
+    $to_user_id = (int)$touser['uid'];
+
     // make sure we're not trying to send a donation to ourselves
-    if ($mybb->user['uid'] == $touser['uid']) {
+    if ($current_user_id === $to_user_id) {
         error($lang->newpoints_cant_donate_self);
     }
 
     // remove points from us
-    points_add_simple($mybb->user['uid'], -$amount);
+    points_subtract($current_user_id, $amount);
 
     // give points to user
-    points_add_simple($touser['uid'], $amount);
+    points_add_simple($to_user_id, $amount);
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if (get_setting('donations_send_private_message')) {
@@ -374,7 +380,7 @@ if ($mybb->get_input('action') == 'stats') {
                         htmlspecialchars_uni($mybb->get_input('reason'))
                     ),
                     'receivepms' => 1,
-                    'touid' => $touser['uid']
+                    'touid' => $to_user_id
                 ]
             );
         } else {
@@ -386,16 +392,34 @@ if ($mybb->get_input('action') == 'stats') {
                         points_format($amount)
                     ),
                     'receivepms' => 1,
-                    'touid' => $touser['uid']
+                    'touid' => $to_user_id
                 ]
             );
         }
     }
 
-    // log donation
+    log_add(
+        'donation_sent',
+        '',
+        $mybb->user['username'],
+        $current_user_id,
+        $amount,
+        $to_user_id,
+        0,
+        0,
+        LOGGING_INCOME_TYPE_SUBTRACTION
+    );
+
     log_add(
         'donation',
-        $lang->sprintf($lang->newpoints_donate_log, $touser['username'], $touser['uid'], $amount)
+        '',
+        $touser['username'],
+        $to_user_id,
+        $amount,
+        $current_user_id,
+        0,
+        0,
+        LOGGING_INCOME_TYPE_ADDITION
     );
 
     run_hooks('do_donate_end');
@@ -478,8 +502,6 @@ if ($mybb->get_input('action') == 'stats') {
             $filter_user_name = htmlspecialchars_uni($filters['username']);
         }
     }
-
-    $current_user_id = (int)$mybb->user['uid'];
 
     if (!isset($where_clauses['user']) && !$is_manage_page) {
         $where_clauses['user'] = "l.uid='{$current_user_id}'";
@@ -578,14 +600,26 @@ if ($mybb->get_input('action') == 'stats') {
 
         switch ($log_data['log_type']) {
             case LOGGING_INCOME_TYPE_ADDITION:
-                $log_primary = $lang->newpoints_logs_page_table_action_type_addition;
+                $log_type = $lang->newpoints_logs_page_table_action_type_addition;
                 break;
             case LOGGING_INCOME_TYPE_SUBTRACTION:
-                $log_primary = $lang->newpoints_logs_page_table_action_type_subtraction;
+                $log_type = $lang->newpoints_logs_page_table_action_type_subtraction;
                 break;
         }
 
         run_hooks('logs_log_row');
+
+        switch ($log_data['action']) {
+            case 'donation':
+            case 'donation_sent':
+                $donation_user_data = get_user($log_data['log_primary_id']);
+
+                $log_primary = build_profile_link(
+                    htmlspecialchars_uni($donation_user_data['username'] ?? ''),
+                    $donation_user_data['uid'] ?? 0
+                );
+                break;
+        }
 
         $column_user = $column_options = '';
 
