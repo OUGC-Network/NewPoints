@@ -49,8 +49,8 @@ use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
-use const Newpoints\Core\LOGGING_INCOME_TYPE_ADDITION;
-use const Newpoints\Core\LOGGING_INCOME_TYPE_SUBTRACTION;
+use const Newpoints\Core\LOGGING_TYPE_INCOME;
+use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 
 const IN_MYBB = 1;
 
@@ -96,6 +96,7 @@ run_hooks('start');
 $current_user_id = (int)$mybb->user['uid'];
 
 // Block guests here
+if (!$current_user_id) {
     error_no_permission();
 }
 
@@ -407,7 +408,7 @@ if ($mybb->get_input('action') == 'stats') {
         $to_user_id,
         0,
         0,
-        LOGGING_INCOME_TYPE_SUBTRACTION
+        LOGGING_TYPE_CHARGE
     );
 
     log_add(
@@ -419,7 +420,7 @@ if ($mybb->get_input('action') == 'stats') {
         $current_user_id,
         0,
         0,
-        LOGGING_INCOME_TYPE_ADDITION
+        LOGGING_TYPE_INCOME
     );
 
     run_hooks('do_donate_end');
@@ -599,11 +600,11 @@ if ($mybb->get_input('action') == 'stats') {
         $log_primary = $log_secondary = $log_tertiary = $log_type = '-';
 
         switch ($log_data['log_type']) {
-            case LOGGING_INCOME_TYPE_ADDITION:
-                $log_type = $lang->newpoints_logs_page_table_action_type_addition;
+            case LOGGING_TYPE_INCOME:
+                $log_type = $lang->newpoints_logs_page_table_action_type_income;
                 break;
-            case LOGGING_INCOME_TYPE_SUBTRACTION:
-                $log_type = $lang->newpoints_logs_page_table_action_type_subtraction;
+            case LOGGING_TYPE_CHARGE:
+                $log_type = $lang->newpoints_logs_page_table_action_type_charge;
                 break;
         }
 
