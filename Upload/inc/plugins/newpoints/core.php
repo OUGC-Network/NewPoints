@@ -44,18 +44,6 @@ use ReflectionProperty;
 
 use const Newpoints\ROOT;
 
-const URL = 'newpoints.php';
-
-const RULE_TYPE_FORUM = 'forum';
-
-const RULE_TYPE_GROUP = 'group';
-
-const TASK_ENABLE = 1;
-
-const TASK_DEACTIVATE = 0;
-
-const TASK_DELETE = -1;
-
 function language_load(string $plugin = '', bool $forceUserArea = false, bool $suppressError = false): bool
 {
     global $lang;
@@ -1292,7 +1280,8 @@ function log_add(
     float $points = 0,
     int $primary_id = 0,
     int $secondary_id = 0,
-    int $tertiary_id = 0
+    int $tertiary_id = 0,
+    int $log_type = 0
 ): bool {
     if (!$action) {
         return false;
@@ -1319,7 +1308,8 @@ function log_add(
             'points' => $points,
             'log_primary_id' => $primary_id,
             'log_secondary_id' => $secondary_id,
-            'log_tertiary_id' => $tertiary_id
+            'log_tertiary_id' => $tertiary_id,
+            'log_type' => $log_type
         ]
     );
 

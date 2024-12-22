@@ -48,6 +48,9 @@ use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
+use const Newpoints\Core\LOGGING_INCOME_TYPE_ADDITION;
+use const Newpoints\Core\LOGGING_INCOME_TYPE_SUBTRACTION;
+
 const IN_MYBB = 1;
 
 const THIS_SCRIPT = 'newpoints.php';
@@ -537,7 +540,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $query = $db->simple_select(
         "newpoints_log l LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)",
-        'l.lid, l.action, l.points, l.date, l.log_primary_id, l.log_secondary_id, l.log_tertiary_id, u.uid, u.username, u.usergroup, u.displaygroup',
+        'l.lid, l.action, l.points, l.date, l.log_primary_id, l.log_secondary_id, l.log_tertiary_id, l.log_type, u.uid, u.username, u.usergroup, u.displaygroup',
         implode(' AND ', $where_clauses),
         ['order_by' => 'date', 'order_dir' => 'desc', 'limit' => $per_page, 'limit_start' => $limit_start]
     );
@@ -546,7 +549,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $logs_rows = '';
 
-    $column_span = 7;
+    $column_span = 8;
 
     $thead_user = $thead_options = '';
 
@@ -571,7 +574,16 @@ if ($mybb->get_input('action') == 'stats') {
 
         $log_date = my_date('normal', $log_data['date']);
 
-        $log_primary = $log_secondary = $log_tertiary = '-';
+        $log_primary = $log_secondary = $log_tertiary = $log_type = '-';
+
+        switch ($log_data['log_type']) {
+            case LOGGING_INCOME_TYPE_ADDITION:
+                $log_primary = $lang->newpoints_logs_page_table_action_type_addition;
+                break;
+            case LOGGING_INCOME_TYPE_SUBTRACTION:
+                $log_primary = $lang->newpoints_logs_page_table_action_type_subtraction;
+                break;
+        }
 
         run_hooks('logs_log_row');
 

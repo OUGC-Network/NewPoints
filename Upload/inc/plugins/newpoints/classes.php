@@ -123,6 +123,11 @@ const TABLES_DATA = [
             'unsigned' => true,
             'default' => 0
         ],
+        'log_type' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 0
+        ],
 
     ],
     'newpoints_forumrules' => [
@@ -467,6 +472,18 @@ const FIELDS_DATA = [
     ],
 ];
 
+const URL = 'newpoints.php';
+
+const RULE_TYPE_FORUM = 'forum';
+
+const RULE_TYPE_GROUP = 'group';
+
+const TASK_ENABLE = 1;
+
+const TASK_DEACTIVATE = 0;
+
+const TASK_DELETE = -1;
+
 const FORM_TYPE_CHECK_BOX = 'checkBox';
 
 const FORM_TYPE_NUMERIC_FIELD = 'numericField';
@@ -522,3 +539,7 @@ const INCOME_TYPE_USER_REGISTRATION = 'user_registration';
 const INCOME_TYPE_USER_REFERRAL = 'user_referral';
 
 const INCOME_TYPE_PRIVATE_MESSAGE = 'private_message';
+
+const LOGGING_INCOME_TYPE_ADDITION = 1;
+
+const LOGGING_INCOME_TYPE_SUBTRACTION = 2;
