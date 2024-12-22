@@ -136,6 +136,14 @@ if (!$mybb->get_input('action')) {
     run_hooks('home_end');
 
     foreach ($income_setting_params as $income_key => $income_setting) {
+        $constant_name = my_strtoupper(str_replace('newpoints_income_', 'INCOME_TYPE_', $income_key));
+
+        $income_value = get_income_value(constant('\Newpoints\Core\\' . $constant_name));
+
+        if (empty($income_value)) {
+            continue;
+        }
+
         $setting['title'] = $lang->{"{$income_key}"};
 
         $setting['description'] = $lang->{"{$income_key}_desc"};
@@ -148,9 +156,7 @@ if (!$mybb->get_input('action')) {
             ++$i;
         }
 
-        $constant_name = my_strtoupper(str_replace('newpoints_income_', 'INCOME_TYPE_', $income_key));
-
-        $value = points_format(get_income_value(constant('\Newpoints\Core\\' . $constant_name)));
+        $value = points_format($income_value);
 
         $income_settings .= eval(templates_get('home_income_row'));
     }
