@@ -488,7 +488,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $filter_user_name = '';
 
-    if ($is_moderator && $is_manage_page && isset($filters['username'])) {
+    if ($is_moderator && $is_manage_page && !empty($filters['username'])) {
         $user_data = get_user_by_username($filters['username']);
 
         if (empty($user_data['uid'])) {
