@@ -622,6 +622,15 @@ if ($mybb->get_input('action') == 'stats') {
                 break;
         }
 
+        switch ($log_data['action']) {
+            case 'donation':
+                $log_action = $lang->newpoints_logs_page_table_action_donation_received;
+                break;
+            case 'donation_sent':
+                $log_action = $lang->newpoints_logs_page_table_action_donation_sent;
+                break;
+        }
+
         $column_user = $column_options = '';
 
         if ($is_moderator && $is_manage_page) {
@@ -662,6 +671,17 @@ if ($mybb->get_input('action') == 'stats') {
 
     while ($action = $db->fetch_field($query, 'action')) {
         $action_types[htmlspecialchars_uni($action)] = htmlspecialchars_uni($action);
+
+        switch ($action) {
+            case 'donation':
+                $action_types[htmlspecialchars_uni(
+                    $action
+                )] = $lang->newpoints_logs_page_table_action_donation_received;
+                break;
+            case 'donation_sent':
+                $action_types[htmlspecialchars_uni($action)] = $lang->newpoints_logs_page_table_action_donation_sent;
+                break;
+        }
     }
 
     if ($is_moderator && !$is_manage_page) {
