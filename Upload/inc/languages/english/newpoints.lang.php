@@ -117,6 +117,8 @@ $l['newpoints_page_confirm_table_purchase_button'] = 'Purchase';
 $l['newpoints_buttons_delete'] = 'Delete';
 $l['newpoints_buttons_manage'] = 'Manage';
 
+$l['newpoints_manage_page_breadcrumb'] = 'Manage';
+
 // Logs
 $l['newpoints_logs_page_title'] = 'Logs';
 $l['newpoints_logs_page_breadcrumb'] = 'Logs';

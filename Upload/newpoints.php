@@ -54,7 +54,7 @@ const THIS_SCRIPT = 'newpoints.php';
 
 const NP_DISABLE_GUESTS = false;
 
-$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate, newpoints_option_selected, newpoints_logs_table_row, newpoints_logs_table, newpoints_logs_button_manage, newpoints_input_select_option, newpoints_input_select, newpoints_logs_filter_table, newpoints_page';
+$templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, newpoints_home_income_table, newpoints_home, newpoints_statistics_richest_user, newpoints_no_results, newpoints_statistics, newpoints_donate_form, newpoints_donate, newpoints_option_selected, newpoints_logs_table_row, newpoints_logs_table, newpoints_button_manage, newpoints_input_select_option, newpoints_input_select, newpoints_logs_filter_table, newpoints_page';
 
 require_once './global.php';
 
@@ -424,6 +424,12 @@ if ($mybb->get_input('action') == 'stats') {
         $mybb->settings['bburl'] . '/' . url_handler_build($url_params)
     );
 
+    if ($is_manage_page) {
+        add_breadcrumb(
+            $lang->newpoints_manage_page_breadcrumb
+        );
+    }
+
     $page_url = url_handler_build($url_params);
 
     $per_page = (int)get_setting('logs_per_page');
@@ -614,7 +620,7 @@ if ($mybb->get_input('action') == 'stats') {
     if ($is_moderator && !$is_manage_page) {
         $manage_url = url_handler_build(array_merge($url_params, ['manage' => 1]));
 
-        $newpoints_buttons = eval(templates_get('logs_button_manage'));
+        $newpoints_buttons = eval(templates_get('button_manage'));
     }
 
     run_hooks('logs_end');
