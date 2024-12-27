@@ -750,7 +750,7 @@ function settings_rebuild(): bool
 
                 foreach ($settings_data as $setting_key => &$setting_data) {
                     if (empty($lang->{"setting_newpoints_{$setting_group}_{$setting_key}"})) {
-                        continue;
+                        //continue;
                     }
 
                     if (in_array($setting_data['type'], ['select', 'checkbox', 'radio'])) {
@@ -779,12 +779,10 @@ function settings_rebuild(): bool
 
     if ($settings_list) {
         foreach ($settings_list as $setting_group => $settings_data) {
-            if (empty($lang->{"setting_group_newpoints_{$setting_group}"})) {
             if (!isset($lang->{"setting_group_newpoints_{$setting_group}"})) {
                 //$lang->{"setting_group_newpoints_{$setting_group}"} = $setting_group;
             }
 
-            if (empty($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
             if (!isset($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
                 //$lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
             }
@@ -1708,14 +1706,15 @@ function task_delete(string $plugin_code = ''): bool
 
 function page_build_menu_options(): string
 {
-    static $options = null;
+    static $menu = null;
 
-    if ($options === null) {
+    if ($menu === null) {
         global $mybb, $lang, $theme;
 
         $menu_items = [
             0 => [
                 'lang_string' => 'newpoints_home',
+                'category' => 'main'
             ]
         ];
 
@@ -1723,6 +1722,7 @@ function page_build_menu_options(): string
             $menu_items[get_setting('stats_menu_order')] = [
                 'action' => 'stats',
                 'lang_string' => 'newpoints_statistics',
+                'category' => 'main'
             ];
         }
 
@@ -1730,6 +1730,7 @@ function page_build_menu_options(): string
             $menu_items[get_setting('donations_menu_order')] = [
                 'action' => 'donate',
                 'lang_string' => 'newpoints_donate',
+                'category' => 'user'
             ];
         }
 
@@ -1738,51 +1739,83 @@ function page_build_menu_options(): string
         $menu_items[] = [
             'action' => 'logs',
             'lang_string' => 'newpoints_logs',
+            'category' => 'user'
         ];
 
-        $alternative_background = alt_trow(true);
-
-        $options = '';
+        $options_list = [];
 
         foreach ($menu_items as $option) {
-            if (isset($option['setting']) && !get_setting($option['setting'])) {
-                continue;
-            }
+            $options_list[$option['category'] ?? 'market'][] = $option;
+        }
 
-            $action_url = $item_selected = $option_name = '';
+        ksort($options_list);
 
-            if (isset($option['action'])) {
-                $action_url = url_handler_build(['action' => $option['action']]);
+        global $collapse, $collapsed, $collapsedimg;
 
-                if (my_strtolower($mybb->get_input('action')) === my_strtolower($option['action'])) {
-                    $item_selected = eval(templates_get('option_selected'));
+        foreach ($options_list as $category_key => $menu_items) {
+            $collapsed_name = "category_{$category_key}";
+
+            $collapsedimg[$collapsed_name] = $collapsedimg[$collapsed_name] ?? '';
+
+            $collapsed_image = $collapsedimg[$collapsed_name];
+
+            $collapsed["{$collapsed_name}_e"] = $collapsed["{$collapsed_name}_e"] ?? '';
+
+            $expanded_display = $collapsed["{$collapsed_name}_e"];
+
+            $expanded_alternative_text = !empty($collapsed["{$collapsed_name}_e"]) ? $lang->expcol_expand : $lang->expcol_collapse;
+
+            $alternative_background = alt_trow(true);
+
+            $options = '';
+
+            foreach ($menu_items as $option) {
+                if (isset($option['setting']) && !get_setting($option['setting'])) {
+                    continue;
                 }
-            } else {
-                $action_url = url_handler_build();
+
+                $action_url = $item_selected = $option_name = '';
+
+                if (isset($option['action'])) {
+                    $action_url = url_handler_build(['action' => $option['action']]);
+
+                    if (my_strtolower($mybb->get_input('action')) === my_strtolower($option['action'])) {
+                        $item_selected = eval(templates_get('option_selected'));
+                    }
+                } else {
+                    $action_url = url_handler_build();
+                }
+
+                $option_name = '';
+
+                if (isset($option['lang_string']) && isset($lang->{$option['lang_string']})) {
+                    $option_name = $lang->{$option['lang_string']};
+                } elseif (isset($option['action'])) {
+                    $option_name = ucwords((string)$option['action']);
+                }
+
+                $option = run_hooks('menu_build_option', $option);
+
+                $options .= eval(templates_get('option'));
+
+                $alternative_background = alt_trow();
             }
 
-            $option_name = '';
+            $menu_category_title = 'newpoints_menu_category_' . $category_key;
 
-            if (isset($option['lang_string']) && isset($lang->{$option['lang_string']})) {
-                $option_name = $lang->{$option['lang_string']};
-            } elseif (isset($option['action'])) {
-                $option_name = ucwords((string)$option['action']);
-            }
+            $menu_category_title = $lang->{$menu_category_title};
 
-            $option = run_hooks('menu_build_option', $option);
-
-            $options .= eval(templates_get('option'));
-
-            $alternative_background = alt_trow();
+            $menu .= eval(templates_get('menu_category'));
         }
     }
 
-    return $options;
+    return $menu;
 }
 
 function page_build_menu(): string
 {
     global $mybb, $lang, $theme;
+    global $newpoints_file;
 
     $menu_options = page_build_menu_options();
 

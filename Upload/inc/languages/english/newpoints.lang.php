@@ -116,6 +116,7 @@ $l['newpoints_page_confirm_table_purchase_button'] = 'Purchase';
 
 $l['newpoints_buttons_delete'] = 'Delete';
 $l['newpoints_buttons_manage'] = 'Manage';
+$l['newpoints_buttons_orders'] = 'View Orders';
 
 $l['newpoints_manage_page_breadcrumb'] = 'Manage';
 
@@ -147,3 +148,7 @@ $l['newpoints_logs_page_filter_table_user'] = 'User';
 $l['newpoints_logs_page_errors_invalid_user_name'] = 'You have entered an invalid user name.';
 $l['newpoints_logs_page_errors_no_logs_selected'] = 'You have selected an invalid log.';
 $l['newpoints_logs_page_success_log_deleted'] = 'The selected log was successfully deleted.<br /><br />You will now be redirected back to the previous page.';
+
+$l['newpoints_menu_category_main'] = 'Main';
+$l['newpoints_menu_category_market'] = 'Market';
+$l['newpoints_menu_category_user'] = 'User';
