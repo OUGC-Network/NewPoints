@@ -235,9 +235,10 @@ if ($mybb->get_input('action') == 'stats') {
     // get latest donations
     $query = $db->query(
         "
-        SELECT l.*, u.usergroup, u.displaygroup
+        SELECT l.*, u.usergroup, u.displaygroup, l.log_primary_id AS to_uid, tu.username AS to_username, tu.usergroup AS to_usergroup, tu.displaygroup AS to_displaygroup
 		FROM {$db->table_prefix}newpoints_log l
 		LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)
+		LEFT JOIN {$db->table_prefix}users tu ON (tu.uid=l.log_primary_id)
 		WHERE l.action='donation'
 		ORDER BY l.date DESC
 		LIMIT " . (int)get_setting('donations_stats_latest')
@@ -245,16 +246,19 @@ if ($mybb->get_input('action') == 'stats') {
 
     while ($donation = $db->fetch_array($query)) {
         $bgcolor = alt_trow();
-
         $data = explode('-', $donation['data']);
 
-        $donation['to'] = build_profile_link(htmlspecialchars_uni($data[0]), intval($data[1]));
+        $donation['to'] = build_profile_link(
+            htmlspecialchars_uni($donation['to_username'] ?? ($data[0] ?? '')),
+            $donation['to_uid'] ?? ($data[1] ?? 0)
+        );
+
         $donation['from'] = build_profile_link(
             format_name(htmlspecialchars_uni($donation['username']), $donation['usergroup'], $donation['displaygroup']),
             intval($donation['uid'])
         );
 
-        $donation['amount'] = points_format((float)$data[2]);
+        $donation['amount'] = points_format((float)($donation['points'] ?? ($data[2] ?? 0)));
         $donation['date'] = my_date(
                 $mybb->settings['dateformat'],
                 intval($donation['date']),
