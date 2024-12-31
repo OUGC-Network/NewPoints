@@ -107,7 +107,7 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
     }
 
     $plugins_cache = $cache->read('newpoints_plugins');
-    $active_plugins = $plugins_cache['active'];
+    $active_plugins = $plugins_cache['active'] ?? [];
 
     require_once $plugin_file_path;
 
@@ -326,7 +326,8 @@ if (!$mybb->get_input('action')) // view plugins
             // Plugin is not installed at all
             if (!$installed && $compatibility_warning) {
                 $table->construct_cell(
-                    "{$compatibility_warning}", ['class' => 'align_center', 'colspan' => 2]
+                    "{$compatibility_warning}",
+                    ['class' => 'align_center', 'colspan' => 2]
                 );
             } elseif (!$installed) {
                 $activate_url = url_handler_build([
