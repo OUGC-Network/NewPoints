@@ -1014,46 +1014,6 @@ function class_moderation_delete_poll(int $pid): int
     return $pid;
 }
 
-function member_do_register_end(): bool
-{
-    global $db, $mybb, $user_info;
-
-    // give points to our new user
-    if (get_income_value(INCOME_TYPE_USER_REGISTRATION)) {
-        $user_id = (int)$user_info['uid'];
-
-        if (user_can_get_points($user_id)) {
-            points_add_simple(
-                $user_id,
-                get_income_value(INCOME_TYPE_USER_REGISTRATION)
-            );
-        }
-    }
-
-    if (get_income_value(INCOME_TYPE_USER_REFERRAL)) {
-        // Grab the referred user's points
-        $query = $db->simple_select(
-            'users',
-            'uid,newpoints',
-            'username=\'' . my_strtolower($db->escape_string(trim($mybb->get_input('referrername')))) . '\''
-        );
-        $user = $db->fetch_array($query);
-        if (empty($user)) {
-            return false;
-        }
-
-        $user_id = (int)$user['uid'];
-
-        if (!user_can_get_points($user_id)) {
-            return false;
-        }
-
-        points_add_simple($user_id, get_income_value(INCOME_TYPE_USER_REFERRAL));
-    }
-
-    return true;
-}
-
 function polls_vote_process(): bool
 {
     global $mybb, $fid;

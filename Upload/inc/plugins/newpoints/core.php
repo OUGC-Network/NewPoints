@@ -1843,9 +1843,25 @@ function get_income_types(): array
     return $income_types;
 }
 
-function get_income_value(string $income_type): float
+function get_income_value(string $income_type, int $user_id = 0): float
 {
     global $mybb;
+
+    $current_user_id = (int)$mybb->user['uid'];
+
+    if ($user_id === 0) {
+        $user_id = $current_user_id;
+    }
+
+    if ($user_id === $current_user_id) {
+        $group_permissions = $mybb->usergroup;
+    } else {
+        $user_data = get_user($user_id);
+
+        $group_permissions = usergroup_permissions(
+            ($user_data['usergroup'] ?? '') . ',' . ($user_data['additionalgroups'] ?? '')
+        );
+    }
 
     $income_value = 1;
 
@@ -1869,7 +1885,7 @@ function get_income_value(string $income_type): float
         case INCOME_TYPE_PRIVATE_MESSAGE:
             $income_value = get_setting($global_setting_key) !== false ? get_setting(
                 $global_setting_key
-            ) : $mybb->usergroup[$group_setting_key];
+            ) : $group_permissions[$group_setting_key];
             break;
     }
 
@@ -2044,8 +2060,6 @@ function user_get_forum_permissions(int $forum_id, int $user_id): array
 
 function user_can_get_points(int $user_id, int $forum_id = 0): bool
 {
-    global $mybb, $post, $lang, $charset;
-
     $user_data = get_user($user_id);
 
     if (empty($user_data['uid'])) {
@@ -2057,6 +2071,8 @@ function user_can_get_points(int $user_id, int $forum_id = 0): bool
 
         return !empty($forum_permissions['newpoints_can_get_points']);
     }
+
+    global $mybb;
 
     if ($user_id === (int)$mybb->user['uid']) {
         $group_permissions = $mybb->usergroup;

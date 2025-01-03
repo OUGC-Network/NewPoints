@@ -521,7 +521,7 @@ const INCOME_TYPE_THREAD_REPLY = 'thread_reply';
 const INCOME_TYPE_THREAD_RATE = 'thread_rate';
 
 const INCOME_TYPE_POST = 'post';
-
+ 
 const INCOME_TYPE_POST_CHARACTER = 'post_character';
 
 const INCOME_TYPE_PAGE_VIEW = 'page_view';
