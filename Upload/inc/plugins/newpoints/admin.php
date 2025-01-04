@@ -542,8 +542,12 @@ function db_verify_columns(array $fields_objects = FIELDS_DATA): bool
     global $db;
 
     foreach ($fields_objects as $table_name => $table_columns) {
+        if (!$db->table_exists($table_name)) {
+            continue;
+        }
+
         foreach ($table_columns as $field_name => $field_data) {
-            if (!isset($field_data['type']) || !$db->table_exists($table_name)) {
+            if (!isset($field_data['type'])) {
                 continue;
             }
 
