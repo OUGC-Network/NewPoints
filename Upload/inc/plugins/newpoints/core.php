@@ -2089,6 +2089,18 @@ function user_can_get_points(int $user_id, int $forum_id = 0): bool
     return !empty($group_permissions['newpoints_can_get_points']);
 }
 
+function user_update(int $user_id, array $update_data): int
+{
+    global $db;
+
+    return (int)$db->update_query(
+        'users',
+        $update_data,
+        "uid='{$user_id}'",
+        1
+    );
+}
+
 function log_get(int $log_id): array
 {
     global $db;
