@@ -43,6 +43,7 @@ use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\user_can_get_points;
 use function Newpoints\Core\users_get_group_permissions;
 
@@ -54,8 +55,6 @@ use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_THREAD_RATE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
-use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
-use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\INCOME_TYPE_VISIT;
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
@@ -1212,4 +1211,69 @@ function _helper_evaluate_forum_post_lock(int $forum_id): bool
     }
 
     return true;
+}
+
+function fetch_wol_activity_end(array &$hook_parameters): array
+{
+    global $lang;
+
+    if (my_strpos($hook_parameters['location'], main_file_name()) === false) {
+        return $hook_parameters;
+    }
+
+    $hook_parameters['activity'] = 'newpoints_home';
+
+    if (my_strpos($hook_parameters['location'], 'action=stats') !== false) {
+        $hook_parameters['activity'] = 'newpoints_stats';
+    }
+
+    if (my_strpos($hook_parameters['location'], 'action=donate') !== false) {
+        $hook_parameters['activity'] = 'newpoints_donation';
+    }
+
+    if (my_strpos($hook_parameters['location'], 'action=logs') !== false) {
+        $hook_parameters['activity'] = 'newpoints_logs';
+    }
+
+    return $hook_parameters;
+}
+
+function build_friendly_wol_location_end(array &$hook_parameters): array
+{
+    global $mybb, $lang;
+
+    language_load();
+
+    switch ($hook_parameters['user_activity']['activity']) {
+        case 'newpoints_home':
+            $hook_parameters['location_name'] = $lang->sprintf(
+                $lang->newpoints_wol_location_home,
+                $mybb->settings['bburl'],
+                \Newpoints\Core\main_file_name()
+            );
+            break;
+        case 'newpoints_stats':
+            $hook_parameters['location_name'] = $lang->sprintf(
+                $lang->newpoints_wol_location_stats,
+                $mybb->settings['bburl'],
+                url_handler_build(['action' => 'stats'])
+            );
+            break;
+        case 'newpoints_donation':
+            $hook_parameters['location_name'] = $lang->sprintf(
+                $lang->newpoints_wol_location_donation,
+                $mybb->settings['bburl'],
+                url_handler_build(['action' => 'donate'])
+            );
+            break;
+        case 'newpoints_logs':
+            $hook_parameters['location_name'] = $lang->sprintf(
+                $lang->newpoints_wol_location_logs,
+                $mybb->settings['bburl'],
+                url_handler_build(['action' => 'logs'])
+            );
+            break;
+    }
+
+    return $hook_parameters;
 }

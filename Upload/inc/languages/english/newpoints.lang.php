@@ -152,3 +152,8 @@ $l['newpoints_logs_page_success_log_deleted'] = 'The selected log was successful
 $l['newpoints_menu_category_main'] = 'Main';
 $l['newpoints_menu_category_market'] = 'Market';
 $l['newpoints_menu_category_user'] = 'User';
+
+$l['newpoints_wol_location_home'] = 'Viewing the <a href="{1}/{2}">Home</a> page';
+$l['newpoints_wol_location_stats'] = 'Viewing the <a href="{1}/{2}">Statics</a> page';
+$l['newpoints_wol_location_donation'] = 'Viewing the <a href="{1}/{2}">Donation</a> page';
+$l['newpoints_wol_location_logs'] = 'Viewing the <a href="{1}/{2}">Logs</a> page';
