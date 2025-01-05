@@ -91,6 +91,8 @@ $newpoints_errors = '';
 
 add_breadcrumb($lang->newpoints, $newpoints_file);
 
+$newpoints_additional = '';
+
 run_hooks('start');
 
 $current_user_id = (int)$mybb->user['uid'];

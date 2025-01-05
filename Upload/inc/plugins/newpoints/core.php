@@ -1998,7 +1998,7 @@ function page_build_cancel_confirmation(
 ): string {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
-    global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons;
+    global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
 
     $page_title = $table_title = $lang->newpoints_page_confirm_table_cancel_title;
 
