@@ -322,6 +322,41 @@ function admin_user_groups_edit_graph(): bool
                 }
 
                 break;
+            case \Newpoints\Core\FORM_TYPE_SELECT_FIELD:
+                if (in_array($data_field_data['type'], ['TINYINT'])) {
+                    $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+                }
+
+                if (is_callable($data_field_data['formFunction'] ?? '')) {
+                    $options_list = $data_field_data['formFunction']();
+                } else {
+                    $options_list = [];
+                }
+
+                if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
+                    $form_fields_rate[] = $lang->{$setting_language_string} . $form->generate_select_box(
+                            $data_field_key,
+                            $options_list,
+                            [$value],
+                            $formOptions
+                        );
+                } elseif (my_strpos($data_field_key, 'newpoints_income') === 0) {
+                    $form_fields_income[] = $lang->{$setting_language_string} . $form->generate_select_box(
+                            $data_field_key,
+                            $options_list,
+                            [$value],
+                            $formOptions
+                        );
+                } else {
+                    $form_fields[] = $lang->{$setting_language_string} . $form->generate_select_box(
+                            $data_field_key,
+                            $options_list,
+                            [$value],
+                            $formOptions
+                        );
+                }
+
+                break;
         }
     }
 

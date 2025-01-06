@@ -488,6 +488,8 @@ const FORM_TYPE_CHECK_BOX = 'checkBox';
 
 const FORM_TYPE_NUMERIC_FIELD = 'numericField';
 
+const FORM_TYPE_SELECT_FIELD = 'selectField';
+
 const FORM_TYPE_PHP_CODE = 'phpFunction';
 
 const POST_VISIBLE_STATUS_DRAFT = -2;
@@ -521,7 +523,7 @@ const INCOME_TYPE_THREAD_REPLY = 'thread_reply';
 const INCOME_TYPE_THREAD_RATE = 'thread_rate';
 
 const INCOME_TYPE_POST = 'post';
- 
+
 const INCOME_TYPE_POST_CHARACTER = 'post_character';
 
 const INCOME_TYPE_PAGE_VIEW = 'page_view';

@@ -585,7 +585,7 @@ if ($mybb->get_input('action') == 'change') {
 
             $group_lang_var = "setting_group_{$group_key}";
 
-            if (!empty($lang->$group_lang_var)) {
+            if (!empty($lang->{$group_lang_var})) {
                 $group_title = htmlspecialchars_uni($lang->$group_lang_var);
             } else {
                 $group_title = htmlspecialchars_uni($plugin_info['name']);
