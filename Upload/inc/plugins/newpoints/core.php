@@ -1712,10 +1712,10 @@ function page_build_menu_options(): string
         global $mybb, $lang, $theme;
 
         $menu_items = [
-            0 => [
+            /*0 => [
                 'lang_string' => 'newpoints_home',
                 'category' => 'main'
-            ]
+            ]*/
         ];
 
         if (!empty($mybb->usergroup['newpoints_can_see_stats'])) {
