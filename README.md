@@ -179,6 +179,11 @@ To display Newpoints data it is required that you edit the following template fo
    Newpoints details.
 7. Place `{$newpoints_header_menu}` after `{menu_calenda}`in the `header` template to display a link to the NewPoints
    main page.
+8. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
+   `memberlist_user` template to display the user NewPoints amount formatted.
+9. Place
+   `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
+   after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
 
 [Go up to Table of Contents](#table_of_contents)
 

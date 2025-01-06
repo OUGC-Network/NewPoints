@@ -1277,3 +1277,41 @@ function build_friendly_wol_location_end(array &$hook_parameters): array
 
     return $hook_parameters;
 }
+
+function memberlist_start(): bool
+{
+    global $mybb;
+
+    if ($mybb->get_input('sort') === 'newpoints') {
+        global $newpointsMemberListSort;
+
+        $newpointsMemberListSort = true;
+    }
+
+    return true;
+}
+
+function memberlist_intermediate(): bool
+{
+    global $newpointsMemberListSort;
+
+    if (!empty($newpointsMemberListSort)) {
+        global $mybb;
+        global $sort, $sort_field;
+
+        $sort_field = 'u.newpoints';
+
+        $sort = $mybb->input['sort'] = 'newpoints';
+    }
+
+    return true;
+}
+
+function memberlist_user(array &$user_data): array
+{
+    $user_data['newpoints'] = $user_data['newpoints'] ?? 0;
+
+    $user_data['newpoints_formatted'] = \Newpoints\Core\points_format((float)$user_data['newpoints']);
+
+    return $user_data;
+}
