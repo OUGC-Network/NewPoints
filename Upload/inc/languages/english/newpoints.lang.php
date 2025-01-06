@@ -126,8 +126,22 @@ $l['newpoints_logs_page_breadcrumb'] = 'Logs';
 $l['newpoints_logs_page_table_title'] = 'Logs';
 $l['newpoints_logs_page_table_id'] = 'ID';
 $l['newpoints_logs_page_table_action'] = 'Action';
+
 $l['newpoints_logs_page_table_action_donation_received'] = 'Donation Received';
 $l['newpoints_logs_page_table_action_donation_sent'] = 'Donation Sent';
+$l['newpoints_logs_page_table_action_income_thread'] = 'New Thread';
+$l['newpoints_logs_page_table_action_income_thread_reply'] = 'New Reply';
+$l['newpoints_logs_page_table_action_income_post'] = 'New Post';
+$l['newpoints_logs_page_table_action_income_post_character'] = 'Post Characters Update';
+$l['newpoints_logs_page_table_action_income_user_registration'] = 'Registration';
+$l['newpoints_logs_page_table_action_income_user_referral'] = 'Registration Referral';
+$l['newpoints_logs_page_table_action_income_private_message'] = 'New Private Message';
+
+$l['newpoints_logs_page_table_log_thread'] = 'Thread: <a href="{1}/{2}">{3}</a>';
+$l['newpoints_logs_page_table_log_forum'] = 'Forum: <a href="{1}/{2}">{3}</a>';
+$l['newpoints_logs_page_table_log_post'] = 'Post: <a href="{1}/{2}">{3}</a>';
+$l['newpoints_logs_page_table_log_user'] = 'User: {1}';
+
 $l['newpoints_logs_page_table_points'] = 'Points';
 $l['newpoints_logs_page_table_action_user'] = 'User';
 $l['newpoints_logs_page_table_action_primary'] = 'Primary';

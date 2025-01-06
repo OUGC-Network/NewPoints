@@ -1249,7 +1249,7 @@ function build_friendly_wol_location_end(array &$hook_parameters): array
             $hook_parameters['location_name'] = $lang->sprintf(
                 $lang->newpoints_wol_location_home,
                 $mybb->settings['bburl'],
-                \Newpoints\Core\main_file_name()
+                main_file_name()
             );
             break;
         case 'newpoints_stats':
@@ -1311,7 +1311,7 @@ function memberlist_user(array &$user_data): array
 {
     $user_data['newpoints'] = $user_data['newpoints'] ?? 0;
 
-    $user_data['newpoints_formatted'] = \Newpoints\Core\points_format((float)$user_data['newpoints']);
+    $user_data['newpoints_formatted'] = points_format((float)$user_data['newpoints']);
 
     return $user_data;
 }

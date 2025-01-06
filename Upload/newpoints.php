@@ -42,6 +42,7 @@ use function Newpoints\Core\page_build_menu_options;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\points_subtract;
+use function Newpoints\Core\post_parser;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
@@ -49,6 +50,13 @@ use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
+use const Newpoints\Core\INCOME_TYPE_POST;
+use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
+use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
+use const Newpoints\Core\INCOME_TYPE_THREAD;
+use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
+use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
+use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 
@@ -637,6 +645,235 @@ if ($mybb->get_input('action') == 'stats') {
                 break;
         }
 
+        foreach (
+            [
+                INCOME_TYPE_THREAD => function (array &$log_data) use (&$log_primary, &$log_secondary): array {
+                    global $mybb, $lang;
+
+                    $thread_data = get_thread($log_data['log_primary_id']);
+
+                    $forum_data = get_forum($log_data['log_secondary_id']);
+
+                    if (!empty($thread_data)) {
+                        $log_primary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_thread,
+                            $mybb->settings['bburl'],
+                            get_thread_link($thread_data['tid']),
+                            post_parser()->parse_badwords($thread_data['subject'])
+                        );
+                    }
+
+                    if (!empty($forum_data)) {
+                        $log_secondary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_forum2,
+                            $mybb->settings['bburl'],
+                            get_forum_link($forum_data['fid']),
+                            htmlspecialchars_uni(strip_tags($forum_data['name']))
+                        );
+                    }
+
+                    return $log_data;
+                },
+                INCOME_TYPE_THREAD_REPLY => function (array &$log_data) use (
+                    &$log_primary,
+                    &$log_secondary,
+                    &$log_tertiary
+                ): array {
+                    global $mybb, $lang;
+
+                    $thread_data = get_thread($log_data['log_primary_id']);
+
+                    $post_data = get_forum($log_data['log_secondary_id']);
+
+                    $forum_data = get_forum($log_data['log_tertiary_id']);
+
+                    if (!empty($thread_data)) {
+                        $log_primary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_thread,
+                            $mybb->settings['bburl'],
+                            get_thread_link($thread_data['tid']),
+                            post_parser()->parse_badwords($thread_data['subject'])
+                        );
+                    }
+
+                    if (!empty($post_data)) {
+                        $log_secondary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_post,
+                            $mybb->settings['bburl'],
+                            get_post_link($post_data['pid']) . "#pid{$post_data['pid']}",
+                            post_parser()->parse_badwords($post_data['subject'])
+                        );
+                    }
+
+                    if (!empty($forum_data)) {
+                        $log_tertiary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_forum,
+                            $mybb->settings['bburl'],
+                            get_forum_link($forum_data['fid']),
+                            htmlspecialchars_uni(strip_tags($forum_data['name']))
+                        );
+                    }
+
+                    return $log_data;
+                },
+                INCOME_TYPE_POST => function (array &$log_data) use (
+                    &$log_primary,
+                    &$log_secondary,
+                    &$log_tertiary
+                ): array {
+                    global $mybb, $lang;
+
+                    $post_data = get_forum($log_data['log_primary_id']);
+
+                    $thread_data = get_thread($log_data['log_secondary_id']);
+
+                    $forum_data = get_forum($log_data['log_tertiary_id']);
+
+                    if (!empty($post_data)) {
+                        $log_primary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_post,
+                            $mybb->settings['bburl'],
+                            get_post_link($post_data['pid']) . "#pid{$post_data['pid']}",
+                            post_parser()->parse_badwords($post_data['subject'])
+                        );
+                    }
+
+                    if (!empty($thread_data)) {
+                        $log_secondary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_thread,
+                            $mybb->settings['bburl'],
+                            get_thread_link($thread_data['tid']),
+                            post_parser()->parse_badwords($thread_data['subject'])
+                        );
+                    }
+
+                    if (!empty($forum_data)) {
+                        $log_tertiary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_forum2,
+                            $mybb->settings['bburl'],
+                            get_forum_link($forum_data['fid']),
+                            htmlspecialchars_uni(strip_tags($forum_data['name']))
+                        );
+                    }
+
+                    return $log_data;
+                },
+                INCOME_TYPE_POST_CHARACTER => function (array &$log_data) use (
+                    &$log_primary,
+                    &$log_secondary,
+                    &$log_tertiary
+                ): array {
+                    global $mybb, $lang;
+
+                    $thread_data = get_thread($log_data['log_primary_id']);
+
+                    $post_data = get_forum($log_data['log_secondary_id']);
+
+                    $forum_data = get_forum($log_data['log_tertiary_id']);
+
+                    if (!empty($thread_data)) {
+                        $log_primary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_thread,
+                            $mybb->settings['bburl'],
+                            get_thread_link($thread_data['tid']),
+                            post_parser()->parse_badwords($thread_data['subject'])
+                        );
+                    }
+
+                    if (!empty($post_data)) {
+                        $log_secondary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_post,
+                            $mybb->settings['bburl'],
+                            get_post_link($post_data['pid']) . "#pid{$post_data['pid']}",
+                            post_parser()->parse_badwords($post_data['subject'])
+                        );
+                    }
+
+                    if (!empty($forum_data)) {
+                        $log_tertiary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_forum2,
+                            $mybb->settings['bburl'],
+                            get_forum_link($forum_data['fid']),
+                            htmlspecialchars_uni(strip_tags($forum_data['name']))
+                        );
+                    }
+
+                    return $log_data;
+                },
+                INCOME_TYPE_USER_REGISTRATION => function (array &$log_data): array {
+                    return $log_data;
+                },
+                INCOME_TYPE_USER_REFERRAL => function (array &$log_data) use (&$log_primary): array {
+                    global $mybb, $lang;
+
+                    $user_data = get_user($log_data['log_primary_id']);
+
+                    if (!empty($user_data)) {
+                        $log_primary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_user,
+                            $mybb->settings['bburl'],
+                            build_profile_link(
+                                format_name(
+                                    htmlspecialchars_uni($user_data['username']),
+                                    $user_data['usergroup'],
+                                    $user_data['displaygroup']
+                                ),
+                                $user_data['uid']
+                            )
+                        );
+                    }
+
+                    return $log_data;
+                },
+                INCOME_TYPE_PRIVATE_MESSAGE => function (array &$log_data) use (&$log_primary): array {
+                    global $mybb, $lang, $db;
+
+                    $private_message_id = (int)($log_data['log_primary_id'] ?? (
+                        $log_data['log_secondary_id'] ?? (
+                        $log_data['log_tertiary_id'] ?? 0
+                    )
+                    ));
+
+                    if (!empty($private_message_id)) {
+                        $query = $db->simple_select(
+                            'privatemessages',
+                            'toid',
+                            "pmid='{$private_message_id}'"
+                        );
+
+                        $user_data = get_user($db->fetch_field($query, 'toid'));
+                    }
+
+                    if (!empty($user_data)) {
+                        $log_primary = $lang->sprintf(
+                            $lang->newpoints_logs_page_table_log_user,
+                            $mybb->settings['bburl'],
+                            build_profile_link(
+                                format_name(
+                                    htmlspecialchars_uni($user_data['username']),
+                                    $user_data['usergroup'],
+                                    $user_data['displaygroup']
+                                ),
+                                $user_data['uid']
+                            )
+                        );
+                    }
+
+                    return $log_data;
+                },
+            ] as $income_type => $log_function
+        ) {
+            if ($log_data['action'] === "income_{$income_type}") {
+                $language_variable = "newpoints_logs_page_table_action_income_{$income_type}";
+
+                $log_action = $lang->{$language_variable};
+
+                if (is_callable($log_function)) {
+                    $log_data = $log_function($log_data);
+                }
+            }
+        }
+
         $column_user = $column_options = '';
 
         if ($is_moderator && $is_manage_page) {
@@ -687,6 +924,24 @@ if ($mybb->get_input('action') == 'stats') {
             case 'donation_sent':
                 $action_types[htmlspecialchars_uni($action)] = $lang->newpoints_logs_page_table_action_donation_sent;
                 break;
+        }
+
+        foreach (
+            [
+                INCOME_TYPE_THREAD,
+                INCOME_TYPE_THREAD_REPLY,
+                INCOME_TYPE_POST,
+                INCOME_TYPE_POST_CHARACTER,
+                INCOME_TYPE_USER_REGISTRATION,
+                INCOME_TYPE_USER_REFERRAL,
+                INCOME_TYPE_PRIVATE_MESSAGE,
+            ] as $income_type
+        ) {
+            if ($action === "income_{$income_type}") {
+                $language_variable = "newpoints_logs_page_table_action_income_{$income_type}";
+
+                $action_types[$action] = $lang->{$language_variable};
+            }
         }
     }
 
