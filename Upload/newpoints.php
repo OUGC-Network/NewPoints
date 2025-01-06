@@ -287,7 +287,7 @@ if ($mybb->get_input('action') == 'stats') {
         $last_donations = eval(templates_get('no_results'));
     }
 
-    $statistics_items = implode(' ', $statistics_items);
+    $statistics_items = implode('', $statistics_items);
 
     $page = eval(templates_get('statistics'));
 
@@ -385,37 +385,32 @@ if ($mybb->get_input('action') == 'stats') {
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if (get_setting('donations_send_private_message')) {
-        if ($mybb->get_input('reason') != '') {
-            private_message_send(
-                [
-                    'subject' => $lang->newpoints_donate_subject,
-                    'message' => $lang->sprintf(
-                        $lang->newpoints_donate_message_reason,
-                        points_format($amount),
-                        htmlspecialchars_uni($mybb->get_input('reason'))
-                    ),
-                    'receivepms' => 1,
-                    'touid' => $to_user_id
-                ]
+        if ($mybb->get_input('reason')) {
+            $message = $lang->sprintf(
+                $lang->newpoints_donate_message_reason,
+                points_format($amount),
+                htmlspecialchars_uni($mybb->get_input('reason'))
             );
         } else {
-            private_message_send(
-                [
-                    'subject' => $lang->newpoints_donate_subject,
-                    'message' => $lang->sprintf(
-                        $lang->newpoints_donate_message,
-                        points_format($amount)
-                    ),
-                    'receivepms' => 1,
-                    'touid' => $to_user_id
-                ]
+            $message = $lang->sprintf(
+                $lang->newpoints_donate_message,
+                points_format($amount)
             );
         }
+
+        private_message_send(
+            [
+                'subject' => $lang->newpoints_donate_subject,
+                'message' => $message,
+                'receivepms' => 1,
+                'touid' => $to_user_id
+            ]
+        );
     }
 
     log_add(
         'donation_sent',
-        '',
+        $mybb->get_input('reason'),
         $mybb->user['username'],
         $current_user_id,
         $amount,
@@ -427,7 +422,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     log_add(
         'donation',
-        '',
+        $mybb->get_input('reason'),
         $touser['username'],
         $to_user_id,
         $amount,
