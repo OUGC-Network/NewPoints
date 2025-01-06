@@ -105,6 +105,7 @@ const TABLES_DATA = [
         ],
         'points' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0
         ],
@@ -157,11 +158,13 @@ const TABLES_DATA = [
         ],
         /*'pointsview' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0
         ],
         'pointspost' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0
         ],*/
@@ -193,6 +196,7 @@ const TABLES_DATA = [
         ],
         /*'pointsearn' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0
         ],
@@ -249,6 +253,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_rate_addition' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 1,
             'formType' => 'numericField',
@@ -268,6 +273,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_thread' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -278,6 +284,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_thread_reply' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -288,6 +295,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_thread_rate' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -298,6 +306,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_post' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -314,6 +323,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_post_character' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -324,6 +334,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_page_view' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -334,6 +345,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_visit' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -354,6 +366,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_poll' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -364,6 +377,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_poll_vote' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -374,6 +388,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_user_allowance' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -384,6 +399,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_user_allowance_minutes' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -401,6 +417,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_user_registration' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -411,6 +428,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_user_referral' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -421,6 +439,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_income_private_message' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -441,6 +460,7 @@ const FIELDS_DATA = [
     'forums' => [
         'newpoints_rate' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 1,
             'formType' => 'numericField',
@@ -451,6 +471,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_view_lock_points' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
@@ -461,6 +482,7 @@ const FIELDS_DATA = [
         ],
         'newpoints_post_lock_points' => [
             'type' => 'DECIMAL',
+            'unsigned' => true,
             'size' => '16,2',
             'default' => 0,
             'formType' => 'numericField',
