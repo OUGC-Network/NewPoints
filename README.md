@@ -1,10 +1,10 @@
-<h3 align="center">Newpoints</h3>
+<h3 align="center">NewPoints</h3>
 
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/OUGC-Network/Newpoints.svg)](./issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/OUGC-Network/Newpoints.svg)](./pulls)
+[![GitHub Issues](https://img.shields.io/github/issues/OUGC-Network/NewPoints.svg)](./issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/OUGC-Network/NewPoints.svg)](./pulls)
 [![License](https://img.shields.io/badge/license-GPL-blue)](/LICENSE)
 
 </div>
@@ -148,10 +148,10 @@ A setup that meets the following requirements is necessary to use this plugin.
 Follow the next steps in order to install a copy of this plugin on your forum.
 
 1. Download the latest package from the [MyBB Extend](https://community.mybb.com/mods.php) site or
-   from the [repository releases](https://github.com/OUGC-Network/Newpoints/releases/latest).
+   from the [repository releases](https://github.com/OUGC-Network/NewPoints/releases/latest).
 2. Upload the contents of the _Upload_ folder to your MyBB root directory.
 3. Browse to _Configuration » Plugins_ and install this plugin by clicking _Install & Activate_.
-4. Browse to _NewPoints_ to manage Newpoints modules.
+4. Browse to _NewPoints_ to manage NewPoints modules.
 
 ### Updating <a name = "update"></a>
 
@@ -160,11 +160,11 @@ Follow the next steps in order to update your copy of this plugin.
 1. Browse to _Configuration » Plugins_ and deactivate this plugin by clicking _Deactivate_.
 2. Follow step 1 and 2 from the [Install](#install) section.
 3. Browse to _Configuration » Plugins_ and activate this plugin by clicking _Activate_.
-4. Browse to _NewPoints_ to manage Newpoints modules.
+4. Browse to _NewPoints_ to manage NewPoints modules.
 
 ### Template Modifications <a name = "template_modifications"></a>
 
-To display Newpoints data it is required that you edit the following template for each of your themes.
+To display NewPoints data it is required that you edit the following template for each of your themes.
 
 1. Place `{$newpoints_user_balance_formatted}` or `{$GLOBALS['newpoints_user_balance_formatted']}` in any template to
    display the current user points.
@@ -172,11 +172,11 @@ To display Newpoints data it is required that you edit the following template fo
    any `member_profile*` template to display the profile user points.
 3. Place `{$post['newpoints_balance_formatted']}` in any `postbit*` template to display the post user points.
 4. Place `{$post['newpoints_postbit']}` after `{$post['user_details']}`in the `postbit` template to display the post
-   user Newpoints details.
+   user NewPoints details.
 5. Place `{$post['newpoints_postbit']}` after `{$post['user_details']}`in the `postbit_classic` template to display the
-   post user Newpoints details.
+   post user NewPoints details.
 6. Place `{$newpoints_profile}` after `{$warning_level}`in the `member_profile` template to display the profile user
-   Newpoints details.
+   NewPoints details.
 7. Place `{$newpoints_header_menu}` after `{menu_calenda}`in the `header` template to display a link to the NewPoints
    main page.
 8. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
@@ -207,7 +207,7 @@ Below you can find a description of the plugin settings.
     - _If you set this to yes, group rate rules will be calculated using only the primary user group. If you turn this
       off, all group rate rules wil be pondered and the closest value to 1 will always be used._
 - **Main File Name** `numeric` Default: `newpoints.php`
-    - _If you rename the main Newpoints file, update this setting._
+    - _If you rename the main NewPoints file, update this setting._
 
 ### File Level Settings <a name = "file_level_settings"></a>
 
@@ -435,7 +435,7 @@ The following is a list of constants are defined dynamically, `defined()`should 
 
 - [@Omar G](https://github.com/Sama34) - Idea & Initial work
 
-See also the list of [contributors](https://github.com/OUGC-Network/Newpoints/contributors) who participated in
+See also the list of [contributors](https://github.com/OUGC-Network/NewPoints/contributors) who participated in
 this
 project.
 
