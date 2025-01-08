@@ -1958,9 +1958,7 @@ function plugins_version_update(string $plugin_code, int $version): bool
 
     $plugins_list = (array)$cache->read('newpoints_plugins_versions');
 
-    if (isset($plugins_list[$plugin_code])) {
-        unset($plugins_list[$plugin_code]);
-    }
+    $plugins_list[$plugin_code] = $version;
 
     if (!empty($plugins_list)) {
         $cache->update('newpoints_plugins_versions', $plugins_list);
