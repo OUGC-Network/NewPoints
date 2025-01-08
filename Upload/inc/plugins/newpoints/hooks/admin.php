@@ -758,7 +758,7 @@ function admin_user_users_edit_graph(): bool
     return true;
 }
 
-function admin_user_users_edit_start()
+function admin_user_users_edit_start(): bool
 {
     global $newpoints_user_update;
 

@@ -74,8 +74,14 @@ function global_start(): bool
         'global' => [
             'newpoints_header_menu',
             'newpoints_points_format',
+            'multipage_page_current',
+            'multipage_page',
+            'multipage_nextpage',
+            'multipage',
         ],
         'newpoints.php' => [
+            'newpoints_menu_category',
+            'newpoints_page_pagination',
         ],
         'showthread.php' => [
             'newpoints_postbit',
@@ -100,8 +106,6 @@ function global_start(): bool
             $templatelist .= ',' . implode(',', $templates);
         }
     }
-
-    $templatelist .= '';
 
     //users_update();
     return true;

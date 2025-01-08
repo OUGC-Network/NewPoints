@@ -227,7 +227,7 @@ $l['newpoints_groups_users'] = 'Users Configuration';
 $l['newpoints_groups_users_rate'] = 'Rate Configuration';
 $l['newpoints_groups_users_income'] = 'Income Configuration';
 
-$l['newpoints_user_groups_can_get_points'] = 'Can get points?';
+$l['newpoints_user_groups_can_get_points'] = 'Can get income points?';
 $l['newpoints_user_groups_can_see_page'] = 'Can see main page?';
 $l['newpoints_user_groups_can_see_stats'] = 'Can see the stats page?';
 $l['newpoints_user_groups_can_donate'] = 'Can donate points?';

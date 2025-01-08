@@ -93,10 +93,9 @@ if ($mybb->get_input('action') == 'change') {
                     }
                 }
 
-                $value = $db->escape_string($value);
                 $db->update_query(
                     'newpoints_settings',
-                    ['value' => $value],
+                    ['value' => $db->escape_string($value)],
                     "name='" . $db->escape_string($name) . "'"
                 );
                 //$db->update_query("settings", array('value' => $value), "name='".$db->escape_string($name)."'");
@@ -596,6 +595,7 @@ if ($mybb->get_input('action') == 'change') {
                     $plugin
                 ) . "\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
             );
+
             $table->construct_row();
         }
     }

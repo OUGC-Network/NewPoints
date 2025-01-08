@@ -726,7 +726,7 @@ function recount_rebuild_newpoints_recount()
                 continue;
             }
 
-            if (!$forum_rules[$thread['fid']]) {
+            if (empty($forum_rules[$thread['fid']])) {
                 $forum_rules[$thread['fid']]['rate'] = 1;
             }
 

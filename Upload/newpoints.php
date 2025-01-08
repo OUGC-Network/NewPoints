@@ -101,9 +101,11 @@ add_breadcrumb($lang->newpoints, $newpoints_file);
 
 $newpoints_additional = '';
 
-run_hooks('start');
-
 $current_user_id = (int)$mybb->user['uid'];
+
+$newpoints_pagination = $newpoints_buttons = '';
+
+run_hooks('start');
 
 // Block guests here
 if (!$current_user_id) {
@@ -554,8 +556,6 @@ if ($mybb->get_input('action') == 'stats') {
 
         $current_page = 1;
     }
-
-    $newpoints_pagination = $newpoints_buttons = '';
 
     if ($total_logs > $per_page) {
         $newpoints_pagination = multipage(
