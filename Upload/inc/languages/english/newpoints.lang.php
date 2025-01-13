@@ -121,6 +121,7 @@ $l['newpoints_buttons_orders'] = 'View Orders';
 $l['newpoints_manage_page_breadcrumb'] = 'Manage';
 
 // Logs
+$l['newpoints_logs_menu_title'] = 'Logs';
 $l['newpoints_logs_page_title'] = 'Logs';
 $l['newpoints_logs_page_breadcrumb'] = 'Logs';
 $l['newpoints_logs_page_table_title'] = 'Logs';

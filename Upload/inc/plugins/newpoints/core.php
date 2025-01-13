@@ -1738,7 +1738,7 @@ function page_build_menu_options(): string
 
         $menu_items[] = [
             'action' => 'logs',
-            'lang_string' => 'newpoints_logs',
+            'lang_string' => 'newpoints_logs_menu_title',
             'category' => 'user'
         ];
 
