@@ -291,7 +291,11 @@ if ($mybb->get_input('action') == 'stats') {
 
     $statistics_items = implode('', $statistics_items);
 
-    $page = eval(templates_get('statistics'));
+    $newpoints_content = eval(templates_get('statistics'));
+
+    $page_title = $lang->newpoints_statistics;
+
+    $page = eval(templates_get('page'));
 
     run_hooks('stats_end');
 
