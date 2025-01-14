@@ -203,7 +203,7 @@ function count_characters(string $message): int
     $message = $parser->parse_message($message, [
         'allow_html' => false,
         'allow_mycode' => true,
-        'allow_smilies' => false,
+        'allow_smilies' => true,
         'allow_imgcode' => true,
         'filter_badwords' => true,
         'nl2br' => false
@@ -770,7 +770,11 @@ function settings_rebuild(): bool
                     $setting_data['description'] = $lang->{"setting_newpoints_{$setting_group}_{$setting_key}_desc"};
                 }
 
-                $settings_list[$setting_group] = $settings_data;
+                if (!isset($settings_list[$setting_group])) {
+                    $settings_list[$setting_group] = [];
+                }
+
+                $settings_list[$setting_group] = array_merge($settings_list[$setting_group], $settings_data);
             }
         }
     }
@@ -1490,17 +1494,17 @@ function users_get_by_username(string $username, string $fields = '*'): array
 
 function users_get_group_permissions(int $user_id): array
 {
-    $user = get_user($user_id);
+    $user_data = get_user($user_id);
 
     $user_group = [];
 
-    if (!empty($user['uid'])) {
+    if (!empty($user_data['uid'])) {
         $user_group = usergroup_permissions(
-            !empty($user['additionalgroups']) ? $user['usergroup'] . ',' . $user['additionalgroups'] : $user['usergroup']
+            !empty($user_data['additionalgroups']) ? $user_data['usergroup'] . ',' . $user_data['additionalgroups'] : $user_data['usergroup']
         );
 
-        if (!empty($user['displaygroup'])) {
-            $display_group = usergroup_displaygroup($user['displaygroup']);
+        if (!empty($user_data['displaygroup'])) {
+            $display_group = usergroup_displaygroup($user_data['displaygroup']);
 
             if (is_array($display_group)) {
                 $user_group = array_merge($user_group, $display_group);
@@ -1523,7 +1527,7 @@ function group_permission_get_lowest(string $permission_key, int $user_id = 0): 
 
     $group_ids = $user_data['usergroup'] ?? '';
 
-    if (!empty($user_data['usergroup'])) {
+    if (!empty($user_data['additionalgroups'])) {
         $group_ids .= ',' . $user_data['additionalgroups'];
     }
 

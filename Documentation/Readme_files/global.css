@@ -31,7 +31,7 @@ a:active {
 	line-height: 1.4;
 	margin: 0 auto;
 	min-width: 980px;
-	
+
 	color: #8c8c8c;
 	width: 90%;
 	font-family: "Lato", Arial, Sans-Serif;
@@ -1152,7 +1152,7 @@ a.button:active {
 	padding: 8px 12px;
 	margin: 2px 2px 6px 2px;
 	border-bottom: 2px solid #2c3e50;
-	
+
 	color: #fff;
 	font-size: 14px;
 }
