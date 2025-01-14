@@ -45,6 +45,7 @@ use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
 use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
 use const Newpoints\Core\FORM_TYPE_PHP_CODE;
+use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
 use const Newpoints\ROOT;
 
 function admin_config_plugins_deactivate(): bool
@@ -322,7 +323,7 @@ function admin_user_groups_edit_graph(): bool
                 }
 
                 break;
-            case \Newpoints\Core\FORM_TYPE_SELECT_FIELD:
+            case FORM_TYPE_SELECT_FIELD:
                 if (in_array($data_field_data['type'], ['TINYINT'])) {
                     $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
                 }
