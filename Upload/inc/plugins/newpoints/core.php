@@ -783,12 +783,12 @@ function settings_rebuild(): bool
 
     if ($settings_list) {
         foreach ($settings_list as $setting_group => $settings_data) {
-            if (!isset($lang->{"setting_group_newpoints_{$setting_group}"})) {
-                //$lang->{"setting_group_newpoints_{$setting_group}"} = $setting_group;
+            if (!isset($lang->{"setting_group_newpoints_{$setting_group}"}) && !DEBUG) {
+                $lang->{"setting_group_newpoints_{$setting_group}"} = $setting_group;
             }
 
-            if (!isset($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
-                //$lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
+            if (!isset($lang->{"setting_group_newpoints_{$setting_group}_desc"}) && !DEBUG) {
+                $lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
             }
 
             settings(
