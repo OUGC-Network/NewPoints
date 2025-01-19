@@ -566,28 +566,26 @@ function db_verify_tables_exists(array $tables_objects = TABLES_DATA): bool
 {
     global $db;
 
-    $isInstalledEach = true;
+    $is_installed_each = true;
 
-    foreach (db_tables($tables_objects) as $tableName => $tableData) {
-        $isInstalledEach = $db->table_exists($tableName) && $isInstalledEach;
-
-        break;
+    foreach (db_tables($tables_objects) as $table_name => $table_data) {
+        $is_installed_each = $db->table_exists($table_name) && $is_installed_each;
     }
 
-    return $isInstalledEach;
+    return $is_installed_each;
 }
 
 function db_verify_columns_exists(array $fields_objects = FIELDS_DATA): bool
 {
     global $db;
 
-    $isInstalledEach = true;
+    $is_installed_each = true;
 
     foreach ($fields_objects as $table_name => $table_columns) {
         if (!$db->table_exists($table_name)) {
-            $isInstalledEach = false;
+            $is_installed_each = false;
 
-            break;
+            continue;
         }
 
         foreach ($table_columns as $field_name => $field_data) {
@@ -595,11 +593,11 @@ function db_verify_columns_exists(array $fields_objects = FIELDS_DATA): bool
                 continue;
             }
 
-            $isInstalledEach = $db->field_exists($field_name, $table_name) && $isInstalledEach;
+            $is_installed_each = $db->field_exists($field_name, $table_name) && $is_installed_each;
         }
     }
 
-    return $isInstalledEach;
+    return $is_installed_each;
 }
 
 function db_drop_tables(array $tables_objects = TABLES_DATA): bool
