@@ -97,7 +97,7 @@ function add_hooks(string $namespace): bool
     return true;
 }
 
-function run_hooks(string $hook_name = '', &$hook_arguments = '')
+function run_hooks(string $hook_name = '', array &$hook_arguments = []): array
 {
     if (get_setting('disablePlugins') !== false) {
         return $hook_arguments;
