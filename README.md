@@ -67,6 +67,18 @@ A setup that meets the following requirements is necessary to use this plugin.
 
   ```
    .
+   ├── admin
+   │ ├── modules
+   │ │ ├── newpoints
+   │ │ │ ├── forumrules.php
+   │ │ │ ├── grouprules.php
+   │ │ │ ├── log.php
+   │ │ │ ├── maintenance.php
+   │ │ │ ├── module_meta.php
+   │ │ │ ├── plugins.php
+   │ │ │ ├── settings.php
+   │ │ │ ├── stats.php
+   │ │ │ ├── upgrades.php
    ├── images
    │ ├── newpoints
    │ │ ├── index.html
@@ -79,16 +91,6 @@ A setup that meets the following requirements is necessary to use this plugin.
    ├── inc
    │ ├── plugins
    │ │ ├── newpoints
-   │ │ │ ├── admin
-   │ │ │ │ ├── forumrules.php
-   │ │ │ │ ├── grouprules.php
-   │ │ │ │ ├── log.php
-   │ │ │ │ ├── maintenance.php
-   │ │ │ │ ├── module_meta.php
-   │ │ │ │ ├── plugins.php
-   │ │ │ │ ├── settings.php
-   │ │ │ │ ├── stats.php
-   │ │ │ │ ├── upgrades.php
    │ │ │ ├── core
    │ │ │ │ ├── index.html
    │ │ │ │ ├── hooks.php

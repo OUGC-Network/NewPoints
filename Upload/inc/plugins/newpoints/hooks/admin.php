@@ -79,19 +79,12 @@ function admin_load(): bool
 
     run_hooks('admin_load');
 
-    global $run_module, $action_file;
-
-    if ($run_module !== 'newpoints') {
-        return false;
-    }
-
-    require_once ROOT . "/admin/{$action_file}";
-
     return true;
 }
 
 function admin_tabs(array $modules): array
 {
+    return [];
     global $is_super_admin;
 
     require_once ROOT . '/admin/module_meta.php';
@@ -119,60 +112,6 @@ function admin_tabs(array $modules): array
     }
 
     return $modules;
-}
-
-function admin_user_admin_permissions_edit(): bool
-{
-    global $permission_modules;
-    global $newpoints_custom_load;
-
-    $newpoints_custom_load = true;
-
-    require_once ROOT . '/admin/module_meta.php';
-
-    $permission_modules['newpoints'] = \newpoints_admin_permissions();
-
-    return true;
-}
-
-function admin_page_output_tab_control_start(array $tabs): array
-{
-    global $newpoints_custom_load;
-
-    if (empty($newpoints_custom_load)) {
-        return $tabs;
-    }
-
-    static $already_done = false;
-
-    if ($already_done === true) {
-        return $tabs;
-    }
-
-    $already_done = true;
-
-    global $permission_modules, $modules;
-    global $module_tabs;
-
-    require_once ROOT . '/admin/module_meta.php';
-
-    $modules[$permission_modules['newpoints']['disporder']][] = 'newpoints';
-
-    ksort($modules);
-
-    $module_tabs = [];
-
-    foreach ($modules as $mod) {
-        if (!is_array($mod)) {
-            continue;
-        }
-
-        foreach ($mod as $module) {
-            $module_tabs[$module] = $permission_modules[$module]['name'];
-        }
-    }
-
-    return $module_tabs;
 }
 
 function newpoints_admin_menu(array &$sub_menu): array
