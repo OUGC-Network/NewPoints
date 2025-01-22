@@ -319,8 +319,9 @@ function plugin_uninstallation(): bool
     plugin_library_load();
 
     // uninstall plugins
-    $plugins_cache = $cache->read('newpoints_plugins');
-    $active_plugins = $plugins_cache['active'];
+    $plugins_cache = (array)$cache->read('newpoints_plugins');
+    
+    $active_plugins = $plugins_cache['active'] ?? [];
 
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {
