@@ -44,6 +44,8 @@ global $rule;
 
 language_load();
 
+$hook_arguments = ['form_container' => &$form_container];
+
 run_hooks('admin_grouprules_begin');
 
 $page->add_breadcrumb_item($lang->newpoints_grouprules, 'index.php?module=newpoints-grouprules');
@@ -183,7 +185,7 @@ if (!$mybb->get_input('action')) // view grouprules
         'group'
     );
 
-    $form_container = run_hooks('admin_grouprules_add', $form_container);
+    $hook_arguments = run_hooks('admin_grouprules_add', $hook_arguments);
 
     $form_container->end();
 
@@ -279,7 +281,7 @@ if (!$mybb->get_input('action')) // view grouprules
         'group'
     );
 
-    $form_container = run_hooks('admin_grouprules_edit', $form_container);
+    $hook_arguments = run_hooks('admin_grouprules_edit', $hook_arguments);
 
     $form_container->end();
 
