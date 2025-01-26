@@ -216,7 +216,6 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
         log_add(
             'income_' . INCOME_TYPE_POST_CHARACTER,
             'income_post_update',
-            '',
             get_user($post_user_id)['username'] ?? '',
             $post_user_id,
             $bonus_income,
