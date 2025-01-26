@@ -846,7 +846,6 @@ if ($mybb->get_input('action') == 'stats') {
                     if (!empty($user_data)) {
                         $log_primary = $lang->sprintf(
                             $lang->newpoints_logs_page_table_log_user,
-                            $mybb->settings['bburl'],
                             build_profile_link(
                                 format_name(
                                     htmlspecialchars_uni($user_data['username']),
