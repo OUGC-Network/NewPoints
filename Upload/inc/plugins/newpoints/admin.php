@@ -320,7 +320,7 @@ function plugin_uninstallation(): bool
 
     // uninstall plugins
     $plugins_cache = (array)$cache->read('newpoints_plugins');
-    
+
     $active_plugins = $plugins_cache['active'] ?? [];
 
     if (!empty($active_plugins)) {

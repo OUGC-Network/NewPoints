@@ -189,7 +189,7 @@ function archive_start(): bool
 
 function postbit(array &$post): array
 {
-    global $mybb, $currency, $points, $donate, $lang, $uid;
+    global $mybb, $currency, $points, $lang, $uid;
 
     $post['newpoints_postbit'] = $points = $post['newpoints_balance_formatted'] = '';
 
