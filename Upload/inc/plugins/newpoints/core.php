@@ -109,7 +109,7 @@ function run_hooks(string $hook_name = '', array &$hook_arguments = []): array
         $hook_arguments = $plugins->run_hooks('newpoints_' . $hook_name, $hook_arguments);
     }
 
-    return $hook_arguments;
+    return (array)$hook_arguments;
 }
 
 function url_handler(string $newUrl = ''): string
