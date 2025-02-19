@@ -91,6 +91,7 @@ function plugin_information(): array
 
 function plugin_activation(): bool
 {
+    // todo: remove old templates from the global templates set
     global $db, $cache;
 
     language_load();

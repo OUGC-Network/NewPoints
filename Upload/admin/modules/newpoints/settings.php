@@ -336,6 +336,14 @@ if ($mybb->get_input('action') == 'change') {
 			<script type=\"text/javascript\">
 				checkAction('{$element_id}');
 			</script>";
+        } elseif ($type[0] == "forumselectsingle") {
+            $selected_value = (int)$setting['value']; // No need to check if empty, int will give 0
+
+            $setting_code = $form->generate_forum_select(
+                $element_name,
+                $selected_value,
+                array('id' => $element_id, 'main_option' => $lang->none)
+            );
         } elseif ($type[0] == 'groupselect') {
             $selected_values = '';
             if ($setting['value'] != '' && $setting['value'] != -1) {
@@ -387,6 +395,14 @@ if ($mybb->get_input('action') == 'change') {
 			<script type=\"text/javascript\">
 				checkAction('{$element_id}');
 			</script>";
+        } elseif ($type[0] == "groupselectsingle") {
+            $selected_value = (int)$setting['value']; // No need to check if empty, int will give 0
+            
+            $setting_code = $form->generate_group_select(
+                $element_name,
+                $selected_value,
+                array('id' => $element_id, 'main_option' => $lang->none)
+            );
         } else {
             $option_list = [];
 
