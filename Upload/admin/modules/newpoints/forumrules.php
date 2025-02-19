@@ -119,9 +119,9 @@ if (!$mybb->get_input('action')) // view forumrules
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules_add');
 
     if ($mybb->request_method == 'post') {
-        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
-            $mybb->request_method = 'get';
+        if (!verify_post_check($mybb->get_input('my_post_key'), true)) {
             flash_message($lang->newpoints_error, 'error');
+
             admin_redirect('index.php?module=newpoints-forumrules');
         }
 
@@ -199,9 +199,9 @@ if (!$mybb->get_input('action')) // view forumrules
     $page->output_nav_tabs($sub_tabs, 'newpoints_forumrules_edit');
 
     if ($mybb->request_method == 'post') {
-        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
-            $mybb->request_method = 'get';
+        if (!verify_post_check($mybb->get_input('my_post_key'), true)) {
             flash_message($lang->newpoints_error, 'error');
+
             admin_redirect('index.php?module=newpoints-forumrules');
         }
 
@@ -296,9 +296,9 @@ if (!$mybb->get_input('action')) // view forumrules
     }
 
     if ($mybb->request_method == 'post') {
-        if (!$mybb->get_input('my_post_key') || $mybb->post_code != $mybb->get_input('my_post_key')) {
-            $mybb->request_method = 'get';
+        if (!verify_post_check($mybb->get_input('my_post_key'), true)) {
             flash_message($lang->newpoints_error, 'error');
+
             admin_redirect('index.php?module=newpoints-forumrules');
         }
 
