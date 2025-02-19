@@ -32,6 +32,8 @@ declare(strict_types=1);
 namespace Newpoints\Admin;
 
 use MyBB;
+use MybbStuff_MyAlerts_AlertTypeManager;
+use MybbStuff_MyAlerts_Entity_AlertType;
 use PluginLibrary;
 use stdClass;
 
@@ -41,6 +43,7 @@ use function Newpoints\Core\language_load;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_rebuild_cache;
+use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\task_delete;
 use function Newpoints\Core\task_disable;
@@ -59,6 +62,7 @@ use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\TABLES_DATA;
+use const Newpoints\ROOT;
 
 const PERMISSION_ENABLE = 1;
 
@@ -92,7 +96,7 @@ function plugin_information(): array
 function plugin_activation(): bool
 {
     // todo: remove old templates from the global templates set
-    global $db, $cache;
+    global $db, $cache, $mybb;
 
     language_load();
 
@@ -134,6 +138,50 @@ function plugin_activation(): bool
     permissions_update();
 
     rules_rebuild_cache();
+
+    if (get_setting('my_alerts_enabled') && class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+        global $alertTypeManager;
+
+        isset($alertTypeManager) || $alertTypeManager = MybbStuff_MyAlerts_AlertTypeManager::createInstance(
+            $db,
+            $mybb->cache
+        );
+
+        $alertTypeManager = MybbStuff_MyAlerts_AlertTypeManager::getInstance();
+
+        $newpoints_my_alerts_formatters = [
+            0 => [
+                'plugin_code' => 'core',
+                'alert_keys' => ['add_points', 'subtract_points'],
+            ]
+        ];
+
+        $hook_arguments = [
+            'formatter_classes_directories' => &$newpoints_my_alerts_formatters,
+        ];
+
+        $hook_arguments = run_hooks('my_alerts_install', $hook_arguments);
+
+        foreach ($newpoints_my_alerts_formatters as $formatter_key => &$formatter_data) {
+            if (is_string($formatter_data['plugin_code']) && !empty($formatter_data['plugin_code'])) {
+                $formatter_data['plugin_code'] = trim("{$formatter_data['plugin_code']}_");
+            }
+
+            if (!empty($formatter_data['plugin_code'])) {
+                foreach ($formatter_data['alert_types'] as $object_key => &$alert_type) {
+                    $alertType = new MybbStuff_MyAlerts_Entity_AlertType();
+
+                    $alertType->setCode("newpoints_{$formatter_data['plugin_code']}_{$alert_type}");
+
+                    $alertType->setEnabled();
+
+                    $alertType->setCanBeUserDisabled();
+
+                    $alertTypeManager->add($alertType);
+                }
+            }
+        }
+    }
 
     /*~*~* RUN UPDATES START *~*~*/
 
@@ -375,6 +423,44 @@ function plugin_uninstallation(): bool
     $PL->settings_delete('newpoints');
 
     $PL->templates_delete('newpoints');
+
+    if (get_setting('my_alerts_enabled') && class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+        global $alertTypeManager;
+
+        isset($alertTypeManager) || $alertTypeManager = MybbStuff_MyAlerts_AlertTypeManager::createInstance(
+            $db,
+            $cache
+        );
+
+        $alertTypeManager = MybbStuff_MyAlerts_AlertTypeManager::getInstance();
+
+        $newpoints_my_alerts_formatters = [
+            0 => [
+                'plugin_code' => 'core',
+                'alert_keys' => ['add_points', 'subtract_points'],
+            ]
+        ];
+
+        $hook_arguments = [
+            'formatter_classes_directories' => &$newpoints_my_alerts_formatters,
+        ];
+
+        $hook_arguments = run_hooks('my_alerts_uninstall', $hook_arguments);
+
+        foreach ($newpoints_my_alerts_formatters as $formatter_key => &$formatter_data) {
+            if (is_string($formatter_data['plugin_code']) && !empty($formatter_data['plugin_code'])) {
+                $formatter_data['plugin_code'] = trim("{$formatter_data['plugin_code']}_");
+            }
+
+            if (!empty($formatter_data['plugin_code'])) {
+                foreach ($formatter_data['alert_types'] as $object_key => &$alert_type) {
+                    $alertTypeManager->deleteByCode(
+                        "newpoints_{$formatter_data['plugin_code']}_{$alert_type}"
+                    );
+                }
+            }
+        }
+    }
 
     foreach (['newpoints', 'backupnewpoints'] as $task_name) {
         task_delete($task_name);

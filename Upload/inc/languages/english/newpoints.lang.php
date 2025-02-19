@@ -172,3 +172,5 @@ $l['newpoints_wol_location_home'] = 'Viewing the <a href="{1}/{2}">Home</a> page
 $l['newpoints_wol_location_stats'] = 'Viewing the <a href="{1}/{2}">Statics</a> page';
 $l['newpoints_wol_location_donation'] = 'Viewing the <a href="{1}/{2}">Donation</a> page';
 $l['newpoints_wol_location_logs'] = 'Viewing the <a href="{1}/{2}">Logs</a> page';
+
+$l['newpoints_alert_text_add_points'] = '{3} were added to your account.';

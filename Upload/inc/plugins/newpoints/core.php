@@ -37,10 +37,15 @@ use DB_SQLite;
 use DirectoryIterator;
 use Moderation;
 use MyBB;
+use MybbStuff_MyAlerts_AlertManager;
+use MybbStuff_MyAlerts_AlertTypeManager;
+use MybbStuff_MyAlerts_Entity_Alert;
 use PluginLibrary;
 use pluginSystem;
 use postParser;
 use ReflectionProperty;
+
+use function Newpoints\Hooks\Forum\myalerts_register_client_alert_formatters;
 
 use const Newpoints\ROOT;
 
@@ -2121,6 +2126,145 @@ function log_delete(int $log_id): bool
     global $db;
 
     $db->delete_query('newpoints_log', "lid='{$log_id}'");
+
+    return true;
+}
+
+function my_alerts_initiate(): bool
+{
+    if (!get_setting('my_alerts_enabled')) {
+        return false;
+    }
+
+    if (!function_exists('myalerts_info')) {
+        return false;
+    }
+
+    global $newpoints_my_alerts_formatters;
+
+    $newpoints_my_alerts_formatters = [
+        0 => [
+            'plugin_code' => 'core',
+            'alert_keys' => ['add_points', 'subtract_points'],
+            'formatters_directory' => ROOT . '/alert_formatters/',
+            'namespace' => '\NewPoints\MyAlerts\Formatters\\'
+        ]
+    ];
+
+    $hook_arguments = [
+        'formatter_classes_directories' => &$newpoints_my_alerts_formatters,
+    ];
+
+    $hook_arguments = run_hooks('my_alerts_init', $hook_arguments);
+
+    if (class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter')) {
+        foreach ($newpoints_my_alerts_formatters as $formatter_key => &$formatter_data) {
+            if (is_string($formatter_data['plugin_code']) && !empty($formatter_data['plugin_code'])) {
+                $formatter_data['plugin_code'] = trim("{$formatter_data['plugin_code']}_");
+            }
+
+            if (empty($formatter_data['plugin_code'])) {
+                unset($newpoints_my_alerts_formatters[$formatter_key]);
+
+                continue;
+            }
+
+            if (file_exists($formatter_data['formatters_directory'])) {
+                $formatters_directory_iterator = new DirectoryIterator($formatter_data['formatters_directory']);
+
+                foreach ($formatters_directory_iterator as $formatter_file) {
+                    if (!$formatter_file->isFile()) {
+                        continue;
+                    }
+
+                    $path_name = $formatter_file->getPathname();
+
+                    $path_info = pathinfo($path_name);
+
+                    $file_name = str_replace([
+                        "{$formatter_data['plugin_code']}_",
+                        '_formatter.php'
+                    ], '', $path_info['filename']);
+
+                    if ($path_info['extension'] === 'php' && in_array(
+                            $file_name,
+                            $formatter_data['alert_keys'],
+                            true
+                        )) {
+                        $formatter_data['alert_classes'] = [];
+
+                        foreach ($formatter_data['alert_types'] as $object_key => &$alert_type) {
+                            require_once $path_name;
+
+                            if (isset($formatter_data['namespace']) && !class_exists($formatter_data['namespace'])) {
+                                unset($formatter_data['alert_types'][$object_key]);
+
+                                continue;
+                            }
+
+                            $namespace = $formatter_data['namespace'] ?? '';
+
+                            $alert_class_name = "{$namespace}newpoints_{$formatter_data['plugin_code']}_{$alert_type}_formatter";
+
+                            if (!class_exists($alert_class_name)) {
+                                unset($formatter_data['alert_types'][$object_key]);
+                            } else {
+                                $formatter_data['alert_classes'][$alert_type] = $alert_class_name;
+                            }
+                        }
+
+                        if (empty($formatter_data['alert_types'])) {
+                            unset($newpoints_my_alerts_formatters[$formatter_key]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!empty($newpoints_my_alerts_formatters) &&
+        version_compare(myalerts_info()['version'], get_setting('my_alerts_version')) <= 0) {
+        myalerts_register_client_alert_formatters();
+    }
+
+    return true;
+}
+
+function alert_send(int $object_id, int $user_id, string $alert_type_key = 'give_award'): bool
+{
+    if (!get_setting('my_alerts_enabled')) {
+        return false;
+    }
+
+    if (!class_exists('MybbStuff_MyAlerts_AlertTypeManager')) {
+        return false;
+    }
+
+    global $alertType;
+
+    $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode($alert_type_key);
+
+    if (!$alertType) {
+        return false;
+    }
+
+    global $db;
+
+    $query = $db->simple_select(
+        'alerts',
+        'id',
+        "object_id='{$object_id}' AND uid='{$user_id}' AND unread=1 AND alert_type_id='{$alertType->getId()}'"
+    );
+
+    if ($db->fetch_field($query, 'id')) {
+        return false;
+    }
+
+    if ($alertType !== null && $alertType->getEnabled()) {
+        $alert = new MybbStuff_MyAlerts_Entity_Alert($user_id, $alertType, $object_id);
+
+        MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
+    }
 
     return true;
 }

@@ -33,12 +33,15 @@ namespace Newpoints\Hooks\Forum;
 
 use MyBB;
 
+use MybbStuff_MyAlerts_AlertFormatterManager;
+
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\main_file_name;
+use function Newpoints\Core\my_alerts_initiate;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\templates_get;
@@ -56,6 +59,16 @@ use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_THREAD_RATE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_VISIT;
+use const Newpoints\ROOT;
+
+function global_start09(): bool
+{
+    load_set_guest_data();
+
+    my_alerts_initiate();
+
+    return true;
+}
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
@@ -67,8 +80,6 @@ function global_start(): bool
     if (isset($templatelist)) {
         $templatelist .= ',';
     }
-
-    load_set_guest_data();
 
     $template_list = [
         'global' => [
@@ -108,6 +119,7 @@ function global_start(): bool
     }
 
     //users_update();
+
     return true;
 }
 
@@ -164,13 +176,20 @@ function global_end(): bool
     return true;
 }
 
+function xmlhttp09(): bool
+{
+    load_set_guest_data();
+
+    my_alerts_initiate();
+
+    return true;
+}
+
 // Loads plugins from xmlhttp and runs a new hook called 'newpoints_xmlhttp' that can be used by NewPoints plugins (instead of xmlhttp)
 // xmlhttp can't be used by NP plugins
 // todo, fix plugins not being able to use xmlhttp by loading plugins before
 function xmlhttp(): bool
 {
-    load_set_guest_data();
-
     run_hooks('xmlhttp');
 
     return true;
@@ -1318,4 +1337,49 @@ function memberlist_user(array &$user_data): array
     $user_data['newpoints_formatted'] = points_format((float)$user_data['newpoints']);
 
     return $user_data;
+}
+
+function myalerts_register_client_alert_formatters(): bool
+{
+    if (!get_setting('my_alerts_enabled')) {
+        return false;
+    }
+
+    global $newpoints_my_alerts_formatters;
+
+    $hook_arguments = [
+        'formatter_classes_directories' => &$newpoints_my_alerts_formatters,
+    ];
+
+    $hook_arguments = run_hooks('my_alerts_register_client_alert_formatters', $hook_arguments);
+
+    if (
+        class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') &&
+        class_exists('MybbStuff_MyAlerts_AlertFormatterManager')
+    ) {
+        global $mybb, $lang;
+
+        foreach ($newpoints_my_alerts_formatters as $plugin_code => $formatter_data) {
+            $formatter_manager = MybbStuff_MyAlerts_AlertFormatterManager::getInstance();
+
+            if (empty($formatter_manager)) {
+                $formatter_manager = MybbStuff_MyAlerts_AlertFormatterManager::createInstance($mybb, $lang);
+            }
+
+            if (!empty($formatter_manager)) {
+                foreach ($formatter_data['alert_classes'] as $alert_type => $alert_class_name) {
+                    $formatter_manager->registerFormatter(
+                        new $alert_class_name(
+                            $mybb,
+                            $lang,
+                            $plugin_code,
+                            "newpoints_{$formatter_data['plugin_code']}_{$alert_type}"
+                        )
+                    );
+                }
+            }
+        }
+    }
+
+    return true;
 }

@@ -81,6 +81,8 @@ define('Newpoints\Core\SETTINGS', [
     //'main_file' => 'newpoints.php',
     //'disablePlugins' => true
     //'income_post' => 10,
+    'my_alerts_version' => '2.1.0',
+    'my_alerts_enabled' => false,
 ]);
 
 define('Newpoints\Core\DEBUG', false);
