@@ -1294,9 +1294,9 @@ function log_add(
         return false;
     }
 
-    global $mybb;
-
     if (empty($user_name) || empty($user_id)) {
+        global $mybb;
+
         $user_name = $mybb->user['username'];
 
         $user_id = (int)$mybb->user['uid'];
@@ -1304,7 +1304,7 @@ function log_add(
 
     global $db;
 
-    $db->insert_query(
+    $log_id = (int)$db->insert_query(
         'newpoints_log',
         [
             'action' => $db->escape_string($action),
@@ -1319,6 +1319,51 @@ function log_add(
             'log_type' => $log_type
         ]
     );
+
+    if ($log_id && $log_type) {
+        switch ($log_type) {
+            case LOGGING_TYPE_INCOME:
+                if (get_setting('pm_alerts_enabled')) {
+                    private_message_send(
+                        [
+                            //'language' => 'english',
+                            'subject' => ['newpoints_log_pm_subject' => strip_tags(points_format($points))],
+                            'message' => ['newpoints_log_pm_message' => strip_tags(points_format($points))],
+                            'touid' => $user_id
+                        ],
+                        0,
+                        true
+                    );
+                }
+
+                alert_send(
+                    $log_id,
+                    $user_id,
+                    'newpoints_core_add_points'
+                );
+                break;
+            case LOGGING_TYPE_CHARGE:
+                if (get_setting('pm_alerts_enabled')) {
+                    private_message_send(
+                        [
+                            //'language' => 'english',
+                            'subject' => ['newpoints_log_pm_subtract_subject' => strip_tags(points_format($points))],
+                            'message' => ['newpoints_log_pm_subtract_message' => strip_tags(points_format($points))],
+                            'touid' => $user_id
+                        ],
+                        0,
+                        true
+                    );
+                }
+
+                alert_send(
+                    $log_id,
+                    $user_id,
+                    'newpoints_core_subtract_points'
+                );
+                break;
+        }
+    }
 
     return true;
 }
@@ -2230,7 +2275,7 @@ function my_alerts_initiate(): bool
     return true;
 }
 
-function alert_send(int $object_id, int $user_id, string $alert_type_key = 'give_award'): bool
+function alert_send(int $object_id, int $user_id, string $alert_type_key): bool
 {
     if (!get_setting('my_alerts_enabled')) {
         return false;

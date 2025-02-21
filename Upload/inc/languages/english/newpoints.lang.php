@@ -173,4 +173,9 @@ $l['newpoints_wol_location_stats'] = 'Viewing the <a href="{1}/{2}">Statics</a> 
 $l['newpoints_wol_location_donation'] = 'Viewing the <a href="{1}/{2}">Donation</a> page';
 $l['newpoints_wol_location_logs'] = 'Viewing the <a href="{1}/{2}">Logs</a> page';
 
+$l['newpoints_log_pm_add_subject'] = '{3} were added to your account.';
+$l['newpoints_log_pm_add_message'] = 'Hello, {1} were added to your account.';
+$l['newpoints_log_pm_subtract_subject'] = '{3} were subtracted from your account.';
+$l['newpoints_log_pm_subtract_message'] = 'Hello, {1} were subtracted from your account.';
+
 $l['newpoints_alert_text_add_points'] = '{3} were added to your account.';
