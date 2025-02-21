@@ -234,6 +234,12 @@ function postbit(array &$post): array
 
     $post['newpoints_postbit'] = eval(templates_get('postbit'));
 
+    $post['user_details'] = str_replace(
+        ['<!--NEWPOINTS_POST_USER_DETAILS-->', '<!--NEWPOINTS_POST_USER_POINTS-->'],
+        [$post['newpoints_postbit'], $post['newpoints_balance_formatted']],
+        $post['user_details']
+    );
+
     return $post;
 }
 
