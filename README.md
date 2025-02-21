@@ -172,20 +172,23 @@ To display NewPoints data it is required that you edit the following template fo
    display the current user points.
 2. Place `{$newpoints_profile_user_balance_formatted}` or `{$GLOBALS['newpoints_profile_user_balance_formatted']}` in
    any `member_profile*` template to display the profile user points.
-3. Place `{$post['newpoints_balance_formatted']}` in any `postbit*` template to display the post user points.
-4. Place `{$post['newpoints_postbit']}` after `{$post['user_details']}`in the `postbit` template to display the post
-   user NewPoints details.
-5. Place `{$post['newpoints_postbit']}` after `{$post['user_details']}`in the `postbit_classic` template to display the
-   post user NewPoints details.
-6. Place `{$newpoints_profile}` after `{$warning_level}`in the `member_profile` template to display the profile user
+3. Place `{$post['newpoints_postbit']}` in the `postbit` or `postbit_classic` templates to display the post user
    NewPoints details.
-7. Place `{$newpoints_header_menu}` after `{menu_calenda}`in the `header` template to display a link to the NewPoints
+4. Place `{$post['newpoints_balance_formatted']}` in the `postbit` or `postbit_classic` templates to display the post
+   user points.
+5. Place `<!--NEWPOINTS_POST_USER_DETAILS-->` in the `postbit_author_user` template to display the post user NewPoints
+   details inside the author template.
+6. Place `<!--NEWPOINTS_POST_USER_POINTS-->` in the `postbit_author_user` template to display the post user points
+   inside the author template.
+7. Place `{$newpoints_profile}` after `{$warning_level}`in the `member_profile` template to display the profile user
+   NewPoints details.
+8. Place `{$newpoints_header_menu}` after `{menu_calenda}`in the `header` template to display a link to the NewPoints
    main page.
-8. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
+9. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
    `memberlist_user` template to display the user NewPoints amount formatted.
-9. Place
-   `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
-   after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
+10. Place
+    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
+    after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
 
 [Go up to Table of Contents](#table_of_contents)
 
