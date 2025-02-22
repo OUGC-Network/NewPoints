@@ -90,6 +90,8 @@ define('Newpoints\Core\DEBUG', false);
 
 define('Newpoints\DECIMAL_DATA_TYPE_SIZE', '16,4');
 
+define('Newpoints\DECIMAL_DATA_TYPE_STEP', 0.0001);
+
 define('Newpoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
 
 define('Newpoints\ROOT_PLUGINS', ROOT . '/plugins');

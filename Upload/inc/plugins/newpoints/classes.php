@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace Newpoints\Core;
 
 use const Newpoints\DECIMAL_DATA_TYPE_SIZE;
+use const Newpoints\DECIMAL_DATA_TYPE_STEP;
 
 const TABLES_DATA = [
     'newpoints_settings' => [
@@ -224,7 +225,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 'min' => '',
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
     ],
@@ -261,7 +262,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_rate_subtraction' => [
@@ -281,7 +282,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_thread_reply' => [
@@ -292,7 +293,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_thread_rate' => [
@@ -303,7 +304,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_post' => [
@@ -314,7 +315,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_post_minimum_characters' => [
@@ -331,7 +332,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_page_view' => [
@@ -342,7 +343,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_visit' => [
@@ -353,7 +354,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_visit_minutes' => [
@@ -363,7 +364,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_poll' => [
@@ -374,7 +375,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_poll_vote' => [
@@ -385,7 +386,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_user_allowance' => [
@@ -396,7 +397,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_user_allowance_minutes' => [
@@ -425,7 +426,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_user_referral' => [
@@ -436,7 +437,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_income_private_message' => [
@@ -447,7 +448,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ]
     ],
@@ -468,7 +469,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_view_lock_points' => [
@@ -479,7 +480,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
         'newpoints_post_lock_points' => [
@@ -490,7 +491,7 @@ const FIELDS_DATA = [
             'formType' => 'numericField',
             'formOptions' => [
                 //'min' => 0,
-                'step' => 0.0001,
+                'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
     ],
