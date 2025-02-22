@@ -1326,7 +1326,7 @@ function log_add(
                 if (get_setting('pm_alerts_enabled')) {
                     private_message_send(
                         [
-                            //'language' => 'english',
+                            'language' => get_user($user_id)['language'] ?? '',
                             'subject' => ['newpoints_log_pm_subject' => strip_tags(points_format($points))],
                             'message' => ['newpoints_log_pm_message' => strip_tags(points_format($points))],
                             'touid' => $user_id
@@ -1346,7 +1346,7 @@ function log_add(
                 if (get_setting('pm_alerts_enabled')) {
                     private_message_send(
                         [
-                            //'language' => 'english',
+                            'language' => get_user($user_id)['language'] ?? '',
                             'subject' => ['newpoints_log_pm_subtract_subject' => strip_tags(points_format($points))],
                             'message' => ['newpoints_log_pm_subtract_message' => strip_tags(points_format($points))],
                             'touid' => $user_id
