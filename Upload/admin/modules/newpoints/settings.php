@@ -581,30 +581,13 @@ if ($mybb->get_input('action') == 'change') {
                 continue;
             }
 
-            $group_lang_var = "setting_group_{$group_key}";
+            $group_lang_var = "setting_group_newpoints_{$group_key}";
 
-            if (!empty($lang->{$group_lang_var})) {
-                $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
-            } else {
-                $group_title = htmlspecialchars_uni($group_key);
-            }
+            $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
-            $group_lang_var_desc = "setting_group_{$group_key}_desc";
+            $group_lang_var_desc = "setting_group_newpoints_{$group_key}_desc";
 
-            if (!empty($lang->{$group_lang_var_desc})) {
-                $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
-            } else {
-                $group_desc = htmlspecialchars_uni($plugin_info['description']);
-            }
-
-
-            $group_lang_var = "setting_group_{$group_key}";
-
-            if (!empty($lang->{$group_lang_var})) {
-                $group_title = htmlspecialchars_uni($lang->$group_lang_var);
-            } else {
-                $group_title = htmlspecialchars_uni($plugin_info['name']);
-            }
+            $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
 
             $table->construct_cell(
                 "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=" . htmlspecialchars_uni(
@@ -630,21 +613,13 @@ if ($mybb->get_input('action') == 'change') {
             continue;
         }
 
-        $group_lang_var = "setting_group_{$group_key}";
+        $group_lang_var = "setting_group_newpoints_{$group_key}";
 
-        if (!empty($lang->{$group_lang_var})) {
-            $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
-        } else {
-            $group_title = htmlspecialchars_uni($group_key);
-        }
+        $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
-        $group_lang_var_desc = "setting_group_{$group_key}_desc";
+        $group_lang_var_desc = "setting_group_newpoints_{$group_key}_desc";
 
-        if (!empty($lang->{$group_lang_var_desc})) {
-            $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
-        } else {
-            $group_desc = '';
-        }
+        $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
 
         $table->construct_cell(
             "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=" . htmlspecialchars_uni(
