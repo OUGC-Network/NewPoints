@@ -116,21 +116,17 @@ if ($mybb->get_input('action') == 'change') {
         admin_redirect('index.php?module=newpoints-settings');
     }
 
-    // What type of page
     $cache_groups = $cache_settings = [];
 
-    $mybb->input['plugin'] = trim($mybb->get_input('plugin'));
+    $plugin_code = trim($mybb->get_input('plugin'));
 
     $group_key = '';
 
-    if ($mybb->get_input('plugin')) {
-        $groupinfo = [];
+    if ($plugin_code) {
+        $plugin_title = $plugin_description = '';
 
-        $groupinfo['plugin'] = $plugin = $mybb->get_input('plugin');
+        $group_key = str_replace('newpoints_', '', $plugin_code);
 
-        $group_key = str_replace('newpoints_', '', $plugin);
-
-        // Cache settings
         $query = $db->simple_select(
             'newpoints_settings',
             '*',
@@ -147,47 +143,41 @@ if ($mybb->get_input('action') == 'change') {
             $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
         }
 
-        if (in_array($plugin, ['main', 'donations', 'stats', 'logs'], true)) {
-            $lang_var = 'setting_group_newpoints_' . $mybb->get_input('plugin');
+        if (in_array($plugin_code, ['main', 'donations', 'stats', 'logs'], true)) {
+            $lang_var = 'setting_group_newpoints_' . $plugin_code;
 
-            $groupinfo['title'] = $lang->$lang_var;
-            $groupinfo['description'] = $lang->$lang_var . '_description';
-        } elseif ($groupinfo = newpoints_get_plugininfo($groupinfo['plugin'])) {
-            $groupinfo['plugin'] = $plugin;
-            $groupinfo['title'] = htmlspecialchars_uni($groupinfo['name']);
-            $groupinfo['description'] = htmlspecialchars_uni($groupinfo['description']);
+            $plugin_title = $lang->{$lang_var};
+
+            $plugin_description = $lang->{$lang_var . '_description'};
+        } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
+            $plugin_title = htmlspecialchars_uni($plugin_information['name']);
+
+            $plugin_description = htmlspecialchars_uni($plugin_description);
         } else {
             $setting_groups_objects = [];
 
             $setting_groups_objects = run_hooks('admin_settings_commit_start', $setting_groups_objects);
 
-            if (!isset($setting_groups_objects[$plugin])) {
+            if (!isset($setting_groups_objects[$plugin_code])) {
                 flash_message($lang->error_no_settings_found, 'error');
+
                 admin_redirect('index.php?module=newpoints-settings');
             }
 
-            $groupinfo['plugin'] = $group_key = $plugin;
+            $group_key = $plugin_code;
 
-            $group_lang_var = "setting_group_{$group_key}";
+            $group_lang_var = "setting_group_newpoints_{$group_key}";
 
-            if (!empty($lang->{$group_lang_var})) {
-                $groupinfo['title'] = htmlspecialchars_uni($lang->{$group_lang_var});
-            } else {
-                $groupinfo['title'] = htmlspecialchars_uni($group_key);
-            }
+            $plugin_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
-            $group_desc_lang_var = "setting_group_{$group_key}_desc";
+            $group_desc_lang_var = "setting_group_newpoints_{$group_key}_desc";
 
-            if (!empty($lang->{$group_desc_lang_var})) {
-                $groupinfo['description'] = htmlspecialchars_uni($lang->{$group_desc_lang_var});
-            } else {
-                $groupinfo['description'] = '';
-            }
+            $plugin_description = htmlspecialchars_uni($lang->{$group_desc_lang_var});
         }
 
         // Page header
-        $page->add_breadcrumb_item($groupinfo['title']);
-        $page->output_header($lang->board_settings . " - {$groupinfo['title']}");
+        $page->add_breadcrumb_item($plugin_title);
+        $page->output_header($lang->board_settings . " - {$plugin_title}");
 
         $page->output_nav_tabs($sub_tabs, 'newpoints_settings_change');
 
@@ -200,7 +190,7 @@ if ($mybb->get_input('action') == 'change') {
     // Build rest of page
     $buttons[] = $form->generate_submit_button($lang->save_settings);
 
-    $form_container = new FormContainer($groupinfo['title']);
+    $form_container = new FormContainer($plugin_title);
 
     if (empty($cache_settings[$group_key])) {
         $form_container->output_cell($lang->error_no_settings_found);
@@ -415,9 +405,7 @@ if ($mybb->get_input('action') == 'change') {
 
                 $title_lang = "setting_{$setting['name']}_{$optionsexp[0]}";
 
-                if (($lang->$title_lang)) {
-                    $optionsexp[1] = $lang->$title_lang;
-                }
+                $optionsexp[1] = $lang->{$title_lang};
 
                 if ($type[0] == 'select') {
                     $option_list[$optionsexp[0]] = htmlspecialchars_uni(
@@ -637,15 +625,12 @@ if ($mybb->get_input('action') == 'change') {
     $page->output_footer();
 }
 
-function newpoints_get_plugininfo($plugin)
+function newpoints_get_plugininfo($plugin): array
 {
-    global $mybb, $plugins, $theme, $db, $templates, $cache;
-
     $plugin_file_path = MYBB_ROOT . "inc/plugins/newpoints/plugins/{$plugin}.php";
 
-    // Ignore potentially missing plugins.
     if (!file_exists($plugin_file_path)) {
-        return false;
+        return [];
     }
 
     require_once $plugin_file_path;
@@ -653,10 +638,8 @@ function newpoints_get_plugininfo($plugin)
     $info_func = "{$plugin}_info";
 
     if (!function_exists($info_func)) {
-        return false;
+        return [];
     }
 
-    $plugin_info = $info_func();
-
-    return $plugin_info;
+    return $info_func();
 }
