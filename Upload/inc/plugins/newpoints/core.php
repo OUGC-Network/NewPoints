@@ -2058,7 +2058,7 @@ function page_build_cancel_confirmation(
 
     add_breadcrumb($page_title);
 
-    $mybb->get_input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
+    $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
 
     $confirm_contents = eval(templates_get('page_confirm_cancel'));
 
@@ -2088,7 +2088,7 @@ function page_build_purchase_confirmation(
 
     add_breadcrumb($page_title);
 
-    $mybb->get_input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
+    $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
 
     $confirm_contents = eval(templates_get('page_confirm_purchase'));
 
