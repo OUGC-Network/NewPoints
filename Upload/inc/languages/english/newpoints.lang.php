@@ -58,7 +58,7 @@ $l['newpoints_from'] = 'From';
 $l['newpoints_to'] = 'To';
 $l['newpoints_noresults'] = 'No results found.';
 $l['newpoints_date'] = 'Date';
-$l['newpoints_not_enough_points'] = 'You don\'t have enough points. Required: {1}';
+$l['newpoints_not_enough_points'] = "You don't have enough points. Required: {1}";
 $l['newpoints_amount_paid'] = 'Amount Paid';
 $l['newpoints_source'] = 'Source';
 

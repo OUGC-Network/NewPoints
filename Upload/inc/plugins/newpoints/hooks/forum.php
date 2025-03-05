@@ -1198,19 +1198,21 @@ function _helper_evaluate_forum_view_lock(int $forum_id): bool
 {
     $forum_data = get_forum($forum_id);
 
-    if (empty($forum_data['newpoints_view_lock_points'])) {
+    $minimum_points = (float)$forum_data['newpoints_view_lock_points'];
+
+    if (!($minimum_points > 0)) {
         return false;
     }
 
     global $mybb, $lang;
 
-    if ($forum_data['newpoints_view_lock_points'] > $mybb->user['newpoints']) {
+    if ($minimum_points > $mybb->user['newpoints']) {
         language_load();
 
         error(
             $lang->sprintf(
                 $lang->newpoints_not_enough_points,
-                points_format((float)$forum_data['newpoints_view_lock_points'])
+                points_format($minimum_points)
             )
         );
     }
@@ -1222,19 +1224,21 @@ function _helper_evaluate_forum_post_lock(int $forum_id): bool
 {
     $forum_data = get_forum($forum_id);
 
-    if (empty($forum_data['newpoints_post_lock_points'])) {
+    $minimum_points = (float)$forum_data['newpoints_post_lock_points'];
+
+    if (!($minimum_points > 0)) {
         return false;
     }
 
     global $mybb, $lang;
 
-    if ($forum_data['newpoints_post_lock_points'] > $mybb->user['newpoints']) {
+    if ($minimum_points > $mybb->user['newpoints']) {
         language_load();
 
         error(
             $lang->sprintf(
                 $lang->newpoints_not_enough_points,
-                points_format((float)$forum_data['newpoints_post_lock_points'])
+                points_format($minimum_points)
             )
         );
     }
