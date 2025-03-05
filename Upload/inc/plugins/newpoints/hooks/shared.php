@@ -381,12 +381,23 @@ function datahandler_user_update(userDataHandler $data_handler): userDataHandler
 
     $user_data = &$data_handler->data;
 
+    global $mybb, $db;
+
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (!isset($data_field_data['formType']) || !isset($user_data[$data_field_key])) {
+        if (!isset($data_field_data['formType']) ||
+            (!isset($user_data[$data_field_key]) && !isset($mybb->input[$data_field_key]))) {
             continue;
         }
 
-        $data_handler->user_update_data[$data_field_key] = $user_data[$data_field_key];
+        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+            $data_handler->user_update_data[$data_field_key] = (int)($user_data[$data_field_key] ?? $mybb->input[$data_field_key]);
+        } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
+            $data_handler->user_update_data[$data_field_key] = (float)($user_data[$data_field_key] ?? $mybb->input[$data_field_key]);
+        } else {
+            $data_handler->user_update_data[$data_field_key] = $db->escape_string(
+                $user_data[$data_field_key] ?? $mybb->input[$data_field_key]
+            );
+        }
     }
 
     return $data_handler;
