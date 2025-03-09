@@ -76,13 +76,13 @@ if ($mybb->get_input('action') == 'change') {
             );
 
             while ($multi_setting = $db->fetch_array($query)) {
-                $options = array();
+                $options = [];
 
                 if (substr($multi_setting['type'], 0, 8) == 'checkbox') {
                     $checkbox_settings[] = $multi_setting['name'];
 
                     if (empty($upsetting[$multi_setting['name']]) && isset($mybb->input["isvisible_{$multi_setting['name']}"])) {
-                        $upsetting[$multi_setting['name']] = array();
+                        $upsetting[$multi_setting['name']] = [];
                     }
                 } else {
                     $forum_group_select[] = $multi_setting['name'];
@@ -354,7 +354,7 @@ if ($mybb->get_input('action') == 'change') {
             $setting_code = $form->generate_forum_select(
                 $element_name,
                 $selected_value,
-                array('id' => $element_id, 'main_option' => $lang->none)
+                ['id' => $element_id, 'main_option' => $lang->none]
             );
         } elseif ($type[0] == 'groupselect') {
             $selected_values = '';
@@ -413,7 +413,7 @@ if ($mybb->get_input('action') == 'change') {
             $setting_code = $form->generate_group_select(
                 $element_name,
                 $selected_value,
-                array('id' => $element_id, 'main_option' => $lang->none)
+                ['id' => $element_id, 'main_option' => $lang->none]
             );
         } else {
             $typecount = count($type);
@@ -478,7 +478,7 @@ if ($mybb->get_input('action') == 'change') {
                             "{$element_name}[]",
                             $optionsexp[0],
                             htmlspecialchars_uni($optionsexp[1]),
-                            array('id' => $element_id . '_' . $i, "checked" => 1, 'class' => $element_id)
+                            ['id' => $element_id . '_' . $i, 'checked' => 1, 'class' => $element_id]
                         );
                     } else {
                         $option_list[$i] = $form->generate_check_box(
