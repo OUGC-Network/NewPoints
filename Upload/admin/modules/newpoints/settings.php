@@ -67,14 +67,36 @@ if ($mybb->get_input('action') == 'change') {
         $select = $mybb->get_input('select', MyBB::INPUT_ARRAY);
 
         if (!empty($upsetting)) {
-            $forum_group_select = [];
-            $query = $db->simple_select('newpoints_settings', 'name', "type IN('forumselect', 'groupselect')");
-            while ($name = $db->fetch_field($query, 'name')) {
-                $forum_group_select[] = $name;
+            $checkbox_settings = $forum_group_select = [];
+
+            $query = $db->simple_select(
+                'newpoints_settings',
+                'name, type',
+                "type IN('forumselect', 'groupselect', 'checkbox') OR type LIKE 'checkbox%'"
+            );
+
+            while ($multi_setting = $db->fetch_array($query)) {
+                $options = array();
+
+                if (substr($multi_setting['type'], 0, 8) == 'checkbox') {
+                    $checkbox_settings[] = $multi_setting['name'];
+
+                    if (empty($upsetting[$multi_setting['name']]) && isset($mybb->input["isvisible_{$multi_setting['name']}"])) {
+                        $upsetting[$multi_setting['name']] = array();
+                    }
+                } else {
+                    $forum_group_select[] = $multi_setting['name'];
+                }
             }
 
             foreach ($upsetting as $name => $value) {
-                if (!empty($forum_group_select) && in_array($name, $forum_group_select)) {
+                if ($checkbox_settings && in_array($name, $checkbox_settings)) {
+                    $value = '';
+
+                    if (is_array($upsetting[$name])) {
+                        $value = implode(',', $upsetting[$name]);
+                    }
+                } elseif (!empty($forum_group_select) && in_array($name, $forum_group_select)) {
                     if ($value == 'all') {
                         $value = -1;
                     } elseif ($value == 'custom') {
@@ -96,7 +118,7 @@ if ($mybb->get_input('action') == 'change') {
                 $db->update_query(
                     'newpoints_settings',
                     ['value' => $db->escape_string($value)],
-                    "name='" . $db->escape_string($name) . "'"
+                    "name='{$db->escape_string($name)}'"
                 );
                 //$db->update_query("settings", array('value' => $value), "name='".$db->escape_string($name)."'");
             }
@@ -394,6 +416,12 @@ if ($mybb->get_input('action') == 'change') {
                 array('id' => $element_id, 'main_option' => $lang->none)
             );
         } else {
+            $typecount = count($type);
+
+            if ($type[0] == 'checkbox') {
+                $multivalue = explode(',', $setting['value']);
+            }
+
             $option_list = [];
 
             for ($i = 0; $i < count($type); $i++) {
@@ -435,9 +463,9 @@ if ($mybb->get_input('action') == 'change') {
                         );
                     }
                 } elseif ($type[0] == 'checkbox') {
-                    if ($setting['value'] == $optionsexp[0]) {
+                    if (in_array($optionsexp[0], $multivalue)) {
                         $option_list[$i] = $form->generate_check_box(
-                            $element_name,
+                            "{$element_name}[]",
                             $optionsexp[0],
                             htmlspecialchars_uni($optionsexp[1]),
                             [
@@ -446,9 +474,15 @@ if ($mybb->get_input('action') == 'change') {
                                 'class' => $element_id
                             ]
                         );
+                        $option_list[$i] = $form->generate_check_box(
+                            "{$element_name}[]",
+                            $optionsexp[0],
+                            htmlspecialchars_uni($optionsexp[1]),
+                            array('id' => $element_id . '_' . $i, "checked" => 1, 'class' => $element_id)
+                        );
                     } else {
                         $option_list[$i] = $form->generate_check_box(
-                            $element_name,
+                            "{$element_name}[]",
                             $optionsexp[0],
                             htmlspecialchars_uni($optionsexp[1]),
                             [
@@ -469,6 +503,10 @@ if ($mybb->get_input('action') == 'change') {
                 );
             } else {
                 $setting_code = implode('<br />', $option_list);
+
+                if ($type[0] == 'checkbox') {
+                    $setting_code .= $form->generate_hidden_field("isvisible_{$setting['name']}", 1);
+                }
             }
         }
         // Do we have a custom language variable for this title or description?
@@ -571,6 +609,9 @@ if ($mybb->get_input('action') == 'change') {
 
             $group_lang_var = "setting_group_newpoints_{$group_key}";
 
+            if (!isset($lang->{$group_lang_var})) {
+                _dump($group_lang_var, $plugin);
+            }
             $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
             $group_lang_var_desc = "setting_group_newpoints_{$group_key}_desc";
