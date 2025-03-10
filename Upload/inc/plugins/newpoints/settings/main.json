@@ -26,5 +26,13 @@
   "file": {
     "type": "text",
     "value": "newpoints.php"
+  },
+  "my_alerts_enabled": {
+    "type": "yesno",
+    "value": 0
+  },
+  "pm_alerts_enabled": {
+    "type": "yesno",
+    "value": 0
   }
 }

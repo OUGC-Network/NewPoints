@@ -610,8 +610,9 @@ if ($mybb->get_input('action') == 'change') {
             $group_lang_var = "setting_group_newpoints_{$group_key}";
 
             if (!isset($lang->{$group_lang_var})) {
-                _dump($group_lang_var, $plugin);
+                //_dump($group_lang_var, $plugin);
             }
+            
             $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
             $group_lang_var_desc = "setting_group_newpoints_{$group_key}_desc";

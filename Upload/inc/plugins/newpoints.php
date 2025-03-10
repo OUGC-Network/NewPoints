@@ -65,6 +65,7 @@ use function Newpoints\Core\users_get_by_username;
 use function Newpoints\Core\users_update;
 
 use const Newpoints\ROOT;
+use const Newpoints\Core\PRIVATE_MESSAGE_CURRENT_USER_ID;
 
 const NEWPOINTS_VERSION = '3.1.2';
 
@@ -81,9 +82,7 @@ define('Newpoints\Core\SETTINGS', [
     //'main_file' => 'newpoints.php',
     //'disablePlugins' => true
     //'income_post' => 10,
-    'my_alerts_version' => '2.1.0',
-    'my_alerts_enabled' => false,
-    'pm_alerts_enabled' => false,
+    'my_alerts_version' => '2.1.0'
 ]);
 
 define('Newpoints\Core\DEBUG', false);
@@ -235,9 +234,9 @@ function newpoints_format_points(float $points): string
     return points_format($points);
 }
 
-function newpoints_send_pm(array $pm, int $fromid = 0): bool
+function newpoints_send_pm(array $private_message_data, int $from_user_id = PRIVATE_MESSAGE_CURRENT_USER_ID): bool
 {
-    return private_message_send($pm, $fromid);
+    return private_message_send($private_message_data, $from_user_id);
 }
 
 function newpoints_getuser_byname(string $username, string $fields = '*'): array

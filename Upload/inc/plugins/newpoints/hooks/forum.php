@@ -1351,45 +1351,52 @@ function memberlist_user(array &$user_data): array
 
 function myalerts_register_client_alert_formatters(): bool
 {
-    if (!get_setting('my_alerts_enabled')) {
+    if (!get_setting('main_my_alerts_enabled') ||
+        !class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') ||
+        !class_exists('MybbStuff_MyAlerts_AlertFormatterManager')) {
         return false;
     }
 
     global $newpoints_my_alerts_formatters;
 
     $hook_arguments = [
-        'formatter_classes_directories' => &$newpoints_my_alerts_formatters,
+        'newpoints_my_alerts_formatters' => &$newpoints_my_alerts_formatters,
     ];
 
     $hook_arguments = run_hooks('my_alerts_register_client_alert_formatters', $hook_arguments);
 
-    if (
-        class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') &&
-        class_exists('MybbStuff_MyAlerts_AlertFormatterManager')
-    ) {
-        global $mybb, $lang;
+    global $mybb, $lang;
 
-        foreach ($newpoints_my_alerts_formatters as $plugin_code => $formatter_data) {
-            $formatter_manager = MybbStuff_MyAlerts_AlertFormatterManager::getInstance();
+    foreach ($newpoints_my_alerts_formatters as $plugin_code => $formatter_data) {
+        $formatter_manager = MybbStuff_MyAlerts_AlertFormatterManager::getInstance();
 
-            if (empty($formatter_manager)) {
-                $formatter_manager = MybbStuff_MyAlerts_AlertFormatterManager::createInstance($mybb, $lang);
-            }
+        if (empty($formatter_manager)) {
+            $formatter_manager = MybbStuff_MyAlerts_AlertFormatterManager::createInstance($mybb, $lang);
+        }
 
-            if (!empty($formatter_manager)) {
-                foreach ($formatter_data['alert_classes'] as $alert_type => $alert_class_name) {
-                    $formatter_manager->registerFormatter(
-                        new $alert_class_name(
-                            $mybb,
-                            $lang,
-                            $plugin_code,
-                            "newpoints_{$formatter_data['plugin_code']}_{$alert_type}"
-                        )
-                    );
-                }
+        if (!empty($formatter_manager)) {
+            foreach ($formatter_data['alert_classes'] as $alert_type => $alert_class_name) {
+                $formatter_manager->registerFormatter(
+                    new $alert_class_name(
+                        $mybb,
+                        $lang,
+                        "newpoints_{$formatter_data['plugin_code']}{$alert_type}"
+                    )
+                );
             }
         }
     }
 
     return true;
+}
+
+function myalerts_load_lang(): array
+{
+    if (!get_setting('main_my_alerts_enabled')) {
+        return $hook_arguments;
+    }
+
+    $hook_arguments = [];
+
+    return run_hooks('my_alerts_language_load', $hook_arguments);
 }

@@ -2,7 +2,7 @@
 
 /***************************************************************************
  *
- *    NewPoints plugin (/inc/plugins/newpoints/alert_formatters/core_add_points_formatter.php)
+ *    NewPoints plugin (/inc/plugins/newpoints/alert_formatters/core_subtract_points_formatter.php)
  *    Author: Pirata Nervo
  *    Copyright: © 2009 Pirata Nervo
  *    Copyright: © 2024 Omar Gonzalez
@@ -39,7 +39,7 @@ use function Newpoints\Core\log_get;
 use function Newpoints\Core\main_file_name;
 use function Newpoints\Core\points_format;
 
-class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
+class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
     public function init(): bool
     {
@@ -62,7 +62,7 @@ class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_A
         $log_data = log_get($log_id);
 
         return $this->lang->sprintf(
-            $this->lang->newpoints_alert_text_core_add_points,
+            $this->lang->newpoints_alert_text_core_subtract_points,
             $outputAlert['username'],
             points_format((float)$log_data['points'])
         );

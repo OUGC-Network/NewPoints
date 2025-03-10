@@ -208,6 +208,10 @@ $l['setting_newpoints_main_group_rate_primary_only'] = 'Group Rate For Primary G
 $l['setting_newpoints_main_group_rate_primary_only_desc'] = 'If you set this to yes, group rate rules will be calculated using only the primary user group. If you turn this off, all group rate rules wil be pondered and the closest value to <code>1</code> will always be used.';
 $l['setting_newpoints_main_file'] = 'Main File Name';
 $l['setting_newpoints_main_file_desc'] = 'If you rename the main NewPoints file, update this setting. Default: <code>newpoints.php</code>';
+$l['setting_newpoints_main_my_alerts_enabled'] = 'Enable MyAlerts Integration';
+$l['setting_newpoints_main_my_alerts_enabled_desc'] = 'If you enable this, users will be able to get MyAlerts notifications when receiving or losing points. This setting also applies to NewPoints plugins that support alerts.';
+$l['setting_newpoints_main_pm_alerts_enabled'] = 'Enable Private Message Notifications';
+$l['setting_newpoints_main_pm_alerts_enabled_desc'] = 'Enable this to send PM notifications when users receive or lose points.';
 
 $l['setting_group_newpoints_logs'] = 'Logs';
 $l['setting_group_newpoints_logs_desc'] = 'These settings are related to logs.';

@@ -796,6 +796,14 @@ function settings_rebuild(): bool
                 $lang->{"setting_group_newpoints_{$setting_group}_desc"} = '';
             }
 
+            if (!isset($lang->{"setting_group_newpoints_{$setting_group}"})) {
+                //_dump("setting_group_newpoints_{$setting_group}");
+            }
+
+            if (!isset($lang->{"setting_group_newpoints_{$setting_group}_desc"})) {
+                //_dump("setting_group_newpoints_{$setting_group}_desc");
+            }
+
             settings(
                 $setting_group,
                 $lang->{"setting_group_newpoints_{$setting_group}"},
@@ -1148,8 +1156,11 @@ function rules_rebuild_cache(array &$rules = []): bool
  *
  * It's a wrapper for MyBB's function because in the past NewPoints provided a functio while MyBB did not.
  */
-function private_message_send(array $private_message_data, int $from_user_id = 0, bool $admin_override = false): bool
-{
+function private_message_send(
+    array $private_message_data,
+    int $from_user_id = PRIVATE_MESSAGE_CURRENT_USER_ID,
+    bool $admin_override = false
+): bool {
     global $session;
 
     $private_message_data['ipaddress'] = $private_message_data['ipaddress'] ?? $session->packedip;
@@ -1323,44 +1334,64 @@ function log_add(
     if ($log_id && $log_type) {
         switch ($log_type) {
             case LOGGING_TYPE_INCOME:
-                if (get_setting('pm_alerts_enabled')) {
+                if (get_setting('main_pm_alerts_enabled')) {
                     private_message_send(
                         [
                             'language' => get_user($user_id)['language'] ?? '',
-                            'subject' => ['newpoints_log_pm_subject' => strip_tags(points_format($points))],
-                            'message' => ['newpoints_log_pm_message' => strip_tags(points_format($points))],
+                            'subject' => [
+                                'newpoints_log_pm_add_subject',
+                                strip_tags(points_format($points)),
+                                get_setting('main_curname')
+                            ],
+                            'message' => [
+                                'newpoints_log_pm_add_message',
+                                get_user($user_id)['username'] ?? '',
+                                strip_tags(points_format($points)),
+                                get_setting('main_curname')
+                            ],
                             'touid' => $user_id
                         ],
-                        0,
+                        PRIVATE_MESSAGE_ENGINE_ID,
                         true
                     );
                 }
-
-                alert_send(
-                    $log_id,
-                    $user_id,
-                    'newpoints_core_add_points'
-                );
+                /*
+                                alert_send(
+                                    $user_id,
+                                    $log_id,
+                                    'core',
+                                    'add_points'
+                                );*/
                 break;
             case LOGGING_TYPE_CHARGE:
-                if (get_setting('pm_alerts_enabled')) {
+                if (get_setting('main_pm_alerts_enabled')) {
                     private_message_send(
                         [
                             'language' => get_user($user_id)['language'] ?? '',
-                            'subject' => ['newpoints_log_pm_subtract_subject' => strip_tags(points_format($points))],
-                            'message' => ['newpoints_log_pm_subtract_message' => strip_tags(points_format($points))],
+                            'subject' => [
+                                'newpoints_log_pm_subtract_subject',
+                                strip_tags(points_format($points)),
+                                get_setting('main_curname')
+                            ],
+                            'message' => [
+                                'newpoints_log_pm_subtract_message',
+                                get_user($user_id)['username'] ?? '',
+                                strip_tags(points_format($points)),
+                                get_setting('main_curname')
+                            ],
                             'touid' => $user_id
                         ],
-                        0,
+                        PRIVATE_MESSAGE_ENGINE_ID,
                         true
                     );
                 }
-
-                alert_send(
-                    $log_id,
-                    $user_id,
-                    'newpoints_core_subtract_points'
-                );
+                /*
+                                alert_send(
+                                    $user_id,
+                                    $log_id,
+                                    'core',
+                                    'subtract_points'
+                                );*/
                 break;
         }
     }
@@ -2177,7 +2208,7 @@ function log_delete(int $log_id): bool
 
 function my_alerts_initiate(): bool
 {
-    if (!get_setting('my_alerts_enabled')) {
+    if (!get_setting('main_my_alerts_enabled')) {
         return false;
     }
 
@@ -2190,14 +2221,14 @@ function my_alerts_initiate(): bool
     $newpoints_my_alerts_formatters = [
         0 => [
             'plugin_code' => 'core',
-            'alert_keys' => ['add_points', 'subtract_points'],
+            'alert_types' => ['add_points', 'subtract_points'],
             'formatters_directory' => ROOT . '/alert_formatters/',
             'namespace' => '\NewPoints\MyAlerts\Formatters\\'
         ]
     ];
 
     $hook_arguments = [
-        'formatter_classes_directories' => &$newpoints_my_alerts_formatters,
+        'newpoints_my_alerts_formatters' => &$newpoints_my_alerts_formatters,
     ];
 
     $hook_arguments = run_hooks('my_alerts_init', $hook_arguments);
@@ -2227,41 +2258,36 @@ function my_alerts_initiate(): bool
                     $path_info = pathinfo($path_name);
 
                     $file_name = str_replace([
-                        "{$formatter_data['plugin_code']}_",
-                        '_formatter.php'
+                        "{$formatter_data['plugin_code']}",
+                        '_formatter'
                     ], '', $path_info['filename']);
 
-                    if ($path_info['extension'] === 'php' && in_array(
-                            $file_name,
-                            $formatter_data['alert_keys'],
-                            true
-                        )) {
-                        $formatter_data['alert_classes'] = [];
-
-                        foreach ($formatter_data['alert_types'] as $object_key => &$alert_type) {
-                            require_once $path_name;
-
-                            if (isset($formatter_data['namespace']) && !class_exists($formatter_data['namespace'])) {
-                                unset($formatter_data['alert_types'][$object_key]);
-
-                                continue;
-                            }
-
-                            $namespace = $formatter_data['namespace'] ?? '';
-
-                            $alert_class_name = "{$namespace}newpoints_{$formatter_data['plugin_code']}_{$alert_type}_formatter";
-
-                            if (!class_exists($alert_class_name)) {
-                                unset($formatter_data['alert_types'][$object_key]);
-                            } else {
-                                $formatter_data['alert_classes'][$alert_type] = $alert_class_name;
-                            }
-                        }
-
-                        if (empty($formatter_data['alert_types'])) {
-                            unset($newpoints_my_alerts_formatters[$formatter_key]);
-                        }
+                    if ($path_info['extension'] === 'php' &&
+                        in_array($file_name, $formatter_data['alert_types'], true)) {
+                        require_once $path_name;
                     }
+                }
+
+                $formatter_data['alert_classes'] = [];
+
+                foreach ($formatter_data['alert_types'] as $object_key => &$alert_type) {
+                    $alert_class_name = "newpoints_{$formatter_data['plugin_code']}{$alert_type}_formatter";
+
+                    if (isset($formatter_data['namespace'])) {
+                        $alert_class_name = "{$formatter_data['namespace']}{$alert_class_name}";
+                    }
+
+                    if (!class_exists($alert_class_name)) {
+                        unset($formatter_data['alert_types'][$object_key]);
+
+                        continue;
+                    }
+
+                    $formatter_data['alert_classes'][$alert_type] = $alert_class_name;
+                }
+
+                if (empty($formatter_data['alert_types'])) {
+                    unset($newpoints_my_alerts_formatters[$formatter_key]);
                 }
             }
         }
@@ -2275,9 +2301,9 @@ function my_alerts_initiate(): bool
     return true;
 }
 
-function alert_send(int $object_id, int $user_id, string $alert_type_key): bool
+function alert_send(int $user_id, int $object_id, string $plugin_code, string $alert_type): bool
 {
-    if (!get_setting('my_alerts_enabled')) {
+    if (!get_setting('main_my_alerts_enabled')) {
         return false;
     }
 
@@ -2287,13 +2313,15 @@ function alert_send(int $object_id, int $user_id, string $alert_type_key): bool
 
     global $alertType;
 
-    $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode($alert_type_key);
+    $alertType = MybbStuff_MyAlerts_AlertTypeManager::getInstance()->getByCode(
+        "newpoints_{$plugin_code}_{$alert_type}"
+    );
 
-    if (!$alertType) {
+    if (empty($alertType) || !$alertType->getEnabled()) {
         return false;
     }
 
-    global $db;
+    /*global $db;
 
     $query = $db->simple_select(
         'alerts',
@@ -2303,13 +2331,21 @@ function alert_send(int $object_id, int $user_id, string $alert_type_key): bool
 
     if ($db->fetch_field($query, 'id')) {
         return false;
-    }
+    }*/
 
-    if ($alertType !== null && $alertType->getEnabled()) {
-        $alert = new MybbStuff_MyAlerts_Entity_Alert($user_id, $alertType, $object_id);
+    /**
+     * Initialise a new Alert instance.
+     *
+     * @param int|array $user The ID of the user this alert is for.
+     * @param int|MybbSTuff_MyAlerts_Entity_AlertType|string $type The ID of the object this alert is linked to.
+     *                                                                 Optionally pass in an AlertType object or the
+     *                                                                 short code name of the alert type.
+     * @param int $objectId The ID of the object this alert is linked to. (eg: thread ID, post ID, etc.)
+     */
 
-        MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
-    }
+    $alert = new MybbStuff_MyAlerts_Entity_Alert($user_id, $alertType, $object_id);
+
+    $result = MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
 
     return true;
 }

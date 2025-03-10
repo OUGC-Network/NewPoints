@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 use function Newpoints\Admin\db_verify_columns;
 use function Newpoints\Admin\db_verify_tables;
+use function Newpoints\Admin\my_alerts_install;
 use function Newpoints\Admin\plugin_library_load;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
@@ -171,6 +172,8 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
     db_verify_columns();
 
     rules_rebuild_cache();
+
+    my_alerts_install();
 
     $cache->update_attachtypes();
 
