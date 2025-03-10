@@ -106,12 +106,6 @@ if (defined('IN_ADMINCP')) {
     require_once ROOT . '/hooks/admin.php';
 
     add_hooks('Newpoints\Hooks\Admin');
-
-    global $PL;
-
-    if (!($PL instanceof PluginLibrary)) {
-        $PL || require_once PLUGINLIBRARY;
-    }
 } else {
     require_once ROOT . '/hooks/forum.php';
 
