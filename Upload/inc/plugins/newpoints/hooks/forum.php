@@ -1390,13 +1390,15 @@ function myalerts_register_client_alert_formatters(): bool
     return true;
 }
 
-function myalerts_load_lang(): array
+function myalerts_load_lang(): string
 {
     if (!get_setting('main_my_alerts_enabled')) {
-        return $hook_arguments;
+        return '';
     }
 
     $hook_arguments = [];
 
-    return run_hooks('my_alerts_language_load', $hook_arguments);
+    $hook_arguments = run_hooks('my_alerts_language_load', $hook_arguments);
+
+    return '';
 }
