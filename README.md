@@ -426,6 +426,25 @@ Provides a list of available variables, functions, and methods for plugins to us
 
 The following is a list of constants are defined dynamically, `defined()`should be used to make sure they are defined.
 
+- `\Newpoints\DECIMAL_DATA_TYPE_SIZE (string)` Default: `16,4` To be used for DECIMAL data types.
+- `\Newpoints\DECIMAL_DATA_TYPE_STEP (float)` Default: `0.0001` To be used for DECIMAL data types. Example:
+
+```PHP
+const FIELDS_DATA = [
+    'foo_table' => [
+        'foo_column' => [
+            'type' => 'DECIMAL',
+            'size' => DECIMAL_DATA_TYPE_SIZE,
+            'default' => 0,
+            'formType' => 'numericField',
+            'formOptions' => [
+                'step' => DECIMAL_DATA_TYPE_STEP,
+            ]
+        ],
+    ]
+];
+```
+
 [Go up to Table of Contents](#table_of_contents)
 
 ## ⛏ Built Using <a name = "built_using"></a>
