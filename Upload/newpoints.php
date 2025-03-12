@@ -578,7 +578,7 @@ if ($mybb->get_input('action') == 'stats') {
         "newpoints_log l LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)",
         'l.lid, l.action, l.points, l.date, l.log_primary_id, l.log_secondary_id, l.log_tertiary_id, l.log_type, u.uid, u.username, u.usergroup, u.displaygroup',
         implode(' AND ', $where_clauses),
-        ['order_by' => 'date', 'order_dir' => 'desc', 'limit' => $per_page, 'limit_start' => $limit_start]
+        ['order_by' => 'lid desc, date', 'order_dir' => 'desc', 'limit' => $per_page, 'limit_start' => $limit_start]
     );
 
     $alternative_background = alt_trow(true);
