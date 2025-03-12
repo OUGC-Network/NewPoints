@@ -222,8 +222,8 @@ const FIELDS_DATA = [
             'type' => 'DECIMAL',
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 'min' => '',
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -234,33 +234,33 @@ const FIELDS_DATA = [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
-            'formType' => 'checkBox'
+            'form_type' => FORM_TYPE_CHECK_BOX
         ],
         'newpoints_can_see_page' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
-            'formType' => 'checkBox'
+            'form_type' => FORM_TYPE_CHECK_BOX
         ],
         'newpoints_can_see_stats' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
-            'formType' => 'checkBox'
+            'form_type' => FORM_TYPE_CHECK_BOX
         ],
         'newpoints_can_donate' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,
-            'formType' => 'checkBox'
+            'form_type' => FORM_TYPE_CHECK_BOX
         ],
         'newpoints_rate_addition' => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 1,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -269,8 +269,8 @@ const FIELDS_DATA = [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 100,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'max' => 100,
             ]
         ],
@@ -279,8 +279,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -290,8 +290,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -301,8 +301,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -312,8 +312,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -322,15 +322,15 @@ const FIELDS_DATA = [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0,
-            'formType' => 'numericField',
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
         ],
         'newpoints_income_post_character' => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -340,8 +340,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -351,8 +351,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -361,8 +361,8 @@ const FIELDS_DATA = [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -372,8 +372,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -383,8 +383,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -394,8 +394,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -405,13 +405,13 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
         ],
         'newpoints_income_user_allowance_primary_only' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,
-            'formType' => 'checkBox'
+            'form_type' => FORM_TYPE_CHECK_BOX
         ],
         'newpoints_income_user_allowance_last_stamp' => [
             'type' => 'INT',
@@ -423,8 +423,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -434,8 +434,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -445,8 +445,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -457,7 +457,7 @@ const FIELDS_DATA = [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
-            'formType' => 'checkBox'
+            'form_type' => FORM_TYPE_CHECK_BOX
         ]
     ],
     'forums' => [
@@ -466,8 +466,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 1,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -477,8 +477,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -488,8 +488,8 @@ const FIELDS_DATA = [
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
                 //'min' => 0,
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
@@ -509,13 +509,21 @@ const TASK_DEACTIVATE = 0;
 
 const TASK_DELETE = -1;
 
-const FORM_TYPE_CHECK_BOX = 'checkBox';
+const FORM_TYPE_CHECK_BOX = 'check_box';
 
-const FORM_TYPE_NUMERIC_FIELD = 'numericField';
+const FORM_TYPE_CHECK_BOX_LEGACY = 'checkBox';
 
-const FORM_TYPE_SELECT_FIELD = 'selectField';
+const FORM_TYPE_NUMERIC_FIELD = 'numeric_field';
 
-const FORM_TYPE_PHP_CODE = 'phpFunction';
+const FORM_TYPE_NUMERIC_FIELD_LEGACY = 'numericField';
+
+const FORM_TYPE_SELECT_FIELD = 'select_field';
+
+const FORM_TYPE_SELECT_FIELD_LEGACY = 'selectField';
+
+const FORM_TYPE_PHP_CODE = 'php_function';
+
+const FORM_TYPE_PHP_CODE_LEGACY = 'phpFunction';
 
 const POST_VISIBLE_STATUS_DRAFT = -2;
 

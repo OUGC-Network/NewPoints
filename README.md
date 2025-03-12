@@ -434,11 +434,11 @@ const FIELDS_DATA = [
     'foo_table' => [
         'foo_column' => [
             'type' => 'DECIMAL',
-            'size' => DECIMAL_DATA_TYPE_SIZE,
+            'size' => \Newpoints\DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'formType' => 'numericField',
-            'formOptions' => [
-                'step' => DECIMAL_DATA_TYPE_STEP,
+            'form_type' => \Newpoints\Core\FORM_TYPE_NUMERIC_FIELD,
+            'form_options' => [
+                'step' => \Newpoints\DECIMAL_DATA_TYPE_STEP,
             ]
         ],
     ]

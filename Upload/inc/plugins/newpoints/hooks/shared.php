@@ -48,7 +48,9 @@ use function Newpoints\Core\users_get_group_permissions;
 
 use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
+use const Newpoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
 use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_POST;
@@ -344,15 +346,19 @@ function datahandler_user_validate(userDataHandler $data_handler): userDataHandl
     $user_data = &$data_handler->data;
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (!isset($data_field_data['formType'])) {
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+
+        if (empty($data_field_data['form_type'])) {
             continue;
         }
 
-        switch ($data_field_data['formType']) {
+        switch ($data_field_data['form_type']) {
             case FORM_TYPE_CHECK_BOX:
+            case FORM_TYPE_CHECK_BOX_LEGACY:
                 $user_data[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
                 break;
             case FORM_TYPE_NUMERIC_FIELD:
+            case FORM_TYPE_NUMERIC_FIELD_LEGACY:
                 if (!isset($mybb->input[$data_field_key])) {
                     break;
                 }
@@ -384,7 +390,9 @@ function datahandler_user_update(userDataHandler $data_handler): userDataHandler
     global $mybb, $db;
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (!isset($data_field_data['formType']) ||
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+
+        if (empty($data_field_data['form_type']) ||
             (!isset($user_data[$data_field_key]) && !isset($mybb->input[$data_field_key]))) {
             continue;
         }
