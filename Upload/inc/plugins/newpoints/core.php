@@ -1355,13 +1355,13 @@ function log_add(
                         true
                     );
                 }
-                /*
-                                alert_send(
-                                    $user_id,
-                                    $log_id,
-                                    'core',
-                                    'add_points'
-                                );*/
+
+                alert_send(
+                    $user_id,
+                    $log_id,
+                    'core',
+                    'add_points'
+                );
                 break;
             case LOGGING_TYPE_CHARGE:
                 if (get_setting('main_pm_alerts_enabled')) {
@@ -1385,13 +1385,13 @@ function log_add(
                         true
                     );
                 }
-                /*
-                                alert_send(
-                                    $user_id,
-                                    $log_id,
-                                    'core',
-                                    'subtract_points'
-                                );*/
+
+                alert_send(
+                    $user_id,
+                    $log_id,
+                    'core',
+                    'subtract_points'
+                );
                 break;
         }
     }
