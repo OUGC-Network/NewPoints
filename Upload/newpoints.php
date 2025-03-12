@@ -664,7 +664,7 @@ if ($mybb->get_input('action') == 'stats') {
 
                     if (!empty($forum_data)) {
                         $log_secondary = $lang->sprintf(
-                            $lang->newpoints_logs_page_table_log_forum2,
+                            $lang->newpoints_logs_page_table_log_forum,
                             $mybb->settings['bburl'],
                             get_forum_link($forum_data['fid']),
                             htmlspecialchars_uni(strip_tags($forum_data['name']))
