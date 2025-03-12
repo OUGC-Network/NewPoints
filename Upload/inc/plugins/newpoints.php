@@ -254,9 +254,9 @@ function newpoints_find_replace_templatesets(string $title, string $find, string
     return find_replace_template_sets($title, $find, $replace);
 }
 
-function newpoints_log(string $action, string $data = '', string $username = '', int $uid = 0): bool
+function newpoints_log(string $log_action, string $log_data = '', string $username = '', int $user_id = 0): int
 {
-    return log_add($action, $data, $username, $uid);
+    return log_add($log_action, $log_data, $username, $user_id);
 }
 
 function newpoints_remove_log(array $action): bool

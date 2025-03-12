@@ -1284,31 +1284,31 @@ function find_replace_template_sets(string $title, string $find, string $replace
 /**
  * Create a new log entry
  *
- * @param string $action action taken
- * @param string $data extra data
- * @param string $user_name $username of who's executed the action
+ * @param string $log_action action taken
+ * @param string $log_data extra data
+ * @param string $username $username of who's executed the action
  * @param int $user_id $uid of who's executed the action
  * @return bool false if something went wrong
  */
 function log_add(
-    string $action,
-    string $data = '',
-    string $user_name = '',
+    string $log_action,
+    string $log_data = '',
+    string $username = '',
     int $user_id = 0,
-    float $points = 0,
+    float $log_points = 0,
     int $primary_id = 0,
     int $secondary_id = 0,
     int $tertiary_id = 0,
     int $log_type = 0
-): bool {
-    if (!$action) {
-        return false;
+): int {
+    if (!$log_action) {
+        return 0;
     }
 
-    if (empty($user_name) || empty($user_id)) {
+    if (empty($username) || empty($user_id)) {
         global $mybb;
 
-        $user_name = $mybb->user['username'];
+        $username = $mybb->user['username'];
 
         $user_id = (int)$mybb->user['uid'];
     }
@@ -1318,12 +1318,12 @@ function log_add(
     $log_id = (int)$db->insert_query(
         'newpoints_log',
         [
-            'action' => $db->escape_string($action),
-            'data' => $db->escape_string($data),
+            'action' => $db->escape_string($log_action),
+            'data' => $db->escape_string($log_data),
             'date' => TIME_NOW,
             'uid' => $user_id,
-            'username' => $db->escape_string($user_name),
-            'points' => $points,
+            'username' => $db->escape_string($username),
+            'points' => $log_points,
             'log_primary_id' => $primary_id,
             'log_secondary_id' => $secondary_id,
             'log_tertiary_id' => $tertiary_id,
@@ -1340,13 +1340,13 @@ function log_add(
                             'language' => get_user($user_id)['language'] ?? '',
                             'subject' => [
                                 'newpoints_log_pm_add_subject',
-                                strip_tags(points_format($points)),
+                                strip_tags(points_format($log_points)),
                                 get_setting('main_curname')
                             ],
                             'message' => [
                                 'newpoints_log_pm_add_message',
                                 get_user($user_id)['username'] ?? '',
-                                strip_tags(points_format($points)),
+                                strip_tags(points_format($log_points)),
                                 get_setting('main_curname')
                             ],
                             'touid' => $user_id
@@ -1370,13 +1370,13 @@ function log_add(
                             'language' => get_user($user_id)['language'] ?? '',
                             'subject' => [
                                 'newpoints_log_pm_subtract_subject',
-                                strip_tags(points_format($points)),
+                                strip_tags(points_format($log_points)),
                                 get_setting('main_curname')
                             ],
                             'message' => [
                                 'newpoints_log_pm_subtract_message',
                                 get_user($user_id)['username'] ?? '',
-                                strip_tags(points_format($points)),
+                                strip_tags(points_format($log_points)),
                                 get_setting('main_curname')
                             ],
                             'touid' => $user_id
@@ -1396,7 +1396,7 @@ function log_add(
         }
     }
 
-    return true;
+    return $log_id;
 }
 
 /**
