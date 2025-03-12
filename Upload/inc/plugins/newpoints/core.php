@@ -1313,7 +1313,7 @@ function log_add(
         $user_id = (int)$mybb->user['uid'];
     }
 
-    global $db;
+    global $db, $mybb;
 
     $log_id = (int)$db->insert_query(
         'newpoints_log',
@@ -1331,7 +1331,9 @@ function log_add(
         ]
     );
 
-    if ($log_id && $log_type) {
+    $current_user_id = (int)$mybb->user['uid'];
+
+    if ($log_id && $log_type && $user_id !== $current_user_id) {
         switch ($log_type) {
             case LOGGING_TYPE_INCOME:
                 if (get_setting('main_pm_alerts_enabled')) {
