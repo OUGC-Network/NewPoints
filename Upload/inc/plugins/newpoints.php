@@ -67,9 +67,9 @@ use function Newpoints\Core\users_update;
 use const Newpoints\ROOT;
 use const Newpoints\Core\PRIVATE_MESSAGE_CURRENT_USER_ID;
 
-const NEWPOINTS_VERSION = '3.1.3';
+const NEWPOINTS_VERSION = '3.1.4';
 
-const NEWPOINTS_VERSION_CODE = 3103;
+const NEWPOINTS_VERSION_CODE = 3104;
 
 const MAX_DONATIONS_CONTROL = 5; // Maximum donations someone can send each 15 minutes
 
