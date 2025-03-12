@@ -34,6 +34,92 @@ namespace Newpoints\Core;
 use const Newpoints\DECIMAL_DATA_TYPE_SIZE;
 use const Newpoints\DECIMAL_DATA_TYPE_STEP;
 
+const URL = 'newpoints.php';
+
+const RULE_TYPE_FORUM = 'forum';
+
+const RULE_TYPE_GROUP = 'group';
+
+const TASK_ENABLE = 1;
+
+const TASK_DEACTIVATE = 0;
+
+const TASK_DELETE = -1;
+
+const FORM_TYPE_CHECK_BOX = 'check_box';
+
+const FORM_TYPE_CHECK_BOX_LEGACY = 'checkBox';
+
+const FORM_TYPE_NUMERIC_FIELD = 'numeric_field';
+
+const FORM_TYPE_NUMERIC_FIELD_LEGACY = 'numericField';
+
+const FORM_TYPE_SELECT_FIELD = 'select_field';
+
+const FORM_TYPE_SELECT_FIELD_LEGACY = 'selectField';
+
+const FORM_TYPE_PHP_CODE = 'php_function';
+
+const FORM_TYPE_PHP_CODE_LEGACY = 'phpFunction';
+
+const POST_VISIBLE_STATUS_DRAFT = -2;
+
+const POST_VISIBLE_STATUS_SOFT_DELETED = -1;
+
+const POST_VISIBLE_STATUS_UNAPPROVED = 0;
+
+const POST_VISIBLE_STATUS_VISIBLE = 1;
+
+const INCOME_TYPES = [
+    'thread' => [],
+    'thread_reply' => [],
+    'thread_rate' => [],
+    'post' => ['post_minimum_characters' => 'numeric'],
+    'post_character' => [],
+    'page_view' => [],
+    'visit' => ['visit_minutes' => 'numeric'],
+    'poll' => [],
+    'poll_vote' => [],
+    'user_allowance' => [],
+    'user_registration' => [],
+    'user_referral' => [],
+    'private_message' => [],
+];
+
+const INCOME_TYPE_THREAD = 'thread';
+
+const INCOME_TYPE_THREAD_REPLY = 'thread_reply';
+
+const INCOME_TYPE_THREAD_RATE = 'thread_rate';
+
+const INCOME_TYPE_POST = 'post';
+
+const INCOME_TYPE_POST_CHARACTER = 'post_character';
+
+const INCOME_TYPE_PAGE_VIEW = 'page_view';
+
+const INCOME_TYPE_VISIT = 'visit';
+
+const INCOME_TYPE_POLL = 'poll';
+
+const INCOME_TYPE_POLL_VOTE = 'poll_vote';
+
+const INCOME_TYPE_USER_ALLOWANCE = 'user_allowance';
+
+const INCOME_TYPE_USER_REGISTRATION = 'user_registration';
+
+const INCOME_TYPE_USER_REFERRAL = 'user_referral';
+
+const INCOME_TYPE_PRIVATE_MESSAGE = 'private_message';
+
+const LOGGING_TYPE_INCOME = 1;
+
+const LOGGING_TYPE_CHARGE = 2;
+
+const PRIVATE_MESSAGE_ENGINE_ID = -1;
+
+const PRIVATE_MESSAGE_CURRENT_USER_ID = 0;
+
 const TABLES_DATA = [
     'newpoints_settings' => [
         'sid' => [
@@ -496,89 +582,3 @@ const FIELDS_DATA = [
         ],
     ],
 ];
-
-const URL = 'newpoints.php';
-
-const RULE_TYPE_FORUM = 'forum';
-
-const RULE_TYPE_GROUP = 'group';
-
-const TASK_ENABLE = 1;
-
-const TASK_DEACTIVATE = 0;
-
-const TASK_DELETE = -1;
-
-const FORM_TYPE_CHECK_BOX = 'check_box';
-
-const FORM_TYPE_CHECK_BOX_LEGACY = 'checkBox';
-
-const FORM_TYPE_NUMERIC_FIELD = 'numeric_field';
-
-const FORM_TYPE_NUMERIC_FIELD_LEGACY = 'numericField';
-
-const FORM_TYPE_SELECT_FIELD = 'select_field';
-
-const FORM_TYPE_SELECT_FIELD_LEGACY = 'selectField';
-
-const FORM_TYPE_PHP_CODE = 'php_function';
-
-const FORM_TYPE_PHP_CODE_LEGACY = 'phpFunction';
-
-const POST_VISIBLE_STATUS_DRAFT = -2;
-
-const POST_VISIBLE_STATUS_SOFT_DELETED = -1;
-
-const POST_VISIBLE_STATUS_UNAPPROVED = 0;
-
-const POST_VISIBLE_STATUS_VISIBLE = 1;
-
-const INCOME_TYPES = [
-    'thread' => [],
-    'thread_reply' => [],
-    'thread_rate' => [],
-    'post' => ['post_minimum_characters' => 'numeric'],
-    'post_character' => [],
-    'page_view' => [],
-    'visit' => ['visit_minutes' => 'numeric'],
-    'poll' => [],
-    'poll_vote' => [],
-    'user_allowance' => [],
-    'user_registration' => [],
-    'user_referral' => [],
-    'private_message' => [],
-];
-
-const INCOME_TYPE_THREAD = 'thread';
-
-const INCOME_TYPE_THREAD_REPLY = 'thread_reply';
-
-const INCOME_TYPE_THREAD_RATE = 'thread_rate';
-
-const INCOME_TYPE_POST = 'post';
-
-const INCOME_TYPE_POST_CHARACTER = 'post_character';
-
-const INCOME_TYPE_PAGE_VIEW = 'page_view';
-
-const INCOME_TYPE_VISIT = 'visit';
-
-const INCOME_TYPE_POLL = 'poll';
-
-const INCOME_TYPE_POLL_VOTE = 'poll_vote';
-
-const INCOME_TYPE_USER_ALLOWANCE = 'user_allowance';
-
-const INCOME_TYPE_USER_REGISTRATION = 'user_registration';
-
-const INCOME_TYPE_USER_REFERRAL = 'user_referral';
-
-const INCOME_TYPE_PRIVATE_MESSAGE = 'private_message';
-
-const LOGGING_TYPE_INCOME = 1;
-
-const LOGGING_TYPE_CHARGE = 2;
-
-const PRIVATE_MESSAGE_ENGINE_ID = -1;
-
-const PRIVATE_MESSAGE_CURRENT_USER_ID = 0;
