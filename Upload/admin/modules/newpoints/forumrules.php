@@ -266,7 +266,7 @@ if (!$mybb->get_input('action')) // view forumrules
     $form_container->output_row(
         $lang->newpoints_forumrules_rate . '<em>*</em>',
         $lang->newpoints_forumrules_rate_desc,
-        $form->generate_text_box('rate', floatval($rule['rate']), ['id' => 'rate']),
+        $form->generate_text_box('rate', (float)$rule['rate'], ['id' => 'rate']),
         'rate'
     );
     $form_container->output_row(
@@ -274,7 +274,7 @@ if (!$mybb->get_input('action')) // view forumrules
         $lang->newpoints_forumrules_forum_desc,
         $form->generate_forum_select(
             'forum',
-            intval($rule['fid']),
+            (int)$rule['fid'],
             ['id' => 'forum', 'main_option' => $lang->newpoints_select_forum]
         ),
         'forum'

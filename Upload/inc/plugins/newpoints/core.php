@@ -291,7 +291,7 @@ function templates_add(string $name, string $contents, int $sid = -1): bool
     $templatearray = [
         'title' => $db->escape_string($name),
         'template' => $db->escape_string($contents),
-        'sid' => intval($sid)
+        'sid' => $sid
     ];
 
     $query = $db->simple_select(
@@ -849,7 +849,7 @@ function points_add(
     }
 
     // might work only for MySQL and MySQLi
-    //$db->update_query("users", array('newpoints' =>'newpoints+('.floatval($points).')'), 'uid=\''.intval($uid).'\'', '', true);
+    //$db->update_query("users", array('newpoints' =>'newpoints+('.(float)$points.')'), 'uid=\''.(int)$uid.'\'', '', true);
 
     $points_rounded = round($points * $forumrate * $grouprate, (int)get_setting('main_decimal'));
 
@@ -1968,9 +1968,8 @@ function get_income_value(string $income_type, int $user_id = 0): float
         case INCOME_TYPE_USER_REGISTRATION:
         case INCOME_TYPE_USER_REFERRAL:
         case INCOME_TYPE_PRIVATE_MESSAGE:
-            $income_value = get_setting($global_setting_key) !== false ? get_setting(
-                $global_setting_key
-            ) : $group_permissions[$group_setting_key];
+            $income_value = get_setting($global_setting_key) === false ? $group_permissions[$group_setting_key] :
+                get_setting($global_setting_key);
             break;
     }
 
@@ -2305,9 +2304,7 @@ function alert_send(int $user_id, int $object_id, string $plugin_code, string $a
 {
     global $mybb;
 
-    $current_user_id = (int)$mybb->user['uid'];
-
-    if ($user_id === $current_user_id) {
+    if ($user_id === (int)$mybb->user['uid']) {
         return false;
     }
 

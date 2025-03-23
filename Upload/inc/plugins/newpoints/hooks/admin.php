@@ -57,14 +57,14 @@ function admin_config_plugins_deactivate(): bool
     global $mybb, $page;
 
     if (
-        $mybb->get_input('action') != 'deactivate' ||
-        $mybb->get_input('plugin') != 'newpoints' ||
+        $mybb->get_input('action') !== 'deactivate' ||
+        $mybb->get_input('plugin') !== 'newpoints' ||
         !$mybb->get_input('uninstall', MyBB::INPUT_INT)
     ) {
         return false;
     }
 
-    if ($mybb->request_method != 'post') {
+    if ($mybb->request_method !== 'post') {
         $page->output_confirm_action(
             'index.php?module=config-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin=newpoints'
         );
@@ -118,20 +118,20 @@ function admin_tabs(array $modules): array
     return $modules;
 }
 
-function newpoints_admin_menu(array &$sub_menu): array
+function newpoints_admin_menu(array &$sub_menu_items): array
 {
     // as plugins can't hook to admin_newpoints_menu, we must allow them to hook to newpoints_admin_newpoints_menu
-    $sub_menu = run_hooks('admin_newpoints_menu', $sub_menu);
+    $sub_menu_items = run_hooks('admin_newpoints_menu', $sub_menu_items);
 
-    return $sub_menu;
+    return $sub_menu_items;
 }
 
-function newpoints_admin_action_handler(array &$actions): array
+function newpoints_admin_action_handler(array &$action_handlers): array
 {
     // as plugins can't hook to admin_newpoints_action_handler, we must allow them to hook to newpoints_newpoints_action_handler
-    $actions = run_hooks('admin_newpoints_action_handler', $actions);
+    $action_handlers = run_hooks('admin_newpoints_action_handler', $action_handlers);
 
-    return $actions;
+    return $action_handlers;
 }
 
 function newpoints_admin_permissions(array &$admin_permissions): array
@@ -778,7 +778,7 @@ function admin_tools_do_recount_rebuild(): bool
     global $mybb;
 
     if (isset($mybb->input['do_recount_newpoints'])) {
-        if ($mybb->input['page'] == 1) {
+        if ($mybb->get_input('page', MyBB::INPUT_INT) === 1) {
             log_admin_action('recount');
         }
 
@@ -792,7 +792,7 @@ function admin_tools_do_recount_rebuild(): bool
     }
 
     if (isset($mybb->input['do_reset_newpoints'])) {
-        if ($mybb->input['page'] == 1) {
+        if ($mybb->get_input('page', MyBB::INPUT_INT) === 1) {
             log_admin_action('reset');
         }
 

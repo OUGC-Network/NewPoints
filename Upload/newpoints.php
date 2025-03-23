@@ -50,6 +50,8 @@ use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
+use function Newpoints\Core\users_get_group_permissions;
+
 use const Newpoints\Core\INCOME_TYPE_POST;
 use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
@@ -224,7 +226,7 @@ if ($mybb->get_input('action') == 'stats') {
 
         $user['username'] = build_profile_link(
             format_name(htmlspecialchars_uni($user['username']), $user['usergroup'], $user['displaygroup']),
-            intval($user['uid'])
+            (int)$user['uid']
         );
         $user['newpoints'] = points_format((float)$user['newpoints']);
 
@@ -267,16 +269,16 @@ if ($mybb->get_input('action') == 'stats') {
 
         $donation['from'] = build_profile_link(
             format_name(htmlspecialchars_uni($donation['username']), $donation['usergroup'], $donation['displaygroup']),
-            intval($donation['uid'])
+            (int)$donation['uid']
         );
 
         $donation['amount'] = points_format((float)($donation['points'] ?? ($data[2] ?? 0)));
         $donation['date'] = my_date(
                 $mybb->settings['dateformat'],
-                intval($donation['date']),
+                (int)$donation['date'],
                 '',
                 false
-            ) . ', ' . my_date($mybb->settings['timeformat'], intval($donation['date']));
+            ) . ', ' . my_date($mybb->settings['timeformat'], (int)$donation['date']);
 
         run_hooks('stats_last_donations');
 
@@ -389,6 +391,30 @@ if ($mybb->get_input('action') == 'stats') {
     // give points to user
     points_add_simple($to_user_id, $amount);
 
+    log_add(
+        'donation_sent',
+        $mybb->get_input('reason'),
+        $mybb->user['username'],
+        $current_user_id,
+        $amount,
+        $to_user_id,
+        0,
+        0,
+        LOGGING_TYPE_CHARGE
+    );
+
+    log_add(
+        'donation',
+        $mybb->get_input('reason'),
+        $touser['username'],
+        $to_user_id,
+        $amount,
+        $current_user_id,
+        0,
+        0,
+        LOGGING_TYPE_INCOME
+    );
+
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if (get_setting('donations_send_private_message')) {
         if ($mybb->get_input('reason')) {
@@ -413,30 +439,6 @@ if ($mybb->get_input('action') == 'stats') {
             ]
         );
     }
-
-    log_add(
-        'donation_sent',
-        $mybb->get_input('reason'),
-        $mybb->user['username'],
-        $current_user_id,
-        $amount,
-        $to_user_id,
-        0,
-        0,
-        LOGGING_TYPE_CHARGE
-    );
-
-    log_add(
-        'donation',
-        $mybb->get_input('reason'),
-        $touser['username'],
-        $to_user_id,
-        $amount,
-        $current_user_id,
-        0,
-        0,
-        LOGGING_TYPE_INCOME
-    );
 
     run_hooks('do_donate_end');
 

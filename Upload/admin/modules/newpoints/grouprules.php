@@ -271,13 +271,13 @@ if (!$mybb->get_input('action')) // view grouprules
     $form_container->output_row(
         $lang->newpoints_grouprules_rate . '<em>*</em>',
         $lang->newpoints_grouprules_rate_desc,
-        $form->generate_text_box('rate', floatval($rule['rate']), ['id' => 'rate']),
+        $form->generate_text_box('rate', (float)$rule['rate'], ['id' => 'rate']),
         'rate'
     );
     $form_container->output_row(
         $lang->newpoints_grouprules_group . '<em>*</em>',
         $lang->newpoints_grouprules_group_desc,
-        $form->generate_select_box('group', $options, intval($rule['gid']), ['id' => 'group']),
+        $form->generate_select_box('group', $options, (int)$rule['gid'], ['id' => 'group']),
         'group'
     );
 

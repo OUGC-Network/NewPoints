@@ -40,6 +40,7 @@ use stdClass;
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
+use function Newpoints\Core\log_add;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_rebuild_cache;
@@ -60,7 +61,9 @@ use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
+use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\TABLES_DATA;
 use const Newpoints\ROOT;
 
@@ -142,6 +145,24 @@ function plugin_activation(): bool
     my_alerts_install();
 
     /*~*~* RUN UPDATES START *~*~*/
+
+    if ($plugins_list['newpoints'] <= 3104) {
+        $action_types = implode("','", [
+            'income_' . INCOME_TYPE_THREAD_REPLY,
+            'income_' . INCOME_TYPE_POST_CHARACTER,
+            'income_' . INCOME_TYPE_THREAD
+        ]);
+
+        $db->update_query(
+            'newpoints_log',
+            [
+                'log_primary_id' => 0,
+                'log_secondary_id' => 0,
+                'log_tertiary_id' => 0,
+            ],
+            "action IN ('{$action_types}')"
+        );
+    }
 
     if ($plugins_list['newpoints'] < 3100) {
         foreach (
@@ -725,12 +746,12 @@ function recount_rebuild_newpoints_recount()
 
         $threads_query = $db->simple_select(
             'threads',
-            'firstpost,fid,poll',
+            'firstpost, fid, poll, uid',
             "uid='" . $user_id . "' AND visible=1"
         );
 
         while ($thread = $db->fetch_array($threads_query)) {
-            if (!get_income_value(INCOME_TYPE_THREAD)) {
+            if (!get_income_value(INCOME_TYPE_THREAD, $user_id)) {
                 continue;
             }
 
@@ -745,19 +766,17 @@ function recount_rebuild_newpoints_recount()
             if (($character_count = my_strlen(
                     $mybb->get_input('message')
                 )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
-                $bonus = $character_count * get_income_value(INCOME_TYPE_POST_CHARACTER);
+                $bonus = $character_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $user_id);
             } else {
                 $bonus = 0;
             }
 
-            $points += (get_income_value(
-                        INCOME_TYPE_THREAD
-                    ) + $bonus) * $forum_rules[$thread['fid']]['rate'];
+            $points += (get_income_value(INCOME_TYPE_THREAD, $user_id) + $bonus) *
+                $forum_rules[$thread['fid']]['rate'];
 
             if (!empty($thread['poll'])) {
-                $points += get_income_value(
-                        INCOME_TYPE_POLL
-                    ) * $forum_rules[$thread['fid']]['rate'];
+                $points += get_income_value(INCOME_TYPE_POLL, $user_id) *
+                    $forum_rules[$thread['fid']]['rate'];
             }
 
             $first_posts[] = (int)$thread['firstpost'];
@@ -765,12 +784,16 @@ function recount_rebuild_newpoints_recount()
 
         $posts_query = $db->simple_select(
             'posts',
-            'tid,fid,message',
+            'tid,fid,message,uid, pid',
             "uid='{$user_id}' AND pid NOT IN('" . implode("','", $first_posts) . "') AND visible=1"
         );
 
         while ($post_data = $db->fetch_array($posts_query)) {
-            if (!get_income_value(INCOME_TYPE_POST)) {
+            $post_id = (int)$post_data['pid'];
+
+            $thread_id = (int)$post_data['tid'];
+
+            if (!get_income_value(INCOME_TYPE_POST, $user_id)) {
                 continue;
             }
 
@@ -785,40 +808,60 @@ function recount_rebuild_newpoints_recount()
             if (($character_count = my_strlen(
                     $post_data['message']
                 )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
-                $bonus = $character_count * get_income_value(INCOME_TYPE_POST_CHARACTER);
+                $bonus = $character_count *
+                    get_income_value(INCOME_TYPE_POST_CHARACTER, $user_id);
             } else {
                 $bonus = 0;
             }
 
-            $points += (get_income_value(
-                        INCOME_TYPE_POST
-                    ) + $bonus) * $forum_rules[$post_data['fid']]['rate'];
+            $points += (get_income_value(INCOME_TYPE_POST, $user_id) + $bonus) *
+                $forum_rules[$post_data['fid']]['rate'];
 
             $thread_data = get_thread($post_data['tid']);
 
             $thread_user_id = (int)$thread_data['uid'];
 
-            if ($thread_user_id !== $user_id && user_can_get_points($thread_user_id)) {
-                if (get_income_value(INCOME_TYPE_THREAD_REPLY)) {
+            $forum_id = (int)$post_data['fid'];
+
+            if ($thread_user_id !== $user_id && user_can_get_points($thread_user_id, $forum_id)) {
+                $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id);
+
+                $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+
+                $income_value = $income_value * $thread_user_group_permissions['newpoints_rate_addition'];
+
+                if ($income_value) {
                     points_add_simple(
                         $thread_user_id,
-                        get_income_value(INCOME_TYPE_THREAD_REPLY),
-                        (int)$post_data['fid']
+                        $income_value,
+                        $forum_id
+                    );
+
+                    log_add(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        '',
+                        get_user($thread_user_id)['username'] ?? '',
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                        LOGGING_TYPE_INCOME
                     );
                 }
             }
         }
 
-        if (get_income_value(INCOME_TYPE_POLL_VOTE)) {
+        if (get_income_value(INCOME_TYPE_POLL_VOTE, $user_id)) {
             $votes = $db->fetch_field(
                 $db->simple_select('pollvotes', 'COUNT(*) AS votes', "uid='{$user_id}'"),
                 'votes'
             );
 
-            $points += $votes * get_income_value(INCOME_TYPE_POLL_VOTE);
+            $points += $votes * get_income_value(INCOME_TYPE_POLL_VOTE, $user_id);
         }
 
-        if (get_income_value(INCOME_TYPE_PRIVATE_MESSAGE)) {
+        if (get_income_value(INCOME_TYPE_PRIVATE_MESSAGE, $user_id)) {
             $pms_sent = $db->fetch_field(
                 $db->simple_select(
                     'privatemessages',
@@ -828,15 +871,14 @@ function recount_rebuild_newpoints_recount()
                 'numpms'
             );
 
-            $points += $pms_sent * get_income_value(INCOME_TYPE_PRIVATE_MESSAGE);
+            $points += $pms_sent * get_income_value(INCOME_TYPE_PRIVATE_MESSAGE, $user_id);
         }
 
         $db->update_query(
             'users',
             [
-                'newpoints' => get_income_value(
-                        INCOME_TYPE_USER_REGISTRATION
-                    ) + $points * $user_group_permissions['newpoints_rate_addition']
+                'newpoints' => get_income_value(INCOME_TYPE_USER_REGISTRATION, $user_id) + $points *
+                    $user_group_permissions['newpoints_rate_addition']
             ],
             "uid='{$user_id}'"
         );

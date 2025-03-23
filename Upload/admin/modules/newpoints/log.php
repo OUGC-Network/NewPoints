@@ -164,12 +164,12 @@ if (!$mybb->get_input('action')) // view logs
     while ($log = $db->fetch_array($query)) {
         $table->construct_cell(htmlspecialchars_uni($log['action']));
         $table->construct_cell(htmlspecialchars_uni($log['data']));
-        $link = build_profile_link(htmlspecialchars_uni($log['username']), intval($log['uid']));
+        $link = build_profile_link(htmlspecialchars_uni($log['username']), (int)$log['uid']);
         $table->construct_cell($link);
         $table->construct_cell(
-            my_date($mybb->settings['dateformat'], intval($log['date']), '', false) . ', ' . my_date(
+            my_date($mybb->settings['dateformat'], (int)$log['date'], '', false) . ', ' . my_date(
                 $mybb->settings['timeformat'],
-                intval($log['date'])
+                (int)$log['date']
             ),
             ['class' => 'align_center']
         );
