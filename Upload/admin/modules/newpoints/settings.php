@@ -170,7 +170,7 @@ if ($mybb->get_input('action') == 'change') {
 
             $plugin_title = $lang->{$lang_var};
 
-            $plugin_description = $lang->{$lang_var . '_description'};
+            $plugin_description = $lang->{$lang_var . '_desc'};
         } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
             $plugin_title = htmlspecialchars_uni($plugin_information['name']);
 
@@ -612,7 +612,7 @@ if ($mybb->get_input('action') == 'change') {
             if (!isset($lang->{$group_lang_var})) {
                 //_dump($group_lang_var, $plugin);
             }
-            
+
             $group_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
             $group_lang_var_desc = "setting_group_newpoints_{$group_key}_desc";

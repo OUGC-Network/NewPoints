@@ -29,11 +29,16 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\run_hooks;
 
 function task_backupnewpoints(array &$task): array
 {
+    if (get_setting('disableBackUpSystem')) {
+        return $task;
+    }
+
     global $mybb, $db, $lang, $cache, $plugins;
 
     language_load();
@@ -75,7 +80,7 @@ function backupnewpoints_backupdb(): bool
     $db->set_table_prefix('');
 
     $file = MYBB_ADMIN_DIR . '/backups/backupnewpoints/backup_' . substr(
-            md5($mybb->user['uid'] . TIME_NOW),
+            md5(($mybb->user['uid'] ?? 0) . TIME_NOW),
             0,
             10
         ) . random_str(54);

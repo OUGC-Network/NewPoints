@@ -33,6 +33,7 @@ use function Newpoints\Admin\db_verify_columns;
 use function Newpoints\Admin\db_verify_tables;
 use function Newpoints\Admin\my_alerts_install;
 use function Newpoints\Admin\plugin_library_load;
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
@@ -58,6 +59,19 @@ url_handler_set('index.php');
 url_handler_set(url_handler_build([
     'module' => 'newpoints-plugins'
 ]));
+
+$sub_tabs = [
+    'newpoints_plugins' => [
+        'title' => $lang->newpoints_plugins,
+        'link' => url_handler_get(),
+        'description' => $lang->newpoints_plugins_description
+    ],
+    'newpoints_plugins_check_updates' => [
+        'title' => $lang->newpoints_plugins_check_updates,
+        'link' => url_handler_build(['action' => 'check_updates']),
+        'description' => $lang->newpoints_plugins_check_updates_description
+    ]
+];
 
 // Activates or deactivates a specific plugin
 if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'deactivate') {
@@ -241,19 +255,208 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
     flash_message($message, 'success');
     admin_redirect(url_handler_get());
-}
+} elseif ($mybb->input['action'] == 'check_updates') {
+    $plugins_list = newpoints_get_plugins();
 
-if (!$mybb->get_input('action')) // view plugins
-{
+    run_hooks('admin_config_plugins_check');
+
+    $plugins_codenames = $plugins_names = array();
+
+    if ($plugins_list) {
+        $active_hooks = $plugins->hooks;
+
+        foreach ($plugins_list as $plugin_file) {
+            require_once MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugin_file;
+
+            $plugin_codename = str_replace('.php', '', $plugin_file);
+
+            $plugin_information_function = $plugin_codename . '_info';
+
+            if (!function_exists($plugin_information_function)) {
+                continue;
+            }
+
+            $plugin_information = $plugin_information_function();
+
+            $plugin_information['codename'] = trim($plugin_information['codename'] ?? '');
+
+            if (!empty($plugin_information['codename'])) {
+                $plugins_codenames[] = $plugin_information['codename'];
+
+                $plugins_names[$plugin_information['codename']] = array(
+                    'name' => $plugin_information['name'] ?? '',
+                    'version' => $plugin_information['version'] ?? ''
+                );
+            }
+        }
+
+        $plugins->hooks = $active_hooks;
+    }
+
+    if (empty($plugins_codenames)) {
+        flash_message($lang->newpoints_plugins_error_version_check_no_supported_plugins, 'error');
+
+        admin_redirect(url_handler_get());
+    }
+
+    $plugin_repositories = array_map('trim', explode(PHP_EOL, get_setting('main_plugins_repositories')));
+
+    $repositories_plugins = [];
+
+    foreach ($plugin_repositories as $plugin_repository) {
+        $repository_contents = fetch_remote_file(
+            'https://' . $plugin_repository . '/version_check.php?' . http_build_query(['info' => $plugins_codenames]
+            ) . '&'
+        );
+
+        if (!$repository_contents) {
+            continue;
+        }
+
+        $repository_contents = trim($repository_contents);
+
+        $parser = create_xml_parser($repository_contents);
+
+        $tree = $parser->get_tree();
+
+        if (!is_array($tree) || !isset($tree['plugins'])) {
+            continue;
+        }
+
+        $tree['plugin_repository'] = $plugin_repository;
+
+        foreach ($tree['plugins']['plugin'] as $key => $plugin_data) {
+            $tree['plugins']['plugin'][$key]['repository'] = $plugin_repository;
+        }
+
+        $repositories_plugins = array_merge($tree['plugins'], $repositories_plugins);
+    }
+
+    if (!$repositories_plugins) {
+        flash_message($lang->newpoints_plugins_error_communication_problem, 'error');
+
+        admin_redirect(url_handler_get());
+    }
+
+    if (isset($repositories_plugins[0]) && array_key_exists('error', $repositories_plugins)) {
+        switch ($repositories_plugins[0]['error']) {
+            case '1':
+                $error_msg = $lang->newpoints_plugins_error_communication_problem_no_input;
+                break;
+            case '2':
+                $error_msg = $lang->newpoints_plugins_error_communication_problem_no_plugin_ids;
+                break;
+            default:
+                $error_msg = '';
+        }
+
+        flash_message($lang->newpoints_plugins_error_communication_problem . $error_msg, 'error');
+
+        admin_redirect(url_handler_get());
+    }
+
+    $table = new Table();
+
+    $table->construct_header($lang->newpoints_plugins_plugin);
+
+    $table->construct_header($lang->newpoints_plugins_your_version, array('class' => 'align_center', 'width' => 125));
+
+    $table->construct_header($lang->newpoints_plugins_latest_version, array('class' => 'align_center', 'width' => 125));
+
+    $table->construct_header($lang->controls, array('class' => 'align_center', 'width' => 125));
+
+    if (!is_array($repositories_plugins['plugin'])) {
+        flash_message($lang->newpoints_plugins_success_plugins_up_to_date, 'success');
+
+        admin_redirect(url_handler_get());
+    }
+
+    if (array_key_exists('tag', $repositories_plugins['plugin'])) {
+        $only_plugin = $repositories_plugins['plugin'];
+
+        unset($repositories_plugins['plugin']);
+
+        $repositories_plugins['plugin'][0] = $only_plugin;
+    }
+
+    foreach ($repositories_plugins['plugin'] as $plugin_data) {
+        $is_vulnerable = array_key_exists('vulnerable', $plugin_data);
+
+        if (version_compare(
+            $plugins_names[$plugin_data['attributes']['codename']]['version'],
+            $plugin_data['version']['value'],
+            '<'
+        )) {
+            $plugin_data['download_url']['value'] = htmlspecialchars_uni($plugin_data['download_url']['value']);
+
+            $plugin_data['version']['value'] = htmlspecialchars_uni($plugin_data['version']['value']);
+
+            if (isset($plugin_data['vulnerable']['value'])) {
+                $plugin_data['vulnerable']['value'] = htmlspecialchars_uni($plugin_data['vulnerable']['value']);
+            }
+
+            if ($is_vulnerable) {
+                $table->construct_cell(
+                    "<div class=\"error\" id=\"flash_message\">
+    {$lang->newpoints_plugins_error_version_check_vulnerable} {$plugins_names[$plugin_data['attributes']['codename']]['name']}
+</div>
+<p>	<b>{$lang->newpoints_plugins_error_version_vulnerable_notes}</b> <br /><br /> {$plugin_data['vulnerable']['value']}</p>"
+                );
+            } else {
+                $table->construct_cell(
+                    "<strong>{$plugins_names[$plugin_data['attributes']['codename']]['name']}</strong>"
+                );
+            }
+
+            $table->construct_cell(
+                "{$plugins_names[$plugin_data['attributes']['codename']]['version']}",
+                array('class' => 'align_center')
+            );
+
+            $table->construct_cell(
+                "<strong><span style=\"color: #C00\">{$plugin_data['version']['value']}</span></strong>",
+                array('class' => 'align_center')
+            );
+
+            if ($is_vulnerable) {
+                $main_module_url = url_handler_get();
+
+                $table->construct_cell(
+                    "<a href=\"{$main_module_url}\"><b>{$lang->newpoints_plugins_deactivate}</b></a>",
+                    array('class' => 'align_center', 'width' => 150)
+                );
+            } else {
+                $plugin_repository = $plugin_data['repository'];
+
+                $table->construct_cell(
+                    "<strong><a href=\"https://{$plugin_repository}/{$plugin_data['download_url']['value']}\" target=\"_blank\" rel=\"noopener\">{$lang->newpoints_plugins_download}</a></strong>",
+                    array('class' => 'align_center')
+                );
+            }
+
+            $table->construct_row();
+        }
+    }
+
+    if ($table->num_rows() == 0) {
+        flash_message($lang->newpoints_plugins_success_plugins_up_to_date, 'success');
+
+        admin_redirect(url_handler_get());
+    }
+
+    $page->add_breadcrumb_item($lang->newpoints_plugins_plugin_updates);
+
+    $page->output_header($lang->newpoints_plugins_plugin_updates);
+
+    $page->output_nav_tabs($sub_tabs, 'newpoints_plugins_check_updates');
+
+    $table->output($lang->newpoints_plugins_plugin_updates);
+
+    $page->output_footer();
+} else {
     $page->add_breadcrumb_item($lang->newpoints_plugins, url_handler_get());
 
     $page->output_header($lang->newpoints_plugins);
-
-    $sub_tabs['newpoints_plugins'] = [
-        'title' => $lang->newpoints_plugins,
-        'link' => url_handler_get(),
-        'description' => $lang->newpoints_plugins_description
-    ];
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_plugins');
 
@@ -278,22 +481,22 @@ if (!$mybb->get_input('action')) // view plugins
         foreach ($plugins_list as $plugin) {
             require_once MYBB_ROOT . 'inc/plugins/newpoints/plugins/' . $plugin;
             $codename = str_replace('.php', '', $plugin);
-            $infofunc = $codename . '_info';
-            if (!function_exists($infofunc)) {
+            $plugin_information_function = $codename . '_info';
+            if (!function_exists($plugin_information_function)) {
                 continue;
             }
 
-            $plugininfo = $infofunc();
+            $plugin_information = $plugin_information_function();
 
-            if (!empty($plugininfo['website'])) {
-                $plugininfo['name'] = "<a href=\"" . $plugininfo['website'] . "\">" . $plugininfo['name'] . '</a>';
+            if (!empty($plugin_information['website'])) {
+                $plugin_information['name'] = "<a href=\"" . $plugin_information['website'] . "\">" . $plugin_information['name'] . '</a>';
             }
 
-            if (!empty($plugininfo['authorsite'])) {
-                $plugininfo['author'] = "<a href=\"" . $plugininfo['authorsite'] . "\">" . $plugininfo['author'] . '</a>';
+            if (!empty($plugin_information['authorsite'])) {
+                $plugin_information['author'] = "<a href=\"" . $plugin_information['authorsite'] . "\">" . $plugin_information['author'] . '</a>';
             }
 
-            if (!newpoints_iscompatible($plugininfo)) {
+            if (!newpoints_iscompatible($plugin_information)) {
                 $compatibility_warning = "<span style=\"color: red;\">" . $lang->sprintf(
                         $lang->newpoints_plugin_incompatible,
                         NEWPOINTS_VERSION
@@ -323,7 +526,7 @@ if (!$mybb->get_input('action')) // view plugins
             }
 
             $table->construct_cell(
-                "<strong>{$plugininfo['name']}</strong> ({$plugininfo['version']})<br /><small>{$plugininfo['description']}</small><br /><i><small>{$lang->created_by} {$plugininfo['author']}</small></i>"
+                "<strong>{$plugin_information['name']}</strong> ({$plugin_information['version']})<br /><small>{$plugin_information['description']}</small><br /><i><small>{$lang->created_by} {$plugin_information['author']}</small></i>"
             );
 
             // Plugin is not installed at all
@@ -427,7 +630,7 @@ function newpoints_get_plugins(): array
     $plugins_list = [];
 
     // open directory
-    $dir = @opendir(MYBB_ROOT . 'inc/plugins/newpoints/plugins/');
+    $dir = opendir(MYBB_ROOT . 'inc/plugins/newpoints/plugins/');
 
     // browse plugins directory
     if ($dir) {
@@ -448,9 +651,9 @@ function newpoints_get_plugins(): array
             }
         }
 
-        @sort($plugins_list);
+        sort($plugins_list);
 
-        @closedir($dir);
+        closedir($dir);
     }
 
     return $plugins_list;

@@ -45,6 +45,8 @@ function newpoints_meta(): bool
     } else {
         isset($lang->newpoints) || $lang->load('newpoints');
         isset($lang->nav_plugins) || $lang->load('newpoints_module_meta');
+
+        return false;
     }
 
     $sub_menu_items = [
@@ -130,7 +132,12 @@ function newpoints_admin_permissions(): array
 {
     global $lang;
 
-    language_load();
+    if (function_exists('\Newpoints\Core\language_load')) {
+        language_load();
+    } else {
+        isset($lang->newpoints) || $lang->load('newpoints');
+        isset($lang->nav_plugins) || $lang->load('newpoints_module_meta');
+    }
 
     $admin_permissions = [
         'newpoints' => $lang->can_manage_newpoints,
@@ -141,7 +148,9 @@ function newpoints_admin_permissions(): array
         'grouprules' => $lang->can_manage_grouprules,
     ];
 
-    $admin_permissions = run_hooks('admin_permissions', $admin_permissions);
+    if (function_exists('\Newpoints\Core\language_load')) {
+        $admin_permissions = run_hooks('admin_permissions', $admin_permissions);
+    }
 
     return ['name' => $lang->newpoints, 'permissions' => $admin_permissions, 'disporder' => 60];
 }

@@ -43,6 +43,35 @@ $l['newpoints_plugins'] = 'Plugins';
 $l['newpoints_plugins_description'] = 'Here you can manage NewPoints plugins.';
 $l['newpoints_plugin_incompatible'] = 'This plugin is incompatible with NewPoints {1}';
 
+$l['newpoints_plugins_check_updates'] = 'Check Updates';
+$l['newpoints_plugins_check_updates_description'] = 'Here you can manage NewPoints plugins.';
+
+$l['newpoints_plugins_error_version_check_no_supported_plugins'] = 'None of the plugins installed support version checking.';
+$l['newpoints_plugins_error_communication_problem'] = 'There was a problem communicating with the MyBB modifications server. Please try again in a few minutes.';
+$l['newpoints_plugins_error_communication_problem_no_input'] = 'Error code 1: No input specified.';
+$l['newpoints_plugins_error_communication_problem_no_plugin_ids'] = 'Error code 2: No plugin ids specified.';
+$l['newpoints_plugins_error_version_check_vulnerable'] = '[Vulnerable plugin]:';
+$l['newpoints_plugins_error_version_vulnerable_notes'] = 'This submission has currently been marked as vulnerable by the MyBB Staff. We recommend complete removal of this modification. Please see the notes below: ';
+
+$l['newpoints_plugins_success_plugins_up_to_date'] = 'Congratulations, all of your plugins are up to date.';
+
+$l['newpoints_plugins_plugin'] = 'Plugin';
+$l['newpoints_plugins_your_version'] = 'Your Version';
+$l['newpoints_plugins_latest_version'] = 'Latest Version';
+$l['newpoints_plugins_deactivate'] = 'Deactivate';
+$l['newpoints_plugins_download'] = 'Download';
+$l['newpoints_plugins_plugin_updates'] = 'Plugin Updates';
+
+$l['active_plugin'] = 'Active Plugins';
+$l['inactive_plugin'] = 'Inactive Plugins';
+$l['activate'] = 'Activate';
+$l['install_and_activate'] = 'Install &amp; Activate';
+$l['uninstall'] = 'Uninstall';
+$l['created_by'] = 'Created by';
+$l['no_plugins'] = 'There are no plugins on your forum at this time.';
+$l['no_active_plugins'] = 'There are no active plugins on your forum.';
+$l['no_inactive_plugins'] = 'There are no inactive plugins available.';
+
 ///////////////// Settings
 $l['newpoints_settings'] = 'Settings';
 $l['newpoints_settings_description'] = 'Here you can manage NewPoints settings.';
@@ -212,6 +241,8 @@ $l['setting_newpoints_main_my_alerts_enabled'] = 'Enable MyAlerts Integration';
 $l['setting_newpoints_main_my_alerts_enabled_desc'] = 'If you enable this, users will be able to get MyAlerts notifications when receiving or losing points. This setting also applies to NewPoints plugins that support alerts.';
 $l['setting_newpoints_main_pm_alerts_enabled'] = 'Enable Private Message Notifications';
 $l['setting_newpoints_main_pm_alerts_enabled_desc'] = 'Enable this to send PM notifications when users receive or lose points.';
+$l['setting_newpoints_main_plugins_repositories'] = 'Plugins Repositories';
+$l['setting_newpoints_main_plugins_repositories_desc'] = 'Insert your custom plugin repositories for updates. Leave as default if unsure. Default <code>community.mybb.com</code>';
 
 $l['setting_group_newpoints_logs'] = 'Logs';
 $l['setting_group_newpoints_logs_desc'] = 'These settings are related to logs.';

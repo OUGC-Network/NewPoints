@@ -34,5 +34,9 @@
   "pm_alerts_enabled": {
     "type": "yesno",
     "value": 0
+  },
+  "plugins_repositories": {
+    "type": "textarea",
+    "value": "community.mybb.com"
   }
 }

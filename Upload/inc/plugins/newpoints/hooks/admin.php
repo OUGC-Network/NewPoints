@@ -401,6 +401,7 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
         $done ||
         $run_module !== 'forum' ||
         !isset($current_hook_arguments['this']->_title) ||
+        !isset($lang->additional_forum_options) ||
         (
             $current_hook_arguments['this']->_title !== $lang->additional_forum_options &&
             $current_hook_arguments['this']->_title !== "<div class=\"float_right\" style=\"font-weight: normal;\"><a href=\"#\" onclick=\"$('#additional_options_link').toggle(); $('#additional_options').fadeToggle('fast'); return false;\">{$lang->hide_additional_options}</a></div>" . $lang->additional_forum_options
@@ -440,8 +441,6 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
             $setting_language_string = str_replace('newpoints_', 'newpoints_forums_', $data_field_key);
         }
 
-        $value = (int)$forum_data[$data_field_key];
-
         $form_options = [];
 
         if (isset($data_field_data['formOptions'])) {
@@ -470,6 +469,8 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
         switch ($data_field_data['form_type']) {
             case FORM_TYPE_CHECK_BOX:
             case FORM_TYPE_CHECK_BOX_LEGACY:
+                $value = (int)$forum_data[$data_field_key];
+
                 if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
                     $form_fields_rate[] = $form->generate_check_box(
                         $data_field_key,
@@ -490,6 +491,8 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
             case FORM_TYPE_NUMERIC_FIELD_LEGACY:
                 if (in_array($data_field_data['type'], ['DECIMAL', 'FLOAT'])) {
                     $value = (float)$forum_data[$data_field_key];
+                } else {
+                    $value = (int)$forum_data[$data_field_key];
                 }
 
                 if (my_strpos($data_field_key, 'newpoints_rate') === 0) {
