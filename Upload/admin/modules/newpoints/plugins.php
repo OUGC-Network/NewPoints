@@ -260,7 +260,7 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
     run_hooks('admin_config_plugins_check');
 
-    $plugins_codenames = $plugins_names = array();
+    $plugins_codenames = $plugins_names = [];
 
     if ($plugins_list) {
         $active_hooks = $plugins->hooks;
@@ -283,10 +283,10 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
             if (!empty($plugin_information['codename'])) {
                 $plugins_codenames[] = $plugin_information['codename'];
 
-                $plugins_names[$plugin_information['codename']] = array(
+                $plugins_names[$plugin_information['codename']] = [
                     'name' => $plugin_information['name'] ?? '',
                     'version' => $plugin_information['version'] ?? ''
-                );
+                ];
             }
         }
 
@@ -359,11 +359,11 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
     $table->construct_header($lang->newpoints_plugins_plugin);
 
-    $table->construct_header($lang->newpoints_plugins_your_version, array('class' => 'align_center', 'width' => 125));
+    $table->construct_header($lang->newpoints_plugins_your_version, ['class' => 'align_center', 'width' => 125]);
 
-    $table->construct_header($lang->newpoints_plugins_latest_version, array('class' => 'align_center', 'width' => 125));
+    $table->construct_header($lang->newpoints_plugins_latest_version, ['class' => 'align_center', 'width' => 125]);
 
-    $table->construct_header($lang->controls, array('class' => 'align_center', 'width' => 125));
+    $table->construct_header($lang->controls, ['class' => 'align_center', 'width' => 125]);
 
     if (!is_array($repositories_plugins['plugin'])) {
         flash_message($lang->newpoints_plugins_success_plugins_up_to_date, 'success');
@@ -410,12 +410,12 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
             $table->construct_cell(
                 "{$plugins_names[$plugin_data['attributes']['codename']]['version']}",
-                array('class' => 'align_center')
+                ['class' => 'align_center']
             );
 
             $table->construct_cell(
                 "<strong><span style=\"color: #C00\">{$plugin_data['version']['value']}</span></strong>",
-                array('class' => 'align_center')
+                ['class' => 'align_center']
             );
 
             if ($is_vulnerable) {
@@ -423,14 +423,14 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
                 $table->construct_cell(
                     "<a href=\"{$main_module_url}\"><b>{$lang->newpoints_plugins_deactivate}</b></a>",
-                    array('class' => 'align_center', 'width' => 150)
+                    ['class' => 'align_center', 'width' => 150]
                 );
             } else {
                 $plugin_repository = $plugin_data['repository'];
 
                 $table->construct_cell(
                     "<strong><a href=\"https://{$plugin_repository}/{$plugin_data['download_url']['value']}\" target=\"_blank\" rel=\"noopener\">{$lang->newpoints_plugins_download}</a></strong>",
-                    array('class' => 'align_center')
+                    ['class' => 'align_center']
                 );
             }
 
