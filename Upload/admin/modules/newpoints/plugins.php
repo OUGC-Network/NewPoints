@@ -329,7 +329,7 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
             $tree['plugins']['plugin'][$key]['repository'] = $plugin_repository;
         }
 
-        $repositories_plugins = array_merge($tree['plugins'], $repositories_plugins);
+        $repositories_plugins = array_merge_recursive($tree['plugins'], $repositories_plugins);
     }
 
     if (!$repositories_plugins) {
@@ -379,14 +379,18 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
         $repositories_plugins['plugin'][0] = $only_plugin;
     }
 
+    $done_plugins = [];
+
     foreach ($repositories_plugins['plugin'] as $plugin_data) {
         $is_vulnerable = array_key_exists('vulnerable', $plugin_data);
 
-        if (version_compare(
-            $plugins_names[$plugin_data['attributes']['codename']]['version'],
-            $plugin_data['version']['value'],
-            '<'
-        )) {
+        if (empty($done_plugins[$plugin_data['attributes']['codename']]) && version_compare(
+                $plugins_names[$plugin_data['attributes']['codename']]['version'],
+                $plugin_data['version']['value'],
+                '<'
+            )) {
+            $done_plugins[$plugin_data['attributes']['codename']] = true;
+
             $plugin_data['download_url']['value'] = htmlspecialchars_uni($plugin_data['download_url']['value']);
 
             $plugin_data['version']['value'] = htmlspecialchars_uni($plugin_data['version']['value']);
