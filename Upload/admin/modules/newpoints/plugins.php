@@ -74,7 +74,7 @@ $sub_tabs = [
 ];
 
 // Activates or deactivates a specific plugin
-if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'deactivate') {
+if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 'deactivate') {
     if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->invalid_post_verify_key2, 'error');
         admin_redirect(url_handler_get());
@@ -159,7 +159,7 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
         $active_plugins[$codename] = $codename;
         $executed[] = 'activate';
-    } elseif ($mybb->get_input('action') == 'deactivate') {
+    } else {
         $message = $lang->success_plugin_deactivated;
 
         if (function_exists("{$codename}_deactivate")) {
@@ -251,9 +251,11 @@ if ($mybb->get_input('action') == 'activate' || $mybb->get_input('action') == 'd
 
     // Rebuild settings cache
     $array = [];
+
     settings_rebuild_cache($array);
 
     flash_message($message, 'success');
+
     admin_redirect(url_handler_get());
 } elseif ($mybb->input['action'] == 'check_updates') {
     $plugins_list = newpoints_get_plugins();

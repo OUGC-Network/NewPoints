@@ -41,7 +41,6 @@ use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\log_add;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\points_subtract;
-use function Newpoints\Core\rules_forum_get_rate;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\user_can_get_points;
 use function Newpoints\Core\users_get_group_permissions;
@@ -76,6 +75,8 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
     $post_user_id = (int)$post_data['uid'];
 
+    $forum_id = (int)$post_data['fid'];
+
     $income_bonus = 0;
 
     $user_group_permissions = users_get_group_permissions($post_user_id);
@@ -83,10 +84,8 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
     $characters_count = count_characters($post_data['message']);
 
     if ($characters_count >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
-        $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id);
+        $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
     }
-
-    $forum_id = (int)$post_data['fid'];
 
     $thread_id = (int)$post_data['tid'];
 
@@ -95,7 +94,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
     $post_user_group_permissions = users_get_group_permissions($post_user_id);
 
     if (user_can_get_points($post_user_id, $forum_id)) {
-        $income_bonus *= rules_forum_get_rate($forum_id) * $post_user_group_permissions['newpoints_rate_addition'];
+        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
             points_add_simple(
@@ -118,9 +117,9 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
     }
 
     if (user_can_get_points($post_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id);
+        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
 
-        $income_value *= rules_forum_get_rate($forum_id) * $post_user_group_permissions['newpoints_rate_addition'];
+        $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_value) {
             points_add_simple(
@@ -147,11 +146,11 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
     $thread_user_id = (int)$thread_data['uid'];
 
     if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id);
+        $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
 
         $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
 
-        $income_value *= rules_forum_get_rate($forum_id) * $thread_user_group_permissions['newpoints_rate_addition'];
+        $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_value) {
             points_add_simple(
@@ -194,7 +193,9 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
 
     $thread_id = (int)$post_data['tid'];
 
-    $income_bonus = get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id);
+    $forum_id = (int)$post_data['fid'];
+
+    $income_bonus = get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
 
     $old_character_count = count_characters(get_post($post_data['pid'])['message']);
 
@@ -206,12 +207,10 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
 
     $income_bonus = ($new_character_count - $old_character_count) * $income_bonus;
 
-    $forum_id = (int)$post_data['fid'];
-
     $post_user_group_permissions = users_get_group_permissions($post_user_id);
 
     if ($income_bonus > 0 && user_can_get_points($post_user_id, $forum_id)) {
-        $income_bonus *= rules_forum_get_rate($forum_id) * $post_user_group_permissions['newpoints_rate_addition'];
+        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
             points_add_simple(
@@ -283,10 +282,14 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
         $characters_count = count_characters($thread_data['message']);
 
         if ($characters_count >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $thread_user_id);
+            $income_bonus = $characters_count * get_income_value(
+                    INCOME_TYPE_POST_CHARACTER,
+                    $thread_user_id,
+                    $forum_id
+                );
         }
 
-        $income_bonus *= rules_forum_get_rate($forum_id) * $thread_user_group_permissions['newpoints_rate_addition'];
+        $income_bonus *= $thread_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
             points_add_simple(
@@ -309,9 +312,9 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
     }
 
     if (user_can_get_points($thread_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id);
+        $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id, $forum_id);
 
-        $income_value *= rules_forum_get_rate($forum_id) * $thread_user_group_permissions['newpoints_rate_addition'];
+        $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_value) {
             points_add_simple(

@@ -35,6 +35,7 @@ use AbstractPdoDbDriver;
 use DateTime;
 use DB_SQLite;
 use DirectoryIterator;
+use JetBrains\PhpStorm\Deprecated;
 use Moderation;
 use MyBB;
 use MybbStuff_MyAlerts_AlertManager;
@@ -49,23 +50,23 @@ use function Newpoints\Hooks\Forum\myalerts_register_client_alert_formatters;
 
 use const Newpoints\ROOT;
 
-function language_load(string $plugin = '', bool $forceUserArea = false, bool $suppressError = false): bool
+function language_load(string $plugin_code = '', bool $force_user_area = false, bool $suppress_error = false): bool
 {
     global $lang;
 
-    if ($plugin === '') {
-        isset($lang->newpoints) || $lang->load('newpoints', $forceUserArea, $suppressError);
-    } elseif ($plugin === 'module_meta') {
-        isset($lang->nav_plugins) || $lang->load('newpoints_module_meta', $forceUserArea, $suppressError);
+    if ($plugin_code === '') {
+        isset($lang->newpoints) || $lang->load('newpoints', $force_user_area, $suppress_error);
+    } elseif ($plugin_code === 'module_meta') {
+        isset($lang->nav_plugins) || $lang->load('newpoints_module_meta', $force_user_area, $suppress_error);
     } else {
-        if (my_strpos($plugin, 'newpoints_') === 0) {
-            $plugin = str_replace('newpoints_', '', $plugin);
+        if (my_strpos($plugin_code, 'newpoints_') === 0) {
+            $plugin_code = str_replace('newpoints_', '', $plugin_code);
         }
 
-        if (!isset($lang->{"newpoints_{$plugin}"})) {
+        if (!isset($lang->{"newpoints_{$plugin_code}"})) {
             $lang->set_path(MYBB_ROOT . 'inc/plugins/newpoints/languages');
 
-            $lang->load("newpoints_{$plugin}", $forceUserArea, $suppressError);
+            $lang->load("newpoints_{$plugin_code}", $force_user_area, $suppress_error);
 
             $lang->set_path(MYBB_ROOT . 'inc/languages');
         }
@@ -117,7 +118,7 @@ function run_hooks(string $hook_name = '', array &$hook_arguments = []): array
     return (array)$hook_arguments;
 }
 
-function url_handler(string $newUrl = ''): string
+function url_handler(string $new_url = ''): string
 {
     static $setUrl = null;
 
@@ -125,16 +126,16 @@ function url_handler(string $newUrl = ''): string
         $setUrl = main_file_name();
     }
 
-    if (($newUrl = trim($newUrl))) {
-        $setUrl = $newUrl;
+    if (($new_url = trim($new_url))) {
+        $setUrl = $new_url;
     }
 
     return $setUrl;
 }
 
-function url_handler_set(string $newUrl): string
+function url_handler_set(string $new_url): string
 {
-    return url_handler($newUrl);
+    return url_handler($new_url);
 }
 
 function url_handler_get(): string
@@ -142,7 +143,7 @@ function url_handler_get(): string
     return url_handler();
 }
 
-function url_handler_build(array $urlAppend = [], bool $fetchImportUrl = false, bool $encode = true): string
+function url_handler_build(array $url_append = [], bool $fetch_import_url = false, bool $encode = true): string
 {
     global $PL;
 
@@ -150,14 +151,14 @@ function url_handler_build(array $urlAppend = [], bool $fetchImportUrl = false, 
         require_once PLUGINLIBRARY;
     }
 
-    if ($fetchImportUrl === false) {
-        if ($urlAppend && !is_array($urlAppend)) {
-            $urlAppend = explode('=', $urlAppend);
-            $urlAppend = [$urlAppend[0] => $urlAppend[1]];
+    if ($fetch_import_url === false) {
+        if ($url_append && !is_array($url_append)) {
+            $url_append = explode('=', $url_append);
+            $url_append = [$url_append[0] => $url_append[1]];
         }
     }
 
-    return $PL->url_append(url_handler_get(), $urlAppend, '&amp;', $encode);
+    return $PL->url_append(url_handler_get(), $url_append, '&amp;', $encode);
 }
 
 function get_setting(string $setting_key = '')
@@ -288,7 +289,7 @@ function templates_add(string $name, string $contents, int $sid = -1): bool
 
     $name = strpos($name, 'newpoints_') === 0 ? $name : 'newpoints_' . $name;
 
-    $templatearray = [
+    $insert_data = [
         'title' => $db->escape_string($name),
         'template' => $db->escape_string($contents),
         'sid' => $sid
@@ -297,18 +298,17 @@ function templates_add(string $name, string $contents, int $sid = -1): bool
     $query = $db->simple_select(
         'templates',
         'tid,title,template',
-        "sid='{$sid}' AND title='{$templatearray['title']}'"
+        "sid='{$sid}' AND title='{$insert_data['title']}'"
     );
 
-    $templates = [];
-    $duplicates = [];
+    $templates = $duplicates = [];
 
-    while ($templ = $db->fetch_array($query)) {
-        if (isset($templates[$templ['title']])) {
-            $duplicates[$templ['tid']] = $templ['tid'];
-            $templates[$templ['title']]['template'] = false;
+    while ($template_data = $db->fetch_array($query)) {
+        if (isset($templates[$template_data['title']])) {
+            $duplicates[$template_data['tid']] = $template_data['tid'];
+            $templates[$template_data['title']]['template'] = false;
         } else {
-            $templates[$templ['title']] = $templ;
+            $templates[$template_data['title']] = $template_data;
         }
     }
 
@@ -320,13 +320,13 @@ function templates_add(string $name, string $contents, int $sid = -1): bool
     // Update if necessary, insert otherwise
     if (isset($templates[$name])) {
         if ($templates[$name]['template'] !== $contents) {
-            return $db->update_query('templates', $templatearray, "tid={$templates[$name]['tid']}");
+            return $db->update_query('templates', $insert_data, "tid={$templates[$name]['tid']}");
         }
 
         return false;
     }
 
-    $db->insert_query('templates', $templatearray);
+    $db->insert_query('templates', $insert_data);
 
     return true;
 }
@@ -639,8 +639,6 @@ function settings_load(): bool
 
 function settings_load_init(): bool
 {
-    global $mybb;
-
     static $done = false;
 
     if ($done) {
@@ -821,57 +819,57 @@ function settings_rebuild(): bool
 /**
  * Adds/Subtracts points to a user
  *
- * @param int $uid the id of the user
+ * @param int $user_id the id of the user
  * @param float $points the number of points to add or subtract (if a negative value)
- * @param float $forumrate the forum income rate
- * @param float $grouprate the user group income rate
- * @param bool $isstring if the uid is a string in case we don't have the uid we can update the points field by searching for the user name
+ * @param float $forum_rate the forum income rate
+ * @param float $group_rate the user group income rate
+ * @param bool $is_string if the uid is a string in case we don't have the uid we can update the points field by searching for the user name
  * @param bool $immediate true if you want to run the query immediatly. Default is false which means the query will be run on shut down. Note that if the previous paremeter is set to true, the query is run immediatly
  * Note: some pages (by other plugins) do not run queries on shutdown so adding this to shutdown may not be good if you're not sure if it will run.
  * @return bool
  */
 function points_add(
-    int $uid,
+    int $user_id,
     float $points,
-    float $forumrate = 1,
-    float $grouprate = 1,
-    bool $isstring = false,
+    float $forum_rate = 1,
+    float $group_rate = 1,
+    bool $is_string = false,
     bool $immediate = false
 ): bool {
-    global $db, $mybb, $userpoints;
+    global $db, $userpoints;
 
-    if ($points == 0 || ($uid <= 0 && !$isstring)) {
+    if ($points == 0 || ($user_id <= 0 && !$is_string)) {
         return false;
     }
 
-    if ($isstring === true) {
+    if ($is_string === true) {
         $immediate = true;
     }
 
     // might work only for MySQL and MySQLi
     //$db->update_query("users", array('newpoints' =>'newpoints+('.(float)$points.')'), 'uid=\''.(int)$uid.'\'', '', true);
 
-    $points_rounded = round($points * $forumrate * $grouprate, (int)get_setting('main_decimal'));
+    $points_rounded = round($points * $forum_rate * $group_rate, (int)get_setting('main_decimal'));
 
-    if ($isstring) // where username
+    if ($is_string) // where username
     {
         $db->write_query(
             'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . $points_rounded . "' WHERE username='" . $db->escape_string(
-                $uid
+                $user_id
             ) . "'"
         );
         // where uid
         // if immediate, run the query now otherwise add it to shutdown to avoid slow down
     } elseif ($immediate) {
         $db->write_query(
-            'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . $points_rounded . "' WHERE uid='" . $uid . "'"
+            'UPDATE ' . $db->table_prefix . "users SET newpoints=newpoints+'" . $points_rounded . "' WHERE uid='" . $user_id . "'"
         );
     } else {
         isset($userpoints) || $userpoints = [];
 
-        isset($userpoints[$uid]) || $userpoints[$uid] = 0;
+        isset($userpoints[$user_id]) || $userpoints[$user_id] = 0;
 
-        $userpoints[$uid] += $points_rounded;
+        $userpoints[$user_id] += $points_rounded;
     }
 
     static $newpoints_shutdown;
@@ -893,29 +891,20 @@ function points_subtract(
 function points_add_simple(
     int $user_id,
     float $points,
+    #[Deprecated]
     int $forum_id = 0
 ): bool {
-    $forum_rate = 1;
+    if ($forum_id) {
+        $forum_data = get_forum($forum_id);
 
-    if ($forum_id !== 0) {
-        $forum_rate = rules_forum_get_rate($forum_id);
-
-        if (!$forum_rate) {
-            return false;
-        }
-    }
-
-    $user_group_permissions = users_get_group_permissions($user_id);
-
-    if (empty($user_group_permissions['newpoints_rate_addition'])) {
-        return false;
+        $points *= $forum_data['newpoints_rate'];
     }
 
     return points_add(
         $user_id,
         abs($points),
-        $forum_rate,
-        (float)$user_group_permissions['newpoints_rate_addition'],
+        1,
+        1,
         false,
         true
     );
@@ -967,10 +956,10 @@ function points_format(float $points): string
  * Get rules of a certain group or forum
  *
  * @param string $type the type of rule: 'forum' or 'group'
- * @param int $id the id of the group or forum
+ * @param int $rule_id the id of the group or forum
  * @return array false if something went wrong
  */
-function rules_get(string $type, int $id): array
+function rules_get(string $type, int $rule_id): array
 {
     global $db, $cache;
 
@@ -990,14 +979,14 @@ function rules_get(string $type, int $id): array
         //throw new Exception('Invalid rule identifier');
         // Something's wrong so let's get rule from DB
         // To fix this issue, the administrator should edit a rule and save it (all rules are re-cached when one is added/edited)
-        $query = $db->simple_select("newpoints_{$type}rules", 'rate', "{$typeid}id='{$id}'");
+        $query = $db->simple_select("newpoints_{$type}rules", 'rate', "{$typeid}id='{$rule_id}'");
 
         if ($db->num_rows($query)) {
             $rule_data = $db->fetch_array($query);
         }
-    } elseif (!empty($cached_rules) && isset($cached_rules[$type]) && !empty($cached_rules[$type][$id])) {
+    } elseif (!empty($cached_rules) && isset($cached_rules[$type]) && !empty($cached_rules[$type][$rule_id])) {
         // If the array is not empty then grab from cache
-        $rule_data = $cached_rules[$type][$id];
+        $rule_data = $cached_rules[$type][$rule_id];
     }
 
     return $rule_data;
@@ -1025,7 +1014,7 @@ function rules_get_all(string $type): array
     global $db, $cache;
 
     if (!$type) {
-        return false;
+        return [];
     }
 
     if ($type == 'forum') {
@@ -1038,20 +1027,19 @@ function rules_get_all(string $type): array
 
     $rules = [];
 
-    $cachedrules = $cache->read('newpoints_rules');
-    if ($cachedrules === false) {
+    $rules_cache = $cache->read('newpoints_rules');
+
+    if ($rules_cache === false) {
         // Something's wrong so let's get the rules from DB
         // To fix this issue, the administrator should edit a rule and save it (all rules are re-cached when one is added/edited)
-        $query = $db->simple_select('newpoints_' . $type . 'rules', '*');
+        $query = $db->simple_select('newpoints_' . $type . 'rules');
         while ($rule = $db->fetch_array($query)) {
             $rules[$rule[$typeid . 'id']] = $rule;
         }
-    } else {
-        if (!empty($cachedrules[$type])) {
-            // Not empty? Then grab the chosen rules
-            foreach ($cachedrules[$type] as $crule) {
-                $rules[$crule[$typeid . 'id']] = $crule;
-            }
+    } elseif (!empty($rules_cache[$type])) {
+        // Not empty? Then grab the chosen rules
+        foreach ($rules_cache[$type] as $crule) {
+            $rules[$crule[$typeid . 'id']] = $crule;
         }
     }
 
@@ -1128,22 +1116,26 @@ function rules_get_group_rate(array $user = [], string $rate_key = 'newpoints_ra
  */
 function rules_rebuild_cache(array &$rules = []): bool
 {
-    global $db, $cache, $mybb;
+    global $db, $cache;
 
     $rules = [];
 
     // Query forum rules
     $query = $db->simple_select('newpoints_forumrules');
+
     while ($rule = $db->fetch_array($query)) {
         $rules['forum'][$rule['fid']] = $rule;
     }
+
     $db->free_result($query);
 
     // Query group rules
     $query = $db->simple_select('newpoints_grouprules');
+
     while ($rule = $db->fetch_array($query)) {
         $rules['group'][$rule['gid']] = $rule;
     }
+
     $db->free_result($query);
 
     $cache->update('newpoints_rules', $rules);
@@ -1210,19 +1202,19 @@ function my_alerts_send(int $from_user_id, int $to_user_id, string $alert_code)
 /**
  * Get the user group data of the gid
  *
- * @param int $gid the usergroup ID
+ * @param int $group_id the usergroup ID
  * @return array the user data
  *
  */
-function get_group(int $gid): array
+function get_group(int $group_id): array
 {
     global $db;
 
-    if (!$gid) {
+    if (!$group_id) {
         return [];
     }
 
-    $query = $db->simple_select('usergroups', '*', 'gid=\'' . $gid . '\'');
+    $query = $db->simple_select('usergroups', '*', 'gid=\'' . $group_id . '\'');
 
     if ($db->num_rows($query)) {
         return $db->fetch_array($query);
@@ -1288,7 +1280,12 @@ function find_replace_template_sets(string $title, string $find, string $replace
  * @param string $log_data extra data
  * @param string $username $username of who's executed the action
  * @param int $user_id $uid of who's executed the action
- * @return bool false if something went wrong
+ * @param float $log_points
+ * @param int $primary_id
+ * @param int $secondary_id
+ * @param int $tertiary_id
+ * @param int $log_type
+ * @return int false if something went wrong
  */
 function log_add(
     string $log_action,
@@ -1407,9 +1404,9 @@ function log_add(
  */
 function log_remove(array $action): bool
 {
-    global $db, $mybb;
+    global $db;
 
-    if (empty($action) || !is_array($action)) {
+    if (empty($action)) {
         return false;
     }
 
@@ -1737,7 +1734,7 @@ function task_enable(
     string $description = '',
     int $action = TASK_ENABLE
 ): bool {
-    global $db, $lang;
+    global $db;
 
     language_load();
 
@@ -1928,7 +1925,7 @@ function get_income_types(): array
     return $income_types;
 }
 
-function get_income_value(string $income_type, int $user_id = 0): float
+function get_income_value(string $income_type, int $user_id = 0, int $forum_id = 0): float
 {
     global $mybb;
 
@@ -1971,6 +1968,12 @@ function get_income_value(string $income_type, int $user_id = 0): float
             $income_value = get_setting($global_setting_key) === false ? $group_permissions[$group_setting_key] :
                 get_setting($global_setting_key);
             break;
+    }
+
+    if ($forum_id) {
+        $forum_data = get_forum($forum_id);
+
+        $income_value *= $forum_data['newpoints_rate'];
     }
 
     return (float)$income_value;

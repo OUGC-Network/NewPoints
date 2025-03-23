@@ -353,7 +353,7 @@ if ($mybb->get_input('action') == 'stats') {
     if ($mybb->user['usergroup'] != 4) {
         $q = $db->simple_select(
             'newpoints_log',
-            'COUNT(*) as donations',
+            'COUNT(lid) as donations',
             'action=\'donation\' AND date>' . (constant(
                     'TIME_NOW'
                 ) - (int)get_setting('donations_flood_minutes') * 60 * 60) . ' AND uid=' . $current_user_id

@@ -144,70 +144,71 @@ if ($mybb->get_input('action') == 'change') {
 
     $group_key = '';
 
-    if ($plugin_code) {
-        $plugin_title = $plugin_description = '';
+    if (!$plugin_code) {
+        flash_message($lang->newpoints_select_plugin, 'error');
 
-        $group_key = str_replace('newpoints_', '', $plugin_code);
+        admin_redirect('index.php?module=newpoints-settings');
+    }
 
-        $query = $db->simple_select(
-            'newpoints_settings',
-            '*',
-            "plugin='" . $db->escape_string($group_key) . "'",
-            ['order_by' => 'disporder']
-        );
+    $plugin_title = $plugin_description = '';
 
-        if (!$db->num_rows($query)) {
+    $group_key = str_replace('newpoints_', '', $plugin_code);
+
+    $query = $db->simple_select(
+        'newpoints_settings',
+        '*',
+        "plugin='" . $db->escape_string($group_key) . "'",
+        ['order_by' => 'disporder']
+    );
+
+    if (!$db->num_rows($query)) {
+        flash_message($lang->error_no_settings_found, 'error');
+        admin_redirect('index.php?module=newpoints-settings');
+    }
+
+    while ($setting = $db->fetch_array($query)) {
+        $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
+    }
+
+    if (in_array($plugin_code, ['main', 'donations', 'stats', 'logs'], true)) {
+        $lang_var = 'setting_group_newpoints_' . $plugin_code;
+
+        $plugin_title = $lang->{$lang_var};
+
+        $plugin_description = $lang->{$lang_var . '_desc'};
+    } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
+        $plugin_title = htmlspecialchars_uni($plugin_information['name']);
+
+        $plugin_description = htmlspecialchars_uni($plugin_description);
+    } else {
+        $setting_groups_objects = [];
+
+        $setting_groups_objects = run_hooks('admin_settings_commit_start', $setting_groups_objects);
+
+        if (!isset($setting_groups_objects[$plugin_code])) {
             flash_message($lang->error_no_settings_found, 'error');
+
             admin_redirect('index.php?module=newpoints-settings');
         }
 
-        while ($setting = $db->fetch_array($query)) {
-            $cache_settings[$setting['plugin']][$setting['sid']] = $setting;
-        }
+        $group_key = $plugin_code;
 
-        if (in_array($plugin_code, ['main', 'donations', 'stats', 'logs'], true)) {
-            $lang_var = 'setting_group_newpoints_' . $plugin_code;
+        $group_lang_var = "setting_group_newpoints_{$group_key}";
 
-            $plugin_title = $lang->{$lang_var};
+        $plugin_title = htmlspecialchars_uni($lang->{$group_lang_var});
 
-            $plugin_description = $lang->{$lang_var . '_desc'};
-        } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
-            $plugin_title = htmlspecialchars_uni($plugin_information['name']);
+        $group_desc_lang_var = "setting_group_newpoints_{$group_key}_desc";
 
-            $plugin_description = htmlspecialchars_uni($plugin_description);
-        } else {
-            $setting_groups_objects = [];
-
-            $setting_groups_objects = run_hooks('admin_settings_commit_start', $setting_groups_objects);
-
-            if (!isset($setting_groups_objects[$plugin_code])) {
-                flash_message($lang->error_no_settings_found, 'error');
-
-                admin_redirect('index.php?module=newpoints-settings');
-            }
-
-            $group_key = $plugin_code;
-
-            $group_lang_var = "setting_group_newpoints_{$group_key}";
-
-            $plugin_title = htmlspecialchars_uni($lang->{$group_lang_var});
-
-            $group_desc_lang_var = "setting_group_newpoints_{$group_key}_desc";
-
-            $plugin_description = htmlspecialchars_uni($lang->{$group_desc_lang_var});
-        }
-
-        // Page header
-        $page->add_breadcrumb_item($plugin_title);
-        $page->output_header($lang->board_settings . " - {$plugin_title}");
-
-        $page->output_nav_tabs($sub_tabs, 'newpoints_settings_change');
-
-        $form = new Form('index.php?module=newpoints-settings&amp;action=change', 'post', 'change');
-    } else {
-        flash_message($lang->newpoints_select_plugin, 'error');
-        admin_redirect('index.php?module=newpoints-settings');
+        $plugin_description = htmlspecialchars_uni($lang->{$group_desc_lang_var});
     }
+
+    // Page header
+    $page->add_breadcrumb_item($plugin_title);
+    $page->output_header($lang->board_settings . " - {$plugin_title}");
+
+    $page->output_nav_tabs($sub_tabs, 'newpoints_settings_change');
+
+    $form = new Form('index.php?module=newpoints-settings&amp;action=change', 'post', 'change');
 
     // Build rest of page
     $buttons[] = $form->generate_submit_button($lang->save_settings);
@@ -229,10 +230,17 @@ if ($mybb->get_input('action') == 'change') {
 
     foreach ($cache_settings[$group_key] as $setting) {
         $options = '';
+        
         $type = explode("\n", $setting['type']);
+
         $type[0] = trim($type[0]);
+
         $element_name = "upsetting[{$setting['name']}]";
+
         $element_id = "setting_{$setting['name']}";
+
+        $setting_code = '';
+
         if ($type[0] == 'text' || $type[0] == '') {
             $setting_code = $form->generate_text_box($element_name, $setting['value'], ['id' => $element_id]);
         } elseif ($type[0] == 'numeric') {
@@ -265,6 +273,7 @@ if ($mybb->get_input('action') == 'change') {
             );
         } elseif ($type[0] == 'cpstyle') {
             $dir = @opendir(MYBB_ROOT . $config['admin_dir'] . '/styles');
+
             while ($folder = readdir($dir)) {
                 if ($folder != '.' && $folder != '..' && @file_exists(
                         MYBB_ROOT . $config['admin_dir'] . "/styles/$folder/main.css"
@@ -272,8 +281,11 @@ if ($mybb->get_input('action') == 'change') {
                     $folders[$folder] = ucfirst($folder);
                 }
             }
+
             closedir($dir);
+
             ksort($folders);
+
             $setting_code = $form->generate_select_box(
                 $element_name,
                 $folders,
@@ -282,6 +294,7 @@ if ($mybb->get_input('action') == 'change') {
             );
         } elseif ($type[0] == 'language') {
             $languages = $lang->get_languages();
+
             $setting_code = $form->generate_select_box(
                 $element_name,
                 $languages,
@@ -290,6 +303,7 @@ if ($mybb->get_input('action') == 'change') {
             );
         } elseif ($type[0] == 'adminlanguage') {
             $languages = $lang->get_languages(1);
+
             $setting_code = $form->generate_select_box(
                 $element_name,
                 $languages,
@@ -304,9 +318,11 @@ if ($mybb->get_input('action') == 'change') {
             );
         } elseif ($type[0] == 'php') {
             $setting['type'] = substr($setting['type'], 3);
+
             eval("\$setting_code = \"" . $setting['type'] . "\";");
         } elseif ($type[0] == 'forumselect') {
             $selected_values = '';
+
             if ($setting['value'] != '' && $setting['value'] != -1) {
                 $selected_values = explode(',', (string)$setting['value']);
 
@@ -317,6 +333,7 @@ if ($mybb->get_input('action') == 'change') {
             }
 
             $forum_checked = ['all' => '', 'custom' => '', 'none' => ''];
+
             if ($setting['value'] == -1) {
                 $forum_checked['all'] = 'checked="checked"';
             } elseif ($setting['value'] != '') {
@@ -358,6 +375,7 @@ if ($mybb->get_input('action') == 'change') {
             );
         } elseif ($type[0] == 'groupselect') {
             $selected_values = '';
+
             if ($setting['value'] != '' && $setting['value'] != -1) {
                 $selected_values = explode(',', (string)$setting['value']);
 
@@ -372,6 +390,7 @@ if ($mybb->get_input('action') == 'change') {
                 'custom' => '',
                 'none' => ''
             ];
+
             if ($setting['value'] == -1) {
                 $group_checked['all'] = 'checked="checked"';
             } elseif ($setting['value'] != '') {
@@ -418,8 +437,10 @@ if ($mybb->get_input('action') == 'change') {
         } else {
             $typecount = count($type);
 
-            if ($type[0] == 'checkbox') {
-                $multivalue = explode(',', $setting['value']);
+            $multi_values = [];
+
+            if ($type[0] === 'checkbox') {
+                $multi_values = explode(',', $setting['value']);
             }
 
             $option_list = [];
@@ -463,7 +484,7 @@ if ($mybb->get_input('action') == 'change') {
                         );
                     }
                 } elseif ($type[0] == 'checkbox') {
-                    if (in_array($optionsexp[0], $multivalue)) {
+                    if (in_array($optionsexp[0], $multi_values)) {
                         $option_list[$i] = $form->generate_check_box(
                             "{$element_name}[]",
                             $optionsexp[0],
@@ -509,15 +530,20 @@ if ($mybb->get_input('action') == 'change') {
                 }
             }
         }
+
         // Do we have a custom language variable for this title or description?
         $title_lang = 'setting_' . $setting['name'];
+
         $desc_lang = $title_lang . '_desc';
+
         if (!empty($lang->{$title_lang})) {
             $setting['title'] = $lang->{$title_lang};
         }
+
         if (!empty($lang->{$desc_lang})) {
             $setting['description'] = $lang->{$desc_lang};
         }
+
         $form_container->output_row(
             htmlspecialchars_uni($setting['title']),
             $setting['description'],
