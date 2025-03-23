@@ -45,6 +45,11 @@ language_load();
 
 run_hooks('admin_forumrules_begin');
 
+$page->extra_messages[] = [
+    'type' => 'error',
+    'message' => 'Forum rules were effectively removed from the NewPoints core as of version 3.1.5. <a href="./index.php?module=forum">Use the <code>Forum Rate</code> forum setting instead.</a><br/>This module will be removed in future versions and plugins might still rely on forum rules, but are encouraged to drop support for it.'
+];
+
 $page->add_breadcrumb_item($lang->newpoints_forumrules, 'index.php?module=newpoints-forumrules');
 
 $page->output_header($lang->newpoints_forumrules);

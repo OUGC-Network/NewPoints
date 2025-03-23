@@ -109,7 +109,11 @@ $l['newpoints_filter'] = 'Filters enabled:<br />{1}';
 $l['newpoints_username'] = 'Username';
 
 ///////////////// Maintenance
-$l['newpoints_recount'] = 'Recount User NewPoints';
+$l['newpoints_recount_from_logs'] = 'Recount User NewPoints From Logs';
+$l['newpoints_recount_from_logs_description'] = 'When this is run, the NewPoints amount for each user will be updated to reflect the arithmetic subtraction of charge logs from income logs.';
+$l['newpoints_recount_from_logs_success'] = ' The NewPoints amount for users have been rebuilt from logs successfully.';
+
+$l['newpoints_recount'] = 'Recount User NewPoints (Deprecated)';
 $l['newpoints_recount_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect its current live value based on the income settings.';
 $l['newpoints_recount_success'] = ' The NewPoints amount for users have been rebuilt successfully.';
 $l['newpoints_reset'] = 'Reset User NewPoints';

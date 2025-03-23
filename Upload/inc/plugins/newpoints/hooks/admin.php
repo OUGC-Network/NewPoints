@@ -35,6 +35,7 @@ use FormContainer;
 use MyBB;
 
 use function Newpoints\Admin\recount_rebuild_newpoints_recount;
+use function Newpoints\Admin\recount_rebuild_newpoints_recount_from_logs;
 use function Newpoints\Admin\recount_rebuild_newpoints_reset;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
@@ -753,6 +754,16 @@ function admin_tools_recount_rebuild_output_list(): bool
     global $form_container, $form;
 
     $form_container->output_cell(
+        "<label>{$lang->newpoints_recount_from_logs}</label><div class=\"description\">{$lang->newpoints_recount_from_logs_description}</div>"
+    );
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_recount', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+    $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_recount_newpoints_from_logs'])
+    );
+    $form_container->construct_row();
+
+    $form_container->output_cell(
         "<label>{$lang->newpoints_recount}</label><div class=\"description\">{$lang->newpoints_recount_desc}</div>"
     );
     $form_container->output_cell(
@@ -776,6 +787,20 @@ function admin_tools_recount_rebuild_output_list(): bool
 function admin_tools_do_recount_rebuild(): bool
 {
     global $mybb;
+
+    if (isset($mybb->input['do_recount_newpoints_from_logs'])) {
+        if ($mybb->get_input('page', MyBB::INPUT_INT) === 1) {
+            log_admin_action('recount_from_logs');
+        }
+
+        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+
+        if (!$per_page || $per_page <= 0) {
+            $mybb->input['newpoints_recount'] = 50;
+        }
+
+        recount_rebuild_newpoints_recount_from_logs();
+    }
 
     if (isset($mybb->input['do_recount_newpoints'])) {
         if ($mybb->get_input('page', MyBB::INPUT_INT) === 1) {

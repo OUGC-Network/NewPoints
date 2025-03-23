@@ -160,7 +160,7 @@ function pre_parse_page(string &$page_contents): string
             case 'announcements.php':
                 $announcement_id = $mybb->get_input('aid', MyBB::INPUT_INT);
 
-                $query = $db->simple_select("announcements", "fid", "aid='{$announcement_id}'");
+                $query = $db->simple_select('announcements', 'fid', "aid='{$announcement_id}'");
 
                 $announcement_data = $db->fetch_array($query);
 

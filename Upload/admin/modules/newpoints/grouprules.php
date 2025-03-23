@@ -48,6 +48,11 @@ $hook_arguments = ['form_container' => &$form_container];
 
 run_hooks('admin_grouprules_begin');
 
+$page->extra_messages[] = [
+    'type' => 'error',
+    'message' => 'Group rules were effectively removed from the NewPoints core as of version 3.1.5. <a href="./index.php?module=user-groups">Use the <code>Group Rate for Additions</code> or <code>Group Rate for Subtraction</code> group permission instead.</a><br/>This module will be removed in future versions and plugins might still rely on group rules, but are encouraged to drop support for it.'
+];
+
 $page->add_breadcrumb_item($lang->newpoints_grouprules, 'index.php?module=newpoints-grouprules');
 
 $page->output_header($lang->newpoints_grouprules);

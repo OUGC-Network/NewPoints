@@ -51,6 +51,7 @@ use function Newpoints\Core\task_disable;
 use function Newpoints\Core\task_enable;
 use function Newpoints\Core\templates_rebuild;
 use function Newpoints\Core\user_can_get_points;
+use function Newpoints\Core\user_update;
 use function Newpoints\Core\users_get_group_permissions;
 
 use const Newpoints\Core\FIELDS_DATA;
@@ -63,6 +64,7 @@ use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\TABLES_DATA;
 use const Newpoints\ROOT;
@@ -704,6 +706,70 @@ function permission_delete(string $plugin_code): bool
     change_admin_permission('newpoints', 'newpoints_' . $plugin_code, -1);
 
     return true;
+}
+
+function recount_rebuild_newpoints_recount_from_logs()
+{
+    global $db, $mybb, $lang;
+
+    $query = $db->simple_select('users', 'COUNT(uid) as total_users');
+
+    $total_users = $db->fetch_field($query, 'total_users');
+
+    $page = $mybb->get_input('page', MyBB::INPUT_INT);
+
+    $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+
+    $start = ($page - 1) * $per_page;
+
+    $end = $start + $per_page;
+
+    $query = $db->simple_select(
+        'users',
+        'uid',
+        '',
+        ['order_by' => 'uid', 'order_dir' => 'asc', 'limit_start' => $start, 'limit' => $per_page]
+    );
+
+    $log_type_income = LOGGING_TYPE_INCOME;
+
+    $log_type_charge = LOGGING_TYPE_CHARGE;
+
+    while ($user_data = $db->fetch_array($query)) {
+        $user_id = (int)$user_data['uid'];
+
+        $total_income = (float)($db->fetch_field(
+            $db->simple_select(
+                'newpoints_log',
+                'SUM(points) AS total_income',
+                "uid='{$user_id}' AND log_type='{$log_type_income}'",
+            ),
+            'total_income'
+        ) ?? 0);
+
+        $total_charges = (float)($db->fetch_field(
+            $db->simple_select(
+                'newpoints_log',
+                'SUM(points) AS total_charges',
+                "uid='{$user_id}' AND log_type='{$log_type_charge}'",
+            ),
+            'total_charges'
+        ) ?? 0);
+
+        $user_income = $total_income - $total_charges;
+
+        user_update($user_id, ['newpoints' => $total_income - $total_charges]);
+    }
+
+    check_proceed(
+        $total_users,
+        $end,
+        ++$page,
+        $per_page,
+        'newpoints_recount',
+        'do_recount_newpoints_from_logs',
+        $lang->newpoints_recount_from_logs_success
+    );
 }
 
 function recount_rebuild_newpoints_recount()
