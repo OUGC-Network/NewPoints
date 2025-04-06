@@ -1,3 +1,9 @@
+<p align="center">
+    <a href="" rel="noopener">
+        <img width="700" height="400" src="https://github.com/user-attachments/assets/397e2214-4ea5-4450-a462-8c3b7d812db5" alt="Project logo">
+    </a>
+</p>
+
 <h3 align="center">NewPoints</h3>
 
 <div align="center">
@@ -182,7 +188,7 @@ To display NewPoints data it is required that you edit the following template fo
    inside the author template.
 7. Place `{$newpoints_profile}` after `{$warning_level}`in the `member_profile` template to display the profile user
    NewPoints details.
-8. Place `{$newpoints_header_menu}` after `{menu_calenda}`in the `header` template to display a link to the NewPoints
+8. Place `{$newpoints_header_menu}` after `{$menu_calendar}`in the `header` template to display a link to the NewPoints
    main page.
 9. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
    `memberlist_user` template to display the user NewPoints amount formatted.
