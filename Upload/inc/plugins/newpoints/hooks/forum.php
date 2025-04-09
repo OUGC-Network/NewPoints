@@ -82,12 +82,14 @@ function global_start(): bool
 
     if (isset($templatelist)) {
         $templatelist .= ',';
+    } else {
+        $templatelist = '';
     }
 
     $template_list = [
         'global' => [
+            'newpoints_points_format', // for some reason this template does not want to be cached xd
             'newpoints_header_menu',
-            'newpoints_points_format',
             'multipage_page_current',
             'multipage_page',
             'multipage_nextpage',
@@ -107,16 +109,20 @@ function global_start(): bool
         ]
     ];
 
+    if (defined('THIS_SCRIPT')) {
+        $this_script = THIS_SCRIPT;
+    } else {
+        $this_script = 'global';
+    }
+
     $template_list = run_hooks('global_start', $template_list);
 
     foreach ($template_list as $script_name => $templates) {
         if (!is_array($templates)) {
-            $templatelist .= ',' . $templates;
-
-            continue;
+            $templates = [$templates];
         }
 
-        if ($script_name === 'global' || $script_name === THIS_SCRIPT) {
+        if ($script_name === 'global' || $script_name === $this_script) {
             $templatelist .= ',' . implode(',', $templates);
         }
     }

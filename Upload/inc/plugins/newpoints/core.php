@@ -1788,6 +1788,7 @@ function task_delete(string $plugin_code = ''): bool
 
 function page_build_menu_options(): string
 {
+    global $mybb;
     static $menu = null;
 
     if ($menu === null) {
@@ -2130,6 +2131,45 @@ function page_build_purchase_confirmation(
     if ($newpoints_pagination) {
         $newpoints_pagination = eval(templates_get('page_pagination'));
     }
+
+    $page_contents = eval(templates_get('page'));
+
+    output_page($page_contents);
+
+    exit;
+}
+
+function page_build_error(
+    string $error_message,
+    bool $no_permission = false
+): string {
+    global $mybb, $lang;
+    global $headerinclude, $header, $footer, $theme;
+    global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
+
+    language_load();
+
+    if (!$newpoints_menu) {
+        $newpoints_file = main_file_name();
+
+        add_breadcrumb($lang->newpoints, $newpoints_file);
+
+        url_handler_set($newpoints_file);
+
+        $newpoints_menu = page_build_menu();
+    }
+
+    $page_title = $table_title = $lang->newpoints_page_error_table_title;
+
+    if ($no_permission) {
+        $page_title = $table_title = $lang->newpoints_page_no_permission_error_table_title;
+    }
+
+    $button_text = $lang->newpoints_page_confirm_table_purchase_button;
+
+    add_breadcrumb($page_title);
+
+    $newpoints_content = eval(templates_get('page_error'));
 
     $page_contents = eval(templates_get('page'));
 

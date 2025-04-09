@@ -114,6 +114,10 @@ $l['newpoints_page_confirm_table_cancel_button'] = 'Cancel Order';
 $l['newpoints_page_confirm_table_purchase_title'] = 'Confirm Purchase';
 $l['newpoints_page_confirm_table_purchase_button'] = 'Purchase';
 
+$l['newpoints_page_error_table_title'] = 'Error';
+
+$l['newpoints_page_no_permission_error_table_title'] = 'No Permission';
+
 $l['newpoints_buttons_delete'] = 'Delete';
 $l['newpoints_buttons_manage'] = 'Manage';
 $l['newpoints_buttons_orders'] = 'View Orders';
@@ -141,7 +145,9 @@ $l['newpoints_logs_page_table_action_income_private_message'] = 'New Private Mes
 $l['newpoints_logs_page_table_log_thread'] = 'Thread: <a href="{1}/{2}">{3}</a>';
 $l['newpoints_logs_page_table_log_forum'] = 'Forum: <a href="{1}/{2}">{3}</a>';
 $l['newpoints_logs_page_table_log_post'] = 'Post: <a href="{1}/{2}">{3}</a>';
+$l['newpoints_logs_page_table_log_moderator'] = 'Moderator: {1}';
 $l['newpoints_logs_page_table_log_user'] = 'User: {1}';
+$l['newpoints_logs_page_table_log_user_recipient'] = 'Recipient: {1}';
 
 $l['newpoints_logs_page_table_points'] = 'Points';
 $l['newpoints_logs_page_table_action_user'] = 'User';
