@@ -28,17 +28,17 @@
  ****************************************************************************/
 
 $l['nav_plugins'] = 'Plugins';
-$l['nav_settings'] = 'Settings';
-$l['nav_log'] = 'Log';
-$l['nav_forumrules'] = 'Forum Rules';
-$l['nav_grouprules'] = 'Group Rules';
-$l['nav_stats'] = 'Statistics';
-$l['nav_upgrades'] = 'Upgrades';
+$l['nav_settings'] = 'Configuraciones';
+$l['nav_log'] = 'Registro';
+$l['nav_forumrules'] = 'Reglas del Foro';
+$l['nav_grouprules'] = 'Reglas del Grupo';
+$l['nav_stats'] = 'Estadísticas';
+$l['nav_upgrades'] = 'Mejoras';
 
-$l['can_manage_newpoints'] = 'Can Manage NewPoints?';
-$l['can_manage_settings'] = 'Can Manage Settings?';
-$l['can_manage_log'] = 'Can Manage Log?';
-$l['can_manage_forumrules'] = 'Can Manage Forum Rules?';
-$l['can_manage_grouprules'] = 'Can Manage Group Rules?';
-$l['can_manage_stats'] = 'Can Manage Statistics?';
-$l['can_manage_upgrades'] = 'Can Manage Upgrades?';
+$l['can_manage_newpoints'] = '¿Puede gestionar NewPoints?';
+$l['can_manage_settings'] = '¿Puede gestionar configuraciones?';
+$l['can_manage_log'] = '¿Puede gestionar el registro?';
+$l['can_manage_forumrules'] = '¿Puede gestionar las reglas del foro?';
+$l['can_manage_grouprules'] = '¿Puede gestionar las reglas del grupo?';
+$l['can_manage_stats'] = '¿Puede gestionar estadísticas?';
+$l['can_manage_upgrades'] = '¿Puede gestionar mejoras?';
