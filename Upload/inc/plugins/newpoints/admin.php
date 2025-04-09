@@ -922,7 +922,7 @@ function recount_rebuild_newpoints_recount()
         }
 
         $query_polls = $db->simple_select(
-            "pollvotes v LEFT JOIN {$db->table_prefix}poll p ON (p.pid=v.pid) LEFT JOIN {$db->table_prefix}threads t ON (t.tid=p.tid)",
+            "pollvotes v LEFT JOIN {$db->table_prefix}polls p ON (p.pid=v.pid) LEFT JOIN {$db->table_prefix}threads t ON (t.tid=p.tid)",
             'p.tid, t.fid',
             "v.uid='{$user_id}'"
         );
