@@ -62,11 +62,11 @@ $l['newpoints_not_enough_points'] = "You don't have enough points. Required: {1}
 $l['newpoints_amount_paid'] = 'Amount Paid';
 $l['newpoints_source'] = 'Source';
 
-$l['newpoints_home_desc'] = 'NewPoints is a complex points system for MyBB software.';
+$l['newpoints_home_desc'] = 'NewPoints is a complex points system.';
 $l['newpoints_home_description_primary'] = 'There are some options on the menu on the left that you can use.';
 $l['newpoints_home_description_header'] = 'How do you earn points?';
 $l['newpoints_home_description_secondary'] = '';
-$l['newpoints_home_description_footer'] = 'Contact your administrator if you have any questions.<br />This software was written by <strong>Pirata Nervo</strong> for <a href="https://mybb.com">MyBB</a>.';
+$l['newpoints_home_description_footer'] = 'Contact your administrator if you have any questions.';
 $l['newpoints_home_user_rate_description'] = 'Your rate for earning points is <code>{1}</code> and your rate for spending points is <code>{2}</code>.';
 
 $l['newpoints_action'] = 'Action';

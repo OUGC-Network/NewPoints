@@ -62,11 +62,11 @@ $l['newpoints_not_enough_points'] = 'No tienes suficientes puntos. Requerido: {1
 $l['newpoints_amount_paid'] = 'Cantidad Pagada';
 $l['newpoints_source'] = 'Fuente';
 
-$l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo para el software MyBB.';
+$l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo.';
 $l['newpoints_home_description_primary'] = 'Hay algunas opciones en el menú a la izquierda que puedes usar.';
 $l['newpoints_home_description_header'] = '¿Cómo ganas puntos?';
 $l['newpoints_home_description_secondary'] = '';
-$l['newpoints_home_description_footer'] = 'Contacta a tu administrador si tienes alguna pregunta.<br />Este software fue escrito por <strong>Pirata Nervo</strong> para <a href="https://mybb.com">MyBB</a>.';
+$l['newpoints_home_description_footer'] = 'Contacta a tu administrador si tienes alguna pregunta.';
 $l['newpoints_home_user_rate_description'] = 'Tu tasa para ganar puntos es <code>{1}</code> y tu tasa para gastar puntos es <code>{2}</code>.';
 
 $l['newpoints_action'] = 'Acción';
@@ -96,7 +96,7 @@ $l['newpoints_income_poll_vote'] = 'Nuevo Voto de Encuesta';
 $l['newpoints_income_poll_vote_desc'] = 'Cantidad de puntos recibidos por cada voto en una encuesta.';
 $l['newpoints_income_user_allowance'] = 'Asignación de Usuario';
 $l['newpoints_income_user_allowance_desc'] = 'Cantidad de puntos recibidos cada {1} minutos.';
-$l['newpoints_income_user_registration'] = 'Nueva Registro';
+$l['newpoints_income_user_registration'] = 'Nuevo Registro';
 $l['newpoints_income_user_registration_desc'] = 'Cantidad de puntos recibidos cuando los usuarios se registran en el foro.';
 $l['newpoints_income_user_referral'] = 'Nueva Referencia';
 $l['newpoints_income_user_referral_desc'] = 'Cantidad de puntos recibidos por cada usuario referido al foro.';
