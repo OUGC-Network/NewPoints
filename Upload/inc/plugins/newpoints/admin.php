@@ -50,6 +50,7 @@ use function Newpoints\Core\task_delete;
 use function Newpoints\Core\task_disable;
 use function Newpoints\Core\task_enable;
 use function Newpoints\Core\templates_rebuild;
+use function NewPoints\Core\templates_remove;
 use function Newpoints\Core\user_can_get_points;
 use function Newpoints\Core\user_update;
 use function Newpoints\Core\users_get_group_permissions;
@@ -289,6 +290,8 @@ function plugin_activation(): bool
 
         $db->drop_column('usergroups', 'newpoints_rate');
     }
+
+    templates_remove(['donate_inline']);
 
     /*~*~* RUN UPDATES END *~*~*/
 

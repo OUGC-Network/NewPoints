@@ -121,7 +121,6 @@ A setup that meets the following requirements is necessary to use this plugin.
    │ │ │ ├── templates
    │ │ │ │ ├── donate.html
    │ │ │ │ ├── donate_form.html
-   │ │ │ │ ├── donate_inline.html
    │ │ │ │ ├── home.html
    │ │ │ │ ├── home_income_row.html
    │ │ │ │ ├── home_income_table.html
@@ -131,7 +130,9 @@ A setup that meets the following requirements is necessary to use this plugin.
    │ │ │ │ ├── option.html
    │ │ │ │ ├── option_selected.html
    │ │ │ │ ├── postbit.html
+   │ │ │ │ ├── postbit_donate.html
    │ │ │ │ ├── profile.html
+   │ │ │ │ ├── profile_donate.html
    │ │ │ │ ├── statistics.html
    │ │ │ │ ├── statistics_donation.html
    │ │ │ │ ├── statistics_richest_user.html

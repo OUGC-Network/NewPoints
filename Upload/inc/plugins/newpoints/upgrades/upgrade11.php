@@ -65,7 +65,7 @@ function upgrade11_run()
 
     change_admin_permission('newpoints', 'upgrades', 1);
 
-    templates_remove("'newpoints_donate'");
+    templates_remove(['newpoints_donate']);
 
     templates_add(
         'newpoints_donate',

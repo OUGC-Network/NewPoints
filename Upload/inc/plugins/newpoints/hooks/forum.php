@@ -101,11 +101,11 @@ function global_start(): bool
         ],
         'showthread.php' => [
             'newpoints_postbit',
-            'newpoints_donate_inline'
+            'newpoints_postbit_donate'
         ],
         'member.php' => [
             'newpoints_profile',
-            'newpoints_donate_inline'
+            'newpoints_profile_donate'
         ]
     ];
 
@@ -374,14 +374,18 @@ function postbit(array &$post): array
 
     $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
 
-    $post_user_id = (int)$post['uid'];
+    $user_id = $uid = (int)$post['uid'];
 
     $current_user_id = (int)$mybb->user['uid'];
 
-    if (!empty($mybb->usergroup['newpoints_can_donate']) && $current_user_id && $post_user_id !== $current_user_id) {
-        $donate = eval(templates_get('donate_inline'));
-    } else {
-        $donate = '';
+    $post_id = (int)$post['pid'];
+
+    $donate = '';
+
+    if (!empty($mybb->usergroup['newpoints_can_donate']) && $current_user_id && $user_id !== $current_user_id) {
+        $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'pid' => $post_id, 'modal' => 1]);
+
+        $donate = eval(templates_get('postbit_donate'));
     }
 
     $post['newpoints_postbit'] = eval(templates_get('postbit'));
@@ -413,10 +417,9 @@ function postbit_announcement(array &$post_data): array
 function member_profile_end(): bool
 {
     global $mybb, $currency, $points, $memprofile, $newpoints_profile, $lang, $uid;
+    global $newpoints_profile_user_balance_formatted;
 
     $newpoints_profile = '';
-
-    global $newpoints_profile_user_balance_formatted;
 
     language_load();
 
@@ -426,12 +429,16 @@ function member_profile_end(): bool
 
     $points = $newpoints_profile_user_balance_formatted = points_format((float)$memprofile['newpoints']);
 
-    $uid = (int)$memprofile['uid'];
+    $user_id = $uid = (int)$memprofile['uid'];
 
-    if (!empty($mybb->usergroup['newpoints_can_donate']) && !empty($mybb->user['uid']) && $uid !== $mybb->user['uid']) {
-        $donate = eval(templates_get('donate_inline'));
-    } else {
-        $donate = '';
+    $current_user_id = (int)$mybb->user['uid'];
+
+    $donate = '';
+
+    if (!empty($mybb->usergroup['newpoints_can_donate']) && $current_user_id && $user_id !== $current_user_id) {
+        $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'modal' => 1]);
+
+        $donate = eval(templates_get('profile_donate'));
     }
 
     $newpoints_profile = eval(templates_get('profile'));
