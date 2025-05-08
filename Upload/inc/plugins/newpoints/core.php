@@ -1310,6 +1310,8 @@ function log_add(
         $user_id = (int)$mybb->user['uid'];
     }
 
+    $log_points = abs($log_points);
+    
     global $db;
 
     $log_id = (int)$db->insert_query(

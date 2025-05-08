@@ -1298,7 +1298,7 @@ function class_moderation_delete_thread(int &$thread_id): int
     // let's see if the number of characters in the thread is greater than the minimum characters
     $income_bonus = 0;
 
-    $characters_count = count_characters($post_data['message']);
+    $characters_count = count_characters($post_data['message'] ?? '');
 
     if ($characters_count >= $thread_user_group_permissions['newpoints_income_post_minimum_characters']) {
         $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $thread_user_id, $forum_id);
