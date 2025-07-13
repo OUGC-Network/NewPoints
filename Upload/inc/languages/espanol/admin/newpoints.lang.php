@@ -117,6 +117,7 @@ $l['newpoints_recount'] = 'Recontar NewPoints de Usuario (Obsoleto)';
 $l['newpoints_recount_desc'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar su valor actual en vivo basado en la configuración de ingresos.';
 $l['newpoints_recount_success'] = 'La cantidad de NewPoints para los usuarios se ha reconstruido exitosamente.';
 $l['newpoints_reset'] = 'Restablecer NewPoints de Usuario';
+$l['newpoints_reset_success'] = 'El restablecimiento de los puntos de usuario fue exitoso.';
 $l['newpoints_reset_desc'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar este valor.';
 $l['newpoints_invalid_user'] = 'Usuario inválido.';
 

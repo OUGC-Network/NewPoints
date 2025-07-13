@@ -97,7 +97,7 @@ $l['newpoints_log_prune'] = 'Prune log entries';
 $l['newpoints_older_than'] = 'Older than';
 $l['newpoints_older_than_desc'] = 'Prune log entries older than the number of days you enter.';
 $l['newpoints_log_pruned'] = 'Log entries successfully pruned.';
-$l['newpoints_log_pruneconfirm'] = ' Are you sure you want to prune log entries?';
+$l['newpoints_log_pruneconfirm'] = 'Are you sure you want to prune log entries?';
 $l['newpoints_invalid_username'] = 'Invalid username selected.';
 $l['newpoints_log_filter'] = 'Filters';
 $l['newpoints_filter_username'] = 'Username';
@@ -111,12 +111,13 @@ $l['newpoints_username'] = 'Username';
 ///////////////// Maintenance
 $l['newpoints_recount_from_logs'] = 'Recount User NewPoints From Logs';
 $l['newpoints_recount_from_logs_description'] = 'When this is run, the NewPoints amount for each user will be updated to reflect the arithmetic subtraction of charge logs from income logs.';
-$l['newpoints_recount_from_logs_success'] = ' The NewPoints amount for users have been rebuilt from logs successfully.';
+$l['newpoints_recount_from_logs_success'] = 'The NewPoints amount for users have been rebuilt from logs successfully.';
 
 $l['newpoints_recount'] = 'Recount User NewPoints (Deprecated)';
 $l['newpoints_recount_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect its current live value based on the income settings.';
-$l['newpoints_recount_success'] = ' The NewPoints amount for users have been rebuilt successfully.';
+$l['newpoints_recount_success'] = 'The NewPoints amount for users have been rebuilt successfully.';
 $l['newpoints_reset'] = 'Reset User NewPoints';
+$l['newpoints_reset_success'] = 'The reset of user points was successful.';
 $l['newpoints_reset_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect this value.';
 $l['newpoints_invalid_user'] = 'Invalid user.';
 

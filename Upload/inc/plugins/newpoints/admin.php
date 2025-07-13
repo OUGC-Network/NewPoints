@@ -988,7 +988,7 @@ function recount_rebuild_newpoints_reset()
 
     $page = $mybb->get_input('page', MyBB::INPUT_INT);
 
-    $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+    $per_page = 50;
 
     $start = ($page - 1) * $per_page;
 
