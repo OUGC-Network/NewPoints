@@ -1311,7 +1311,7 @@ function log_add(
     }
 
     $log_points = abs($log_points);
-    
+
     global $db;
 
     $log_id = (int)$db->insert_query(
@@ -1449,20 +1449,15 @@ function check_permissions(string $groups_comma): bool
     }
 }
 
-function load_set_guest_data(): bool
+function load_set_guest_data(): void
 {
     global $mybb;
-    global $mypoints, $newpoints_user_balance_formatted;
 
     if (empty($mybb->user) || empty($mybb->user['uid']) || !isset($mybb->user['newpoints'])) {
         $mybb->user['newpoints'] = 0;
     } else {
         $mybb->user['newpoints'] = (float)$mybb->user['newpoints'];
     }
-
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
-
-    return true;
 }
 
 function plugins_load(): bool

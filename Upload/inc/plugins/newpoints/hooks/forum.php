@@ -134,10 +134,10 @@ function global_start(): bool
 
 function global_intermediate(): bool
 {
-    global $mybb;
-    global $newpoints_header_menu;
+    global $mybb, $lang;
+    global $newpoints_user_balance_formatted, $mypoints, $newpoints_header_menu;
 
-    global $lang;
+    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
 
     $newpoints_file = main_file_name();
 
@@ -330,6 +330,11 @@ function xmlhttp09(): bool
 {
     load_set_guest_data();
 
+    global $mybb;
+    global $newpoints_user_balance_formatted, $mypoints;
+
+    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+
     my_alerts_initiate();
 
     return true;
@@ -350,6 +355,11 @@ function xmlhttp(): bool
 function archive_start(): bool
 {
     load_set_guest_data();
+
+    global $mybb;
+    global $newpoints_user_balance_formatted, $mypoints;
+
+    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
 
     run_hooks('archive_start');
 

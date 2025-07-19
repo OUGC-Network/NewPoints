@@ -40,6 +40,7 @@ use function Newpoints\Admin\recount_rebuild_newpoints_reset;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
+use function Newpoints\Core\points_format;
 use function Newpoints\Core\run_hooks;
 
 use const Newpoints\Core\FIELDS_DATA;
@@ -81,6 +82,11 @@ function admin_config_plugins_deactivate(): bool
 function admin_load(): bool
 {
     load_set_guest_data();
+
+    global $mybb;
+    global $newpoints_user_balance_formatted, $mypoints;
+
+    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
 
     run_hooks('admin_load');
 
