@@ -58,6 +58,7 @@ use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\Core\POST_VISIBLE_STATUS_VISIBLE;
 
 function datahandler_post_insert_post_end(postDatahandler &$data_handler): postDatahandler
@@ -104,6 +105,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                     $post_id,
                     $thread_id,
                     $forum_id
+                );
 
                 points_add_simple(
                     $post_user_id,
@@ -111,6 +113,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -128,6 +131,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                     $post_id,
                     $thread_id,
                     $forum_id,
+                );
 
                 points_add_simple(
                     $post_user_id,
@@ -135,6 +139,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -158,6 +163,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                     $post_id,
                     $thread_id,
                     $forum_id,
+                );
 
                 points_add_simple(
                     $thread_user_id,
@@ -165,6 +171,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -217,6 +224,7 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                     $post_id,
                     $thread_id,
                     $forum_id,
+                );
 
                 points_add_simple(
                     $post_user_id,
@@ -224,6 +232,7 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     } elseif ($income_bonus < 0 && user_can_get_points($post_user_id, $forum_id)) {
         $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
@@ -237,6 +246,7 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                     $thread_id,
                     $post_id,
                     $forum_id,
+                );
 
                 points_subtract(
                     $post_user_id,
@@ -244,6 +254,7 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -294,6 +305,7 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
                     0,
                     (int)$data_handler->tid,
                     $forum_id,
+                );
 
                 points_add_simple(
                     $thread_user_id,
@@ -301,6 +313,7 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -318,6 +331,7 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
                     0,
                     (int)$data_handler->tid,
                     $forum_id,
+                );
 
                 points_add_simple(
                     $thread_user_id,
@@ -325,6 +339,7 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
                 );
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -356,6 +371,7 @@ function datahandler_pm_insert_end(PMDataHandler &$data_handler): PMDataHandler
                 points_add_simple($user_id, $income_value);
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -472,6 +488,7 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
                 points_add_simple($user_id, $income_value);
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
@@ -496,6 +513,7 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
                 points_add_simple($referrer_user_id, $income_value);
             } catch (Exception $e) {
                 // Handle exception
+            }
         }
     }
 
