@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -28,7 +28,7 @@
  ****************************************************************************/
 
 $l['newpoints'] = 'NewPoints';
-$l['newpoints_description'] = 'NewPoints plugin for MyBB - A complex but efficient points system for MyBB.';
+$l['newpoints_description'] = 'NewPoints is a complex but efficient points system for MyBB.';
 $l['newpoints_submit_button'] = 'Submit';
 $l['newpoints_reset_button'] = 'Reset';
 $l['newpoints_error'] = 'An unknown error has occurred.';
@@ -111,14 +111,15 @@ $l['newpoints_username'] = 'Username';
 ///////////////// Maintenance
 $l['newpoints_recount_from_logs'] = 'Recount User NewPoints From Logs';
 $l['newpoints_recount_from_logs_description'] = 'When this is run, the NewPoints amount for each user will be updated to reflect the arithmetic subtraction of charge logs from income logs.';
-$l['newpoints_recount_from_logs_success'] = 'The NewPoints amount for users have been rebuilt from logs successfully.';
+$l['newpoints_recount_from_logs_success'] = 'The user {2} have been rebuilt from logs successfully.';
 
-$l['newpoints_recount'] = 'Recount User NewPoints (Deprecated)';
+$l['newpoints_recount'] = 'Recount User NewPoints from Settings';
 $l['newpoints_recount_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect its current live value based on the income settings.';
-$l['newpoints_recount_success'] = 'The NewPoints amount for users have been rebuilt successfully.';
+$l['newpoints_recount_success'] = 'The user {2} have been rebuilt from settings successfully.';
 $l['newpoints_reset'] = 'Reset User NewPoints';
-$l['newpoints_reset_success'] = 'The reset of user points was successful.';
+$l['newpoints_reset_success'] = 'The reset of user {2} was successful.';
 $l['newpoints_reset_desc'] = 'When this is run, the NewPoints amount for each user will be updated to reflect this value.';
+$l['newpoints_reset_amount'] = 'Amount per user';
 $l['newpoints_invalid_user'] = 'Invalid user.';
 
 ///////////////// Stats

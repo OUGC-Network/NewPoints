@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -32,15 +32,15 @@ declare(strict_types=1);
 namespace Newpoints\Hooks\Forum;
 
 use MyBB;
-
 use MybbStuff_MyAlerts_AlertFormatterManager;
+use Exception;
 
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\log_add;
 use function Newpoints\Core\main_file_name;
 use function Newpoints\Core\my_alerts_initiate;
 use function Newpoints\Core\points_add_simple;
@@ -61,8 +61,7 @@ use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_THREAD_RATE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_VISIT;
-use const Newpoints\Core\LOGGING_TYPE_CHARGE;
-use const Newpoints\Core\LOGGING_TYPE_INCOME;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 
 function global_start09(): bool
 {
@@ -258,22 +257,23 @@ function pre_parse_page(string &$page_contents): string
         $income_value *= $mybb->usergroup['newpoints_rate_addition'];
 
         if ($income_value) {
-            points_add_simple(
-                $current_user_id,
-                $income_value
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_PAGE_VIEW,
+                    $current_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_PAGE_VIEW,
-                '',
-                get_user($current_user_id)['username'] ?? '',
-                $current_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $current_user_id,
+                    $income_value
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -284,22 +284,23 @@ function pre_parse_page(string &$page_contents): string
 
         if ($income_value) {
             if ((TIME_NOW - $mybb->user['lastactive']) > $mybb->usergroup['newpoints_income_visit_minutes'] * 60) {
-                points_add_simple(
-                    $current_user_id,
-                    $income_value
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                        'income_' . INCOME_TYPE_VISIT,
+                        $current_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_VISIT,
-                    '',
-                    get_user($current_user_id)['username'] ?? '',
-                    $current_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
-                );
+                    points_add_simple(
+                        $current_user_id,
+                        $income_value
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
     }
@@ -380,7 +381,11 @@ function postbit(array &$post): array
 
     $newpoints_file = main_file_name();
 
-    $currency = get_setting('main_curname');
+    $currency = $lang->sprintf(
+        $lang->newpoints_home_currency,
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
+    );
 
     $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
 
@@ -435,7 +440,11 @@ function member_profile_end(): bool
 
     $newpoints_file = main_file_name();
 
-    $currency = get_setting('main_curname');
+    $currency = $lang->sprintf(
+        $lang->newpoints_home_currency,
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
+    );
 
     $points = $newpoints_profile_user_balance_formatted = points_format((float)$memprofile['newpoints']);
 
@@ -493,23 +502,24 @@ function class_moderation_delete_post_start(&$post_id): int
             ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_value) {
-            points_subtract(
-                $thread_user_id,
-                $income_value,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_THREAD_REPLY,
+                    $thread_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_THREAD_REPLY,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $thread_user_id,
+                    $income_value,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -532,23 +542,24 @@ function class_moderation_delete_post_start(&$post_id): int
     $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
     if ($income_bonus) {
-        points_subtract(
-            $post_user_id,
-            $income_bonus,
-            $forum_id
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                'income_' . INCOME_TYPE_POST_CHARACTER,
+                $post_user_id,
+                $income_bonus,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_POST_CHARACTER,
-            '',
-            get_user($post_user_id)['username'] ?? '',
-            $post_user_id,
-            $income_bonus,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            points_subtract(
+                $post_user_id,
+                $income_bonus,
+                $forum_id
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
@@ -556,23 +567,24 @@ function class_moderation_delete_post_start(&$post_id): int
     $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
     if ($income_value) {
-        points_subtract(
-            $post_user_id,
-            $income_value,
-            $forum_id
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                'income_' . INCOME_TYPE_POST,
+                $post_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_POST,
-            '',
-            get_user($post_user_id)['username'] ?? '',
-            $post_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            points_subtract(
+                $post_user_id,
+                $income_value,
+                $forum_id
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     return $post_id;
@@ -604,23 +616,24 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
 
             // we are not the thread started so remove points from him/her
             if ($income_value) {
-                points_subtract(
-                    $thread_user_id,
-                    $income_value,
-                    $forum_id
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_CHARGE
-                );
+                    points_subtract(
+                        $thread_user_id,
+                        $income_value,
+                        $forum_id
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
 
@@ -643,23 +656,24 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
         $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $post_user_id,
+                    $income_bonus,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
@@ -667,23 +681,24 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
         $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_value) {
-            points_subtract(
-                $post_user_id,
-                $income_value,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POST,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $post_user_id,
+                    $income_value,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -717,22 +732,23 @@ function class_moderation_restore_posts(array &$post_ids): array
             $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
 
             if ($income_value) {
-                points_add_simple(
-                    $thread_user_id,
-                    $income_value
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
-                );
+                    points_add_simple(
+                        $thread_user_id,
+                        $income_value
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
 
@@ -755,23 +771,23 @@ function class_moderation_restore_posts(array &$post_ids): array
         $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
-            // give points to the author of the post
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_bonus
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
@@ -780,22 +796,23 @@ function class_moderation_restore_posts(array &$post_ids): array
 
         // give points to the author of the post
         if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_POST,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_value
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -829,22 +846,23 @@ function class_moderation_approve_threads(array &$thread_ids): array
 
         // add points to the poster
         if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_THREAD,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_value
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         // calculate points per character bonus
@@ -860,22 +878,23 @@ function class_moderation_approve_threads(array &$thread_ids): array
         $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_bonus
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -909,22 +928,23 @@ function class_moderation_approve_posts(array &$post_ids): array
             $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
 
             if ($income_value) {
-                points_add_simple(
-                    $thread_user_id,
-                    $income_value
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
-                );
+                    points_add_simple(
+                        $thread_user_id,
+                        $income_value
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
 
@@ -939,23 +959,23 @@ function class_moderation_approve_posts(array &$post_ids): array
         $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_value) {
-            // give points to the author of the post
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_POST,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_value
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         // calculate points per character bonus
@@ -971,22 +991,23 @@ function class_moderation_approve_posts(array &$post_ids): array
         $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_bonus
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -1031,23 +1052,24 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
         $income_bonus *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_bonus) {
-            points_subtract(
-                $thread_user_id,
-                $income_bonus,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $thread_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $thread_user_id,
+                    $income_bonus,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id, $forum_id);
@@ -1055,23 +1077,24 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
         $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_value) {
-            points_subtract(
-                $thread_user_id,
-                $income_value,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_THREAD,
+                    $thread_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $thread_user_id,
+                    $income_value,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -1104,23 +1127,24 @@ function class_moderation_unapprove_posts(array &$post_ids): array
 
             // we are not the thread started so remove points from them
             if ($income_value) {
-                points_subtract(
-                    $thread_user_id,
-                    $income_value,
-                    $forum_id
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_CHARGE
-                );
+                    points_subtract(
+                        $thread_user_id,
+                        $income_value,
+                        $forum_id
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
 
@@ -1141,23 +1165,24 @@ function class_moderation_unapprove_posts(array &$post_ids): array
         $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $post_user_id,
+                    $income_bonus,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
@@ -1165,23 +1190,24 @@ function class_moderation_unapprove_posts(array &$post_ids): array
         $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_value) {
-            points_subtract(
-                $post_user_id,
-                $income_value,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POST,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $post_user_id,
+                    $income_value,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -1224,23 +1250,24 @@ function class_moderation_delete_thread(int &$thread_id): int
         $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_value) {
-            points_subtract(
-                $thread_user_id,
-                $income_value,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POLL,
+                    $thread_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POLL,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $thread_user_id,
+                    $income_value,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -1261,23 +1288,24 @@ function class_moderation_delete_thread(int &$thread_id): int
     $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
     if ($income_value) {
-        points_subtract(
-            $thread_user_id,
-            $income_value,
-            $forum_id
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                'income_' . INCOME_TYPE_THREAD_REPLY,
+                $thread_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_THREAD_REPLY,
-            '',
-            get_user($thread_user_id)['username'] ?? '',
-            $thread_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            points_subtract(
+                $thread_user_id,
+                $income_value,
+                $forum_id
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id, $forum_id);
@@ -1285,23 +1313,24 @@ function class_moderation_delete_thread(int &$thread_id): int
     $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
     if ($income_value) {
-        points_subtract(
-            $thread_user_id,
-            $income_value,
-            $forum_id
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                'income_' . INCOME_TYPE_THREAD,
+                $thread_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_THREAD,
-            '',
-            get_user($thread_user_id)['username'] ?? '',
-            $thread_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            points_subtract(
+                $thread_user_id,
+                $income_value,
+                $forum_id
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     // calculate points per character bonus
@@ -1317,23 +1346,24 @@ function class_moderation_delete_thread(int &$thread_id): int
     $income_bonus *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
     if ($income_bonus) {
-        points_subtract(
-            $thread_user_id,
-            $income_bonus,
-            $forum_id
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                'income_' . INCOME_TYPE_POST_CHARACTER,
+                $thread_user_id,
+                $income_bonus,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_POST_CHARACTER,
-            '',
-            get_user($thread_user_id)['username'] ?? '',
-            $thread_user_id,
-            $income_bonus,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            points_subtract(
+                $thread_user_id,
+                $income_bonus,
+                $forum_id
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     return $thread_id;
@@ -1365,23 +1395,24 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
 
             // we are not the thread started so remove points from him/her
             if ($income_value) {
-                points_subtract(
-                    $thread_user_id,
-                    $income_value,
-                    $forum_id
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_CHARGE
-                );
+                    points_subtract(
+                        $thread_user_id,
+                        $income_value,
+                        $forum_id
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
 
@@ -1394,23 +1425,24 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
         $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_value) {
-            points_subtract(
-                $post_user_id,
-                $income_value,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_THREAD,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $post_user_id,
+                    $income_value,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         // calculate points per character bonus
@@ -1426,23 +1458,24 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
         $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
         if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus,
-                $forum_id
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                points_subtract(
+                    $post_user_id,
+                    $income_bonus,
+                    $forum_id
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -1474,22 +1507,23 @@ function class_moderation_restore_threads(array &$thread_ids): array
             $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
 
             if ($income_value) {
-                points_add_simple(
-                    $thread_user_id,
-                    $income_value
-                );
+                try {
+                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                        'income_' . INCOME_TYPE_THREAD_REPLY,
+                        $thread_user_id,
+                        $income_value,
+                        $post_id,
+                        $thread_id,
+                        $forum_id,
+                    );
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
-                );
+                    points_add_simple(
+                        $thread_user_id,
+                        $income_value
+                    );
+                } catch (Exception $e) {
+                    // Handle exception
+                }
             }
         }
 
@@ -1512,22 +1546,23 @@ function class_moderation_restore_threads(array &$thread_ids): array
         $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_POST_CHARACTER,
+                    $post_user_id,
+                    $income_bonus,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_bonus
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
 
         $income_value = get_income_value(INCOME_TYPE_THREAD, $post_user_id, $forum_id);
@@ -1535,22 +1570,23 @@ function class_moderation_restore_threads(array &$thread_ids): array
         $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
 
         if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
+            try {
+                instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                    'income_' . INCOME_TYPE_THREAD,
+                    $post_user_id,
+                    $income_value,
+                    $post_id,
+                    $thread_id,
+                    $forum_id,
+                );
 
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                points_add_simple(
+                    $post_user_id,
+                    $income_value
+                );
+            } catch (Exception $e) {
+                // Handle exception
+            }
         }
     }
 
@@ -1573,22 +1609,23 @@ function polls_do_newpoll_process(): bool
 
         $post_id = (int)$thread['firstpost'];
 
-        points_add_simple(
-            $current_user_id,
-            $income_value
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                'income_' . INCOME_TYPE_POLL,
+                $current_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_POLL,
-            '',
-            get_user($current_user_id)['username'] ?? '',
-            $current_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_INCOME
-        );
+            points_add_simple(
+                $current_user_id,
+                $income_value
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     return true;
@@ -1621,23 +1658,24 @@ function class_moderation_delete_poll(int &$post_id): int
     $income_value *= ($poll_user_group_permissions['newpoints_rate_subtraction'] / 100);
 
     if ($income_value) {
-        points_subtract(
-            $poll_user_id,
-            $income_value,
-            $forum_id
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                'income_' . INCOME_TYPE_THREAD,
+                $poll_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_THREAD,
-            '',
-            get_user($poll_user_id)['username'] ?? '',
-            $poll_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            points_subtract(
+                $poll_user_id,
+                $income_value,
+                $forum_id
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     return $post_id;
@@ -1662,23 +1700,23 @@ function polls_vote_process(): bool
 
         $post_id = (int)$thread['firstpost'];
 
-        // give points to us as we're voting in a poll
-        points_add_simple(
-            $current_user_id,
-            $income_value
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                'income_' . INCOME_TYPE_POLL_VOTE,
+                $current_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_POLL_VOTE,
-            '',
-            get_user($current_user_id)['username'] ?? '',
-            $current_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_INCOME
-        );
+            points_add_simple(
+                $current_user_id,
+                $income_value
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     return true;
@@ -1703,23 +1741,23 @@ function ratethread_process(): bool
 
         $post_id = (int)$thread['firstpost'];
 
-        // give points us, as we're rating a thread
-        points_add_simple(
-            $current_user_id,
-            $income_value
-        );
+        try {
+            instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                'income_' . INCOME_TYPE_THREAD_RATE,
+                $current_user_id,
+                $income_value,
+                $post_id,
+                $thread_id,
+                $forum_id,
+            );
 
-        log_add(
-            'income_' . INCOME_TYPE_THREAD_RATE,
-            '',
-            get_user($current_user_id)['username'] ?? '',
-            $current_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_INCOME
-        );
+            points_add_simple(
+                $current_user_id,
+                $income_value
+            );
+        } catch (Exception $e) {
+            // Handle exception
+        }
     }
 
     return true;

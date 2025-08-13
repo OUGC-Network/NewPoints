@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -37,7 +37,10 @@ use MyBB;
 use function Newpoints\Admin\recount_rebuild_newpoints_recount;
 use function Newpoints\Admin\recount_rebuild_newpoints_recount_from_logs;
 use function Newpoints\Admin\recount_rebuild_newpoints_reset;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
+use function Newpoints\Core\instance_exists;
+use function Newpoints\Core\instance_get;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_format;
@@ -759,32 +762,90 @@ function admin_tools_recount_rebuild_output_list(): bool
     global $lang;
     global $form_container, $form;
 
-    $form_container->output_cell(
-        "<label>{$lang->newpoints_recount_from_logs}</label><div class=\"description\">{$lang->newpoints_recount_from_logs_description}</div>"
+    $instances_select = $form->generate_select_box(
+        'newpoints_recount_from_logs_instance_id',
+        (function (): array {
+            $instance_objects = [
+                0 => ''
+            ];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                $instance_objects[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+            }
+
+            return $instance_objects;
+        })()
     );
+
     $form_container->output_cell(
-        $form->generate_numeric_field('newpoints_recount', 50, ['style' => 'width: 150px;', 'min' => 0])
+        "<label>{$lang->newpoints_recount_from_logs}</label><div class=\"description\">{$lang->newpoints_recount_from_logs_description}</div>{$instances_select}"
     );
+
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_recount_from_logs', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+
     $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_recount_newpoints_from_logs'])
     );
+
     $form_container->construct_row();
 
-    $form_container->output_cell(
-        "<label>{$lang->newpoints_recount}</label><div class=\"description\">{$lang->newpoints_recount_desc}</div>"
+    $instances_select = $form->generate_select_box(
+        'newpoints_recount_from_settings_instance_id',
+        (function (): array {
+            $instance_objects = [
+                0 => ''
+            ];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                $instance_objects[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+            }
+
+            return $instance_objects;
+        })()
     );
+
     $form_container->output_cell(
-        $form->generate_numeric_field('newpoints_recount', 50, ['style' => 'width: 150px;', 'min' => 0])
+        "<label>{$lang->newpoints_recount}</label><div class=\"description\">{$lang->newpoints_recount_desc}</div>{$instances_select}"
     );
+
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_recount_from_settings', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+
     $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_recount_newpoints']));
+
     $form_container->construct_row();
 
-    $form_container->output_cell(
-        "<label>{$lang->newpoints_reset}</label><div class=\"description\">{$lang->newpoints_reset_desc}</div>"
+    $instances_select = $form->generate_select_box(
+        'newpoints_reset_instance_id',
+        (function (): array {
+            $instance_objects = [
+                0 => ''
+            ];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                $instance_objects[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+            }
+
+            return $instance_objects;
+        })()
     );
+
     $form_container->output_cell(
-        $form->generate_numeric_field('newpoints_reset', 0, ['style' => 'width: 150px;', 'min' => 0])
+        "<label>{$lang->newpoints_reset}</label><div class=\"description\">{$lang->newpoints_reset_desc}</div>{$instances_select} {$lang->newpoints_reset_amount}:" . $form->generate_numeric_field(
+            'newpoints_reset_amount',
+            0,
+            ['style' => 'width: 100px;', 'min' => 0]
+        )
     );
+
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_reset', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+
     $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_reset_newpoints']));
+
     $form_container->construct_row();
 
     return true;
@@ -799,10 +860,10 @@ function admin_tools_do_recount_rebuild(): bool
             log_admin_action('recount_from_logs');
         }
 
-        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+        $per_page = $mybb->get_input('newpoints_recount_from_logs', MyBB::INPUT_INT);
 
         if (!$per_page || $per_page <= 0) {
-            $mybb->input['newpoints_recount'] = 50;
+            $mybb->input['newpoints_recount_from_logs'] = 50;
         }
 
         recount_rebuild_newpoints_recount_from_logs();
@@ -813,10 +874,10 @@ function admin_tools_do_recount_rebuild(): bool
             log_admin_action('recount');
         }
 
-        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+        $per_page = $mybb->get_input('newpoints_recount_from_settings', MyBB::INPUT_INT);
 
         if (!$per_page || $per_page <= 0) {
-            $mybb->input['newpoints_recount'] = 50;
+            $mybb->input['newpoints_recount_from_settings'] = 50;
         }
 
         recount_rebuild_newpoints_recount();
@@ -827,10 +888,10 @@ function admin_tools_do_recount_rebuild(): bool
             log_admin_action('reset');
         }
 
-        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+        $per_page = $mybb->get_input('newpoints_reset', MyBB::INPUT_INT);
 
         if (!$per_page || $per_page <= 0) {
-            $mybb->input['newpoints_recount'] = 50;
+            $mybb->input['newpoints_reset'] = 50;
         }
 
         recount_rebuild_newpoints_reset();

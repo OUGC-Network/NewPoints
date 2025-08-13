@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -62,12 +62,12 @@ $l['newpoints_not_enough_points'] = 'No tienes suficientes puntos. Requerido: {1
 $l['newpoints_amount_paid'] = 'Cantidad Pagada';
 $l['newpoints_source'] = 'Fuente';
 
-$l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo.';
+$l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo pero eficiente para MyBB.';
 $l['newpoints_home_description_primary'] = 'Hay algunas opciones en el menú a la izquierda que puedes usar.';
-$l['newpoints_home_description_header'] = '¿Cómo ganas puntos?';
+$l['newpoints_home_description_header'] = '¿Cómo ganas {2}?';
 $l['newpoints_home_description_secondary'] = '';
 $l['newpoints_home_description_footer'] = 'Contacta a tu administrador si tienes alguna pregunta.';
-$l['newpoints_home_user_rate_description'] = 'Tu tasa para ganar puntos es <code>{1}</code> y tu tasa para gastar puntos es <code>{2}</code>.';
+$l['newpoints_home_user_rate_description'] = 'Tu tasa para ganar {2} es <code>{3}</code> y tu tasa para gastar {2} es <code>{4}</code>.';
 
 $l['newpoints_action'] = 'Acción';
 $l['newpoints_chars'] = 'Caracteres';
@@ -75,7 +75,7 @@ $l['newpoints_max_donations_control'] = 'Has alcanzado el máximo de {1} en los 
 
 // Settings translation
 $l['newpoints_income_source'] = 'Fuente';
-$l['newpoints_income_amount'] = '{1} Recibido';
+$l['newpoints_income_amount'] = '{1} Recibidos';
 $l['newpoints_income_thread'] = 'Nuevo Tema';
 $l['newpoints_income_thread_desc'] = 'Cantidad de puntos recibidos por cada nuevo tema.';
 $l['newpoints_income_thread_reply'] = 'Nueva Respuesta de Tema';
@@ -143,7 +143,8 @@ $l['newpoints_logs_page_table_log_forum'] = 'Foro: <a href="{1}/{2}">{3}</a>';
 $l['newpoints_logs_page_table_log_post'] = 'Publicación: <a href="{1}/{2}">{3}</a>';
 $l['newpoints_logs_page_table_log_user'] = 'Usuario: {1}';
 
-$l['newpoints_logs_page_table_points'] = 'Puntos';
+$l['newpoints_logs_page_table_points'] = 'Puntos';#deprecated
+$l['newpoints_logs_page_table_amount'] = 'Cantidad';
 $l['newpoints_logs_page_table_action_user'] = 'Usuario';
 $l['newpoints_logs_page_table_action_primary'] = 'Primario';
 $l['newpoints_logs_page_table_action_secondary'] = 'Secundario';
@@ -173,10 +174,10 @@ $l['newpoints_wol_location_stats'] = 'Viendo la página de <a href="{1}/{2}">Est
 $l['newpoints_wol_location_donation'] = 'Viendo la página de <a href="{1}/{2}">Donación</a>';
 $l['newpoints_wol_location_logs'] = 'Viendo la página de <a href="{1}/{2}">Registros</a>';
 
-$l['newpoints_log_pm_add_subject'] = '{1} {2} fueron añadidos a tu cuenta.';
-$l['newpoints_log_pm_add_message'] = 'Hola {1}, {2} {3} fueron añadidos a tu cuenta.';
-$l['newpoints_log_pm_subtract_subject'] = '{1} {2} fueron restados de tu cuenta.';
-$l['newpoints_log_pm_subtract_message'] = 'Hola {1}, {2} {3} fueron restados de tu cuenta.';
+$l['newpoints_log_pm_add_subject'] = '{3} {2} fueron añadidos a tu cuenta.';
+$l['newpoints_log_pm_add_message'] = 'Hola {3}, {4} {2} fueron añadidos a tu cuenta.';
+$l['newpoints_log_pm_subtract_subject'] = '{3} {2} fueron restados de tu cuenta.';
+$l['newpoints_log_pm_subtract_message'] = 'Hola {3}, {4} {2} fueron restados de tu cuenta.';
 
 $l['newpoints_alert_text_core_add_points'] = '{2} fueron añadidos a tu cuenta.';
 $l['newpoints_alert_text_core_subtract_points'] = '{2} fueron restados de tu cuenta.';

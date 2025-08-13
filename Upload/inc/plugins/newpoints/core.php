@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -35,6 +35,7 @@ use AbstractPdoDbDriver;
 use DateTime;
 use DB_SQLite;
 use DirectoryIterator;
+use InvalidArgumentException;
 use JetBrains\PhpStorm\Deprecated;
 use Moderation;
 use MyBB;
@@ -45,6 +46,7 @@ use PluginLibrary;
 use pluginSystem;
 use postParser;
 use ReflectionProperty;
+use Newpoints\System\Core;
 
 use function Newpoints\Hooks\Forum\myalerts_register_client_alert_formatters;
 
@@ -1298,104 +1300,35 @@ function log_add(
     int $tertiary_id = 0,
     int $log_type = 0
 ): int {
-    if (!$log_action) {
-        return 0;
+    switch ($log_type) {
+        case LOGGING_TYPE_INCOME:
+            return instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+                $log_action,
+                $user_id,
+                $log_points,
+                $primary_id,
+                $secondary_id,
+                $tertiary_id,
+            );
+        case LOGGING_TYPE_CHARGE:
+            return instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+                $log_action,
+                $user_id,
+                $log_points,
+                $primary_id,
+                $secondary_id,
+                $tertiary_id,
+            );
+        default:
+            return instance_object(INSTANCE_DEFAULT_ID)->logger->log_action(
+                $log_action,
+                $user_id,
+                $log_points,
+                $primary_id,
+                $secondary_id,
+                $tertiary_id,
+            );
     }
-
-    if (empty($username) || empty($user_id)) {
-        global $mybb;
-
-        $username = $mybb->user['username'];
-
-        $user_id = (int)$mybb->user['uid'];
-    }
-
-    $log_points = abs($log_points);
-
-    global $db;
-
-    $log_id = (int)$db->insert_query(
-        'newpoints_log',
-        [
-            'action' => $db->escape_string($log_action),
-            'data' => $db->escape_string($log_data),
-            'date' => TIME_NOW,
-            'uid' => $user_id,
-            'username' => $db->escape_string($username),
-            'points' => $log_points,
-            'log_primary_id' => $primary_id,
-            'log_secondary_id' => $secondary_id,
-            'log_tertiary_id' => $tertiary_id,
-            'log_type' => $log_type
-        ]
-    );
-
-    if ($log_id && $log_type) {
-        switch ($log_type) {
-            case LOGGING_TYPE_INCOME:
-                if (get_setting('main_pm_alerts_enabled')) {
-                    private_message_send(
-                        [
-                            'language' => get_user($user_id)['language'] ?? '',
-                            'subject' => [
-                                'newpoints_log_pm_add_subject',
-                                strip_tags(points_format($log_points)),
-                                get_setting('main_curname')
-                            ],
-                            'message' => [
-                                'newpoints_log_pm_add_message',
-                                get_user($user_id)['username'] ?? '',
-                                strip_tags(points_format($log_points)),
-                                get_setting('main_curname')
-                            ],
-                            'touid' => $user_id
-                        ],
-                        PRIVATE_MESSAGE_ENGINE_ID,
-                        true
-                    );
-                }
-
-                alert_send(
-                    $user_id,
-                    $log_id,
-                    'core',
-                    'add_points'
-                );
-                break;
-            case LOGGING_TYPE_CHARGE:
-                if (get_setting('main_pm_alerts_enabled')) {
-                    private_message_send(
-                        [
-                            'language' => get_user($user_id)['language'] ?? '',
-                            'subject' => [
-                                'newpoints_log_pm_subtract_subject',
-                                strip_tags(points_format($log_points)),
-                                get_setting('main_curname')
-                            ],
-                            'message' => [
-                                'newpoints_log_pm_subtract_message',
-                                get_user($user_id)['username'] ?? '',
-                                strip_tags(points_format($log_points)),
-                                get_setting('main_curname')
-                            ],
-                            'touid' => $user_id
-                        ],
-                        PRIVATE_MESSAGE_ENGINE_ID,
-                        true
-                    );
-                }
-
-                alert_send(
-                    $user_id,
-                    $log_id,
-                    'core',
-                    'subtract_points'
-                );
-                break;
-        }
-    }
-
-    return $log_id;
 }
 
 /**
@@ -2393,6 +2326,45 @@ function alert_send(int $user_id, int $object_id, string $plugin_code, string $a
     $result = MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
 
     return true;
+}
+
+function instance_object(int $instance_id): Core
+{
+    static $instances_cache = [];
+
+    if (!isset($instances_cache[$instance_id])) {
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/system/core.php';
+
+        $instances_cache[$instance_id] = new Core($instance_id);
+    }
+
+    return $instances_cache[$instance_id];
+}
+
+function instance_get(?int $instance_id = null): array
+{
+    $instance_objects = [
+        1 => [
+            'instance_id' => 1,
+            'display_name_singular' => get_setting('main_curname'),
+            'display_name_plural' => get_setting('main_curname'),
+            'enable_notifications_private_message' => get_setting('main_pm_alerts_enabled'),
+            'enable_notifications_alert' => get_setting('main_my_alerts_enabled'),
+            'users_column_name' => 'newpoints',
+        ],
+    ];
+
+    if ($instance_id !== null) {
+        if (empty($instance_objects[$instance_id])) {
+            throw new InvalidArgumentException(
+                "Instance with ID {$instance_id} does not exist."
+            );
+        }
+
+        return $instance_objects[$instance_id];
+    }
+
+    return $instance_objects;
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

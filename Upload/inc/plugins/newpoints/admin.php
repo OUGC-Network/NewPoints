@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -36,11 +36,12 @@ use MybbStuff_MyAlerts_AlertTypeManager;
 use MybbStuff_MyAlerts_Entity_AlertType;
 use PluginLibrary;
 use stdClass;
+use Exception;
 
 use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_add;
 use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_rebuild_cache;
@@ -711,9 +712,17 @@ function permission_delete(string $plugin_code): bool
     return true;
 }
 
-function recount_rebuild_newpoints_recount_from_logs()
+function recount_rebuild_newpoints_recount_from_logs(): void
 {
     global $db, $mybb, $lang;
+
+    try {
+        $newpoints = instance_object($mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT));
+    } catch (Exception $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=tools-recount_rebuild');
+    }
 
     $query = $db->simple_select('users', 'COUNT(uid) as total_users');
 
@@ -721,7 +730,7 @@ function recount_rebuild_newpoints_recount_from_logs()
 
     $page = $mybb->get_input('page', MyBB::INPUT_INT);
 
-    $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+    $per_page = $mybb->get_input('newpoints_recount_from_logs', MyBB::INPUT_INT);
 
     $start = ($page - 1) * $per_page;
 
@@ -745,7 +754,7 @@ function recount_rebuild_newpoints_recount_from_logs()
             $db->simple_select(
                 'newpoints_log',
                 'SUM(points) AS total_income',
-                "uid='{$user_id}' AND log_type='{$log_type_income}'",
+                "uid='{$user_id}' AND log_type='{$log_type_income}' AND instance_id='{$newpoints->instance_id}'",
             ),
             'total_income'
         ) ?? 0);
@@ -754,12 +763,10 @@ function recount_rebuild_newpoints_recount_from_logs()
             $db->simple_select(
                 'newpoints_log',
                 'SUM(points) AS total_charges',
-                "uid='{$user_id}' AND log_type='{$log_type_charge}'",
+                "uid='{$user_id}' AND log_type='{$log_type_charge}' AND instance_id='{$newpoints->instance_id}'",
             ),
             'total_charges'
         ) ?? 0);
-
-        $user_income = $total_income - $total_charges;
 
         user_update($user_id, ['newpoints' => $total_income - $total_charges]);
     }
@@ -769,9 +776,16 @@ function recount_rebuild_newpoints_recount_from_logs()
         $end,
         ++$page,
         $per_page,
-        'newpoints_recount',
+        'newpoints_recount_from_logs_instance_id" value="' . $mybb->get_input(
+            'newpoints_recount_from_logs_instance_id',
+            MyBB::INPUT_INT
+        ) . '" /><input type="hidden" name="newpoints_recount_from_logs',
         'do_recount_newpoints_from_logs',
-        $lang->newpoints_recount_from_logs_success
+        $lang->sprintf(
+            $lang->newpoints_recount_from_logs_success,
+            $newpoints->get_display_name_upper(),
+            $newpoints->get_display_name_lower(),
+        )
     );
 }
 
@@ -779,13 +793,21 @@ function recount_rebuild_newpoints_recount()
 {
     global $db, $mybb, $lang;
 
+    try {
+        $newpoints = instance_object($mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT));
+    } catch (Exception $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=tools-recount_rebuild');
+    }
+
     $query = $db->simple_select('users', 'COUNT(uid) as total_users');
 
     $total_users = $db->fetch_field($query, 'total_users');
 
     $page = $mybb->get_input('page', MyBB::INPUT_INT);
 
-    $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+    $per_page = $mybb->get_input('newpoints_recount_from_settings', MyBB::INPUT_INT);
 
     $start = ($page - 1) * $per_page;
 
@@ -795,7 +817,7 @@ function recount_rebuild_newpoints_recount()
 
     $query = $db->simple_select(
         'users',
-        'uid,usergroup,additionalgroups',
+        'uid, usergroup, additionalgroups',
         '',
         ['order_by' => 'uid', 'order_dir' => 'asc', 'limit_start' => $start, 'limit' => $per_page]
     );
@@ -904,22 +926,23 @@ function recount_rebuild_newpoints_recount()
                 $income_value = $income_value * $thread_user_group_permissions['newpoints_rate_addition'];
 
                 if ($income_value) {
-                    points_add_simple(
-                        $thread_user_id,
-                        $income_value
-                    );
+                    try {
+                        $newpoints->logger->log_income(
+                            'income_' . INCOME_TYPE_THREAD_REPLY,
+                            $thread_user_id,
+                            $income_value,
+                            $post_id,
+                            $thread_id,
+                            $forum_id,
+                        );
 
-                    log_add(
-                        'income_' . INCOME_TYPE_THREAD_REPLY,
-                        '',
-                        get_user($thread_user_id)['username'] ?? '',
-                        $thread_user_id,
-                        $income_value,
-                        $post_id,
-                        $thread_id,
-                        $forum_id,
-                        LOGGING_TYPE_INCOME
-                    );
+                        points_add_simple(
+                            $thread_user_id,
+                            $income_value
+                        );
+                    } catch (Exception $e) {
+                        // Handle exception
+                    }
                 }
             }
         }
@@ -960,7 +983,10 @@ function recount_rebuild_newpoints_recount()
         $db->update_query(
             'users',
             [
-                'newpoints' => get_income_value(INCOME_TYPE_USER_REGISTRATION, $user_id) + $points *
+                $newpoints->get_users_column_name() => get_income_value(
+                        INCOME_TYPE_USER_REGISTRATION,
+                        $user_id
+                    ) + $points *
                     $user_group_permissions['newpoints_rate_addition']
             ],
             "uid='{$user_id}'"
@@ -972,9 +998,16 @@ function recount_rebuild_newpoints_recount()
         $end,
         ++$page,
         $per_page,
-        'newpoints_recount',
+        'newpoints_recount_from_settings_instance_id" value="' . $mybb->get_input(
+            'newpoints_recount_from_settings_instance_id',
+            MyBB::INPUT_INT
+        ) . '" /><input type="hidden" name="newpoints_recount_from_settings',
         'do_recount_newpoints',
-        $lang->newpoints_recount_success
+        $lang->sprintf(
+            $lang->newpoints_recount_from_logs_success,
+            $newpoints->get_display_name_upper(),
+            $newpoints->get_display_name_lower(),
+        )
     );
 }
 
@@ -982,13 +1015,21 @@ function recount_rebuild_newpoints_reset()
 {
     global $db, $mybb, $lang;
 
+    try {
+        $newpoints = instance_object($mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT));
+    } catch (Exception $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=tools-recount_rebuild');
+    }
+
     $query = $db->simple_select('users', 'COUNT(uid) as total_users');
 
     $total_users = $db->fetch_field($query, 'total_users');
 
     $page = $mybb->get_input('page', MyBB::INPUT_INT);
 
-    $per_page = 50;
+    $per_page = $mybb->get_input('newpoints_reset', MyBB::INPUT_INT);
 
     $start = ($page - 1) * $per_page;
 
@@ -1008,7 +1049,7 @@ function recount_rebuild_newpoints_reset()
 
         $db->update_query(
             'users',
-            ['newpoints' => $mybb->get_input('newpoints_reset', MyBB::INPUT_FLOAT)],
+            [$newpoints->get_users_column_name() => $mybb->get_input('newpoints_reset_amount', MyBB::INPUT_FLOAT)],
             "uid='{$user_id}'"
         );
     }
@@ -1018,9 +1059,19 @@ function recount_rebuild_newpoints_reset()
         $end,
         ++$page,
         $per_page,
-        'newpoints_reset',
+        'newpoints_reset_instance_id" value="' . $mybb->get_input(
+            'newpoints_reset_instance_id',
+            MyBB::INPUT_INT
+        ) . '" /><input type="hidden" name="newpoints_reset_amount" value="' . $mybb->get_input(
+            'newpoints_reset_amount',
+            MyBB::INPUT_FLOAT
+        ) . '" /><input type="hidden" name="newpoints_reset',
         'do_reset_newpoints',
-        $lang->newpoints_reset_success
+        $lang->sprintf(
+            $lang->newpoints_reset_success,
+            $newpoints->get_display_name_upper(),
+            $newpoints->get_display_name_lower(),
+        )
     );
 }
 

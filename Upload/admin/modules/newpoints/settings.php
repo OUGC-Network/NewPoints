@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -230,7 +230,7 @@ if ($mybb->get_input('action') == 'change') {
 
     foreach ($cache_settings[$group_key] as $setting) {
         $options = '';
-        
+
         $type = explode("\n", $setting['type']);
 
         $type[0] = trim($type[0]);

@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -28,7 +28,7 @@
  ****************************************************************************/
 
 $l['newpoints'] = 'NewPoints';
-$l['newpoints_description'] = 'Plugin NewPoints para MyBB - Un sistema de puntos complejo pero eficiente para MyBB.';
+$l['newpoints_description'] = 'NewPoints es un sistema de puntos complejo pero eficiente para MyBB.';
 $l['newpoints_submit_button'] = 'Enviar';
 $l['newpoints_reset_button'] = 'Restablecer';
 $l['newpoints_error'] = 'Ha ocurrido un error desconocido.';
@@ -111,14 +111,15 @@ $l['newpoints_username'] = 'Nombre de usuario';
 ///////////////// Maintenance
 $l['newpoints_recount_from_logs'] = 'Recontar NewPoints de Usuario Desde Registros';
 $l['newpoints_recount_from_logs_description'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar la resta aritmética de los registros de cargos de los registros de ingresos.';
-$l['newpoints_recount_from_logs_success'] = 'La cantidad de NewPoints para los usuarios se ha reconstruido exitosamente a partir de los registros.';
+$l['newpoints_recount_from_logs_success'] = 'La cantidad de {2} de usuario se ha reconstruido exitosamente a partir de los registros.';
 
-$l['newpoints_recount'] = 'Recontar NewPoints de Usuario (Obsoleto)';
+$l['newpoints_recount'] = 'Recontar NewPoints de Usuario Desde Configuracion';
 $l['newpoints_recount_desc'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar su valor actual en vivo basado en la configuración de ingresos.';
-$l['newpoints_recount_success'] = 'La cantidad de NewPoints para los usuarios se ha reconstruido exitosamente.';
+$l['newpoints_recount_success'] = 'La cantidad de {2} de usuario se ha reconstruido exitosamente a partir de la configuracion.';
 $l['newpoints_reset'] = 'Restablecer NewPoints de Usuario';
-$l['newpoints_reset_success'] = 'El restablecimiento de los puntos de usuario fue exitoso.';
+$l['newpoints_reset_success'] = 'El restablecimiento de {2} de usuario fue exitoso.';
 $l['newpoints_reset_desc'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar este valor.';
+$l['newpoints_reset_amount'] = 'Cantidad por usuario';
 $l['newpoints_invalid_user'] = 'Usuario inválido.';
 
 ///////////////// Stats

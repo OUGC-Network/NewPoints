@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -31,9 +31,9 @@ declare(strict_types=1);
 
 use function Newpoints\Core\get_income_types;
 use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_add;
 use function Newpoints\Core\log_delete;
 use function Newpoints\Core\log_get;
 use function Newpoints\Core\main_file_name;
@@ -50,8 +50,6 @@ use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
-use function Newpoints\Core\users_get_group_permissions;
-
 use const Newpoints\Core\INCOME_TYPE_POST;
 use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
@@ -59,6 +57,7 @@ use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 
@@ -122,7 +121,8 @@ if (!$mybb->get_input('action')) {
 
     $income_amount = $lang->sprintf(
         $lang->newpoints_income_amount,
-        get_setting('main_curname')
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
     );
 
     $latest_transactions = [];
@@ -151,6 +151,8 @@ if (!$mybb->get_input('action')) {
 
     $user_rate_description = $lang->sprintf(
         $lang->newpoints_home_user_rate_description,
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
         $user_group_rate_addition,
         $user_group_rate_subtraction
     );
@@ -187,7 +189,14 @@ if (!$mybb->get_input('action')) {
 
     $income_settings = eval(templates_get('home_income_table'));
 
+    #Deprecated
     $newpoints_home_desc = $lang->newpoints_home_desc;
+
+    $description_header = $lang->sprintf(
+        $lang->newpoints_home_description_header,
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
+        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
+    );
 
     $page = eval(templates_get('home'));
 
@@ -385,35 +394,31 @@ if ($mybb->get_input('action') == 'stats') {
         error($lang->newpoints_cant_donate_self);
     }
 
-    // remove points from us
-    points_subtract($current_user_id, $amount);
+    try {
+        instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+            'donation_sent',
+            $current_user_id,
+            $amount,
+            $to_user_id,
+        );
 
-    // give points to user
-    points_add_simple($to_user_id, $amount);
+        points_subtract($current_user_id, $amount);
+    } catch (Exception $e) {
+        // Handle exception
+    }
 
-    log_add(
-        'donation_sent',
-        $mybb->get_input('reason'),
-        $mybb->user['username'],
-        $current_user_id,
-        $amount,
-        $to_user_id,
-        0,
-        0,
-        LOGGING_TYPE_CHARGE
-    );
+    try {
+        instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+            'donation',
+            $to_user_id,
+            $amount,
+            $current_user_id,
+        );
 
-    log_add(
-        'donation',
-        $mybb->get_input('reason'),
-        $touser['username'],
-        $to_user_id,
-        $amount,
-        $current_user_id,
-        0,
-        0,
-        LOGGING_TYPE_INCOME
-    );
+        points_add_simple($to_user_id, $amount);
+    } catch (Exception $e) {
+        // Handle exception
+    }
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
     if (get_setting('donations_send_private_message')) {

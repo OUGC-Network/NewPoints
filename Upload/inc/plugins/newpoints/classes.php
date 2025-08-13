@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -116,9 +116,11 @@ const LOGGING_TYPE_INCOME = 1;
 
 const LOGGING_TYPE_CHARGE = 2;
 
-const PRIVATE_MESSAGE_ENGINE_ID = -1;
+const PRIVATE_MESSAGE_ENGINE_ID = 0;
 
 const PRIVATE_MESSAGE_CURRENT_USER_ID = 0;
+
+const INSTANCE_DEFAULT_ID = 1;
 
 const TABLES_DATA = [
     'newpoints_settings' => [
@@ -218,7 +220,11 @@ const TABLES_DATA = [
             'unsigned' => true,
             'default' => 0
         ],
-
+        'instance_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 1
+        ],
     ],
     'newpoints_forumrules' => [
         'rid' => [

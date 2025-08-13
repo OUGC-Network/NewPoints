@@ -1,7 +1,7 @@
 {
   "name": "NewPoints",
   "version": "3.1.0",
-  "description": "NewPoints plugin for MyBB - A complex but efficient points system for MyBB.",
+  "description": "NewPoints is a complex but efficient points system for MyBB.",
   "repository": {
     "type": "git",
     "url": "https://github.com/OUGC-Network/newpoints.git"
