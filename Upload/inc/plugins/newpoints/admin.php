@@ -37,6 +37,8 @@ use MybbStuff_MyAlerts_Entity_AlertType;
 use PluginLibrary;
 use stdClass;
 use Exception;
+use Newpoints\Core\IncomePermissions;
+use Newpoints\Core\IncomeRates;
 
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\instance_object;
@@ -64,12 +66,10 @@ use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
 use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
-use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\TABLES_DATA;
-use const Newpoints\ROOT;
 
 const PERMISSION_ENABLE = 1;
 
@@ -220,7 +220,7 @@ function plugin_activation(): bool
 
             $db->update_query(
                 'usergroups',
-                ['newpoints_income_user_allowance' => (float)$group['newpoints_allowance']],
+                [IncomePermissions::UserIncomeUserAllowance => (float)$group['newpoints_allowance']],
                 "gid='{$group_id}'"
             );
         }
@@ -236,7 +236,7 @@ function plugin_activation(): bool
 
             $db->update_query(
                 'usergroups',
-                ['newpoints_income_user_allowance_minutes' => (int)($group['newpoints_allowance_period'] / 60)],
+                [IncomePermissions::UserIncomeUserAllowanceMinutes => (int)($group['newpoints_allowance_period'] / 60)],
                 "gid='{$group_id}'"
             );
         }
@@ -252,7 +252,7 @@ function plugin_activation(): bool
 
             $db->update_query(
                 'usergroups',
-                ['newpoints_income_user_allowance_primary_only' => (int)$group['newpoints_allowance_primary_only']],
+                [IncomePermissions::UserIncomeUserAllowancePrimaryOnly => (int)$group['newpoints_allowance_primary_only']],
                 "gid='{$group_id}'"
             );
         }
@@ -268,7 +268,7 @@ function plugin_activation(): bool
 
             $db->update_query(
                 'usergroups',
-                ['newpoints_income_user_allowance_last_stamp' => (int)$group['newpoints_allowance_last_stamp']],
+                [IncomePermissions::UserIncomeUserAllowanceLastStamp => (int)$group['newpoints_allowance_last_stamp']],
                 "gid='{$group_id}'"
             );
         }
@@ -284,7 +284,7 @@ function plugin_activation(): bool
 
             $db->update_query(
                 'usergroups',
-                ['newpoints_rate_addition' => (float)$group['newpoints_rate']],
+                [IncomeRates::RateAddition => (float)$group['newpoints_rate']],
                 "gid='{$group_id}'"
             );
         }
@@ -789,7 +789,8 @@ function recount_rebuild_newpoints_recount_from_logs(): void
     );
 }
 
-function recount_rebuild_newpoints_recount()
+// todo refactor to consider instances
+function recount_rebuild_newpoints_recount(): void
 {
     global $db, $mybb, $lang;
 
@@ -829,7 +830,7 @@ function recount_rebuild_newpoints_recount()
 
         $user_group_permissions = users_get_group_permissions($user_id);
 
-        if (empty($user_group_permissions['newpoints_rate_addition'])) {
+        if (empty($user_group_permissions[IncomeRates::RateAddition])) {
             //continue;
         }
 
@@ -858,7 +859,7 @@ function recount_rebuild_newpoints_recount()
 
             if (($character_count = my_strlen(
                     $mybb->get_input('message')
-                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                )) >= $user_group_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
                 $bonus = $character_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $user_id, $forum_id);
             } else {
                 $bonus = 0;
@@ -902,7 +903,7 @@ function recount_rebuild_newpoints_recount()
 
             if (($character_count = my_strlen(
                     $post_data['message']
-                )) >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
+                )) >= $user_group_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
                 $bonus = $character_count *
                     get_income_value(INCOME_TYPE_POST_CHARACTER, $user_id, $forum_id);
             } else {
@@ -923,7 +924,7 @@ function recount_rebuild_newpoints_recount()
 
                 $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
 
-                $income_value = $income_value * $thread_user_group_permissions['newpoints_rate_addition'];
+                $income_value = $income_value * $thread_user_group_permissions[IncomeRates::RateAddition];
 
                 if ($income_value) {
                     try {
@@ -954,8 +955,6 @@ function recount_rebuild_newpoints_recount()
         );
 
         while ($vote_data = $db->fetch_array($query_polls)) {
-            $thread_id = (int)$vote_data['tid'];
-
             $forum_id = (int)$vote_data['fid'];
 
             $income_value = get_income_value(INCOME_TYPE_POLL_VOTE, $user_id, $forum_id);
@@ -987,7 +986,7 @@ function recount_rebuild_newpoints_recount()
                         INCOME_TYPE_USER_REGISTRATION,
                         $user_id
                     ) + $points *
-                    $user_group_permissions['newpoints_rate_addition']
+                    $user_group_permissions[IncomeRates::RateAddition]
             ],
             "uid='{$user_id}'"
         );

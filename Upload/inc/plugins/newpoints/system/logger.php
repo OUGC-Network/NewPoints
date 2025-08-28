@@ -44,9 +44,9 @@ use const Newpoints\Core\PRIVATE_MESSAGE_ENGINE_ID;
 
 class Logger
 {
-    private Core $core;
+    private Instance $core;
 
-    public function __construct(Core &$core)
+    public function __construct(Instance &$core)
     {
         $this->core = $core;
     }

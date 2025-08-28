@@ -27,6 +27,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use Newpoints\Core\IncomePermissions;
+
 $l['newpoints'] = 'NewPoints';
 
 $l['newpoints_header_menu'] = 'NewPoints';
@@ -77,31 +79,31 @@ $l['newpoints_max_donations_control'] = 'You have reached the maximum of {1} ove
 // Settings translation
 $l['newpoints_income_source'] = 'Source';
 $l['newpoints_income_amount'] = '{1} Received';
-$l['newpoints_income_thread'] = 'New Thread';
+$l[IncomePermissions::UserIncomeThread] = 'New Thread';
 $l['newpoints_income_thread_desc'] = 'Amount of points received for each new thread.';
-$l['newpoints_income_thread_reply'] = 'New Thread Reply';
+$l[IncomePermissions::UserIncomeThreadReply] = 'New Thread Reply';
 $l['newpoints_income_thread_reply_desc'] = 'Amount of points received for each reply to a thread.';
-$l['newpoints_income_thread_rate'] = 'New Thread Rate';
+$l[IncomePermissions::UserIncomeThreadRate] = 'New Thread Rate';
 $l['newpoints_income_thread_rate_desc'] = 'Amount of points received for each new thread rate received.';
-$l['newpoints_income_post'] = 'New Post';
+$l[IncomePermissions::UserIncomePost] = 'New Post';
 $l['newpoints_income_post_desc'] = 'Amount of points received for each new post with at least {1} characters.';
-$l['newpoints_income_post_character'] = 'Post Character';
+$l[IncomePermissions::UserIncomePostCharacter] = 'Post Character';
 $l['newpoints_income_post_character_desc'] = 'Amount of points received for each character in a thread or post.';
-$l['newpoints_income_page_view'] = 'Page View';
+$l[IncomePermissions::UserIncomePageView] = 'Page View';
 $l['newpoints_income_page_view_desc'] = 'Amount of points received for each page view.';
-$l['newpoints_income_visit'] = 'Visit';
+$l[IncomePermissions::UserIncomeVisit] = 'Visit';
 $l['newpoints_income_visit_desc'] = 'Amount of points received for each visit every {1} minutes.';
-$l['newpoints_income_poll'] = 'New Poll';
+$l[IncomePermissions::UserIncomePoll] = 'New Poll';
 $l['newpoints_income_poll_desc'] = 'Amount of points received for each new poll.';
-$l['newpoints_income_poll_vote'] = 'New Poll Vote';
+$l[IncomePermissions::UserIncomePollVote] = 'New Poll Vote';
 $l['newpoints_income_poll_vote_desc'] = 'Amount of points received for each poll vote.';
-$l['newpoints_income_user_allowance'] = 'User Allowance';
+$l[IncomePermissions::UserIncomeUserAllowance] = 'User Allowance';
 $l['newpoints_income_user_allowance_desc'] = 'Amount of points received every {1} minutes.';
-$l['newpoints_income_user_registration'] = 'New Registration';
+$l[IncomePermissions::UserIncomeUserRegistration] = 'New Registration';
 $l['newpoints_income_user_registration_desc'] = 'Amount of points received when users register to the forum.';
-$l['newpoints_income_user_referral'] = 'New Referral';
+$l[IncomePermissions::UserIncomeUserReferral] = 'New Referral';
 $l['newpoints_income_user_referral_desc'] = 'Amount of points received for each user referred to the forum.';
-$l['newpoints_income_private_message'] = 'New Private Message';
+$l[IncomePermissions::UserIncomePrivateMessage] = 'New Private Message';
 $l['newpoints_income_private_message_desc'] = 'Amount of points received for each private message sent.';
 
 $l['newpoints_search_user'] = 'Search for an user..';

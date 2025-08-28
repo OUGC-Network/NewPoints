@@ -29,6 +29,10 @@
 
 declare(strict_types=1);
 
+use Newpoints\Core\IncomePermissions;
+use Newpoints\Core\IncomeRates;
+use Newpoints\Core\Permissions;
+
 use function Newpoints\Admin\plugin_activation;
 use function Newpoints\Admin\plugin_deactivation;
 use function Newpoints\Admin\plugin_information;
@@ -99,6 +103,9 @@ define('Newpoints\ROOT_PLUGINS', ROOT . '/plugins');
 defined('PLUGINLIBRARY') || define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
 
 require_once ROOT . '/core.php';
+require_once ROOT . '/system/Permissions.php';
+require_once ROOT . '/system/IncomeRates.php';
+require_once ROOT . '/system/IncomePermissions.php';
 require_once ROOT . '/classes.php';
 
 if (defined('IN_ADMINCP')) {
@@ -311,15 +318,15 @@ plugins_load();
 
     foreach (
         [
-            'newpoints_rate_subtraction',
-            'newpoints_income_post_minimum_characters',
-            'newpoints_income_visit_minutes'
+            IncomeRates::RateSubtraction,
+            IncomePermissions::UserIncomePostMinimumCharacters,
+            IncomePermissions::UserIncomeVisitMinutes
         ] as $group_permission_key
     ) {
         $groupzerolesser[] = $group_permission_key;
 
-        $grouppermbyswitch[$group_permission_key] = 'newpoints_can_get_points';
+        $grouppermbyswitch[$group_permission_key] = Permissions::CanGetPoints;
     }
 
-    $fpermfields[] = 'newpoints_can_get_points';
+    $fpermfields[] = Permissions::CanGetPoints;
 })();

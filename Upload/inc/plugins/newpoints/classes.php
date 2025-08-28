@@ -322,31 +322,31 @@ const FIELDS_DATA = [
         ],
     ],
     'usergroups' => [
-        'newpoints_can_get_points' => [
+        Permissions::CanGetPoints => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
             'form_type' => FORM_TYPE_CHECK_BOX
         ],
-        'newpoints_can_see_page' => [
+        Permissions::CanSeePage => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
             'form_type' => FORM_TYPE_CHECK_BOX
         ],
-        'newpoints_can_see_stats' => [
+        Permissions::CanSeeStats => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,
             'form_type' => FORM_TYPE_CHECK_BOX
         ],
-        'newpoints_can_donate' => [
+        Permissions::CanDonate => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,
             'form_type' => FORM_TYPE_CHECK_BOX
         ],
-        'newpoints_rate_addition' => [
+        IncomeRates::RateAddition => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -357,7 +357,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_rate_subtraction' => [
+        IncomeRates::RateSubtraction => [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 100,
@@ -366,7 +366,7 @@ const FIELDS_DATA = [
                 //'max' => 100,
             ]
         ],
-        'newpoints_income_thread' => [
+        IncomePermissions::UserIncomeThread => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -377,7 +377,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_thread_reply' => [
+        IncomePermissions::UserIncomeThreadReply => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -388,7 +388,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_thread_rate' => [
+        IncomePermissions::UserIncomeThreadRate => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -399,7 +399,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_post' => [
+        IncomePermissions::UserIncomePost => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -410,13 +410,13 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_post_minimum_characters' => [
+        IncomePermissions::UserIncomePostMinimumCharacters => [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0,
             'form_type' => FORM_TYPE_NUMERIC_FIELD,
         ],
-        'newpoints_income_post_character' => [
+        IncomePermissions::UserIncomePostCharacter => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -427,7 +427,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_page_view' => [
+        IncomePermissions::UserIncomePageView => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -438,7 +438,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_visit' => [
+        IncomePermissions::UserIncomeVisit => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -449,7 +449,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_visit_minutes' => [
+        IncomePermissions::UserIncomeVisitMinutes => [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0,
@@ -459,7 +459,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_poll' => [
+        IncomePermissions::UserIncomePoll => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -470,7 +470,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_poll_vote' => [
+        IncomePermissions::UserIncomePollVote => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -481,7 +481,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_user_allowance' => [
+        IncomePermissions::UserIncomeUserAllowance => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -492,25 +492,25 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_user_allowance_minutes' => [
+        IncomePermissions::UserIncomeUserAllowanceMinutes => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
             'form_type' => FORM_TYPE_NUMERIC_FIELD,
         ],
-        'newpoints_income_user_allowance_primary_only' => [
+        IncomePermissions::UserIncomeUserAllowancePrimaryOnly => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,
             'form_type' => FORM_TYPE_CHECK_BOX
         ],
-        'newpoints_income_user_allowance_last_stamp' => [
+        IncomePermissions::UserIncomeUserAllowanceLastStamp => [
             'type' => 'INT',
             'unsigned' => true,
             'default' => 0
         ],
-        'newpoints_income_user_registration' => [
+        IncomePermissions::UserIncomeUserRegistration => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -521,7 +521,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_user_referral' => [
+        IncomePermissions::UserIncomeUserReferral => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -532,7 +532,7 @@ const FIELDS_DATA = [
                 'step' => DECIMAL_DATA_TYPE_STEP,
             ]
         ],
-        'newpoints_income_private_message' => [
+        IncomePermissions::UserIncomePrivateMessage => [
             'type' => 'DECIMAL',
             'unsigned' => true,
             'size' => DECIMAL_DATA_TYPE_SIZE,
@@ -545,7 +545,7 @@ const FIELDS_DATA = [
         ]
     ],
     'forumpermissions' => [
-        'newpoints_can_get_points' => [
+        Permissions::CanGetPoints => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 1,

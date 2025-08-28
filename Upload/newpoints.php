@@ -29,6 +29,9 @@
 
 declare(strict_types=1);
 
+use Newpoints\Core\IncomeRates;
+use Newpoints\Core\Permissions;
+
 use function Newpoints\Core\get_income_types;
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\instance_object;
@@ -86,7 +89,7 @@ url_handler_set($newpoints_file);
 run_hooks('begin');
 
 // Allow guests here? Some plugins may allow guest access and they may hook to newpoints_start
-if (empty($mybb->usergroup['newpoints_can_see_page'])) {
+if (empty($mybb->usergroup[Permissions::CanSeePage])) {
     error_no_permission();
 }
 
@@ -145,9 +148,9 @@ if (!$mybb->get_input('action')) {
         }
     }
 
-    $user_group_rate_addition = (float)$mybb->usergroup['newpoints_rate_addition'];
+    $user_group_rate_addition = (float)$mybb->usergroup[IncomeRates::RateAddition];
 
-    $user_group_rate_subtraction = $mybb->usergroup['newpoints_rate_subtraction'] / 100;
+    $user_group_rate_subtraction = $mybb->usergroup[IncomeRates::RateSubtraction] / 100;
 
     $user_rate_description = $lang->sprintf(
         $lang->newpoints_home_user_rate_description,
@@ -206,7 +209,7 @@ if (!$mybb->get_input('action')) {
 if ($mybb->get_input('action') == 'stats') {
     add_breadcrumb($lang->newpoints_statistics, url_handler_build(['action' => 'stats']));
 
-    if (empty($mybb->usergroup['newpoints_can_see_stats'])) {
+    if (empty($mybb->usergroup[Permissions::CanSeeStats])) {
         error($lang->newpoints_stats_disabled);
     }
 
@@ -312,7 +315,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     output_page($page);
 } elseif ($mybb->get_input('action') == 'donate') {
-    if (empty($mybb->usergroup['newpoints_can_donate'])) {
+    if (empty($mybb->usergroup[Permissions::CanDonate])) {
         error($lang->newpoints_donations_disabled);
     }
 
@@ -351,7 +354,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     output_page($page);
 } elseif ($mybb->get_input('action') == 'do_donate') {
-    if (empty($mybb->usergroup['newpoints_can_donate'])) {
+    if (empty($mybb->usergroup[Permissions::CanDonate])) {
         error($lang->newpoints_donations_disabled);
     }
 

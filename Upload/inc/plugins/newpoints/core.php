@@ -35,6 +35,7 @@ use AbstractPdoDbDriver;
 use DateTime;
 use DB_SQLite;
 use DirectoryIterator;
+use Exception;
 use InvalidArgumentException;
 use JetBrains\PhpStorm\Deprecated;
 use Moderation;
@@ -46,7 +47,7 @@ use PluginLibrary;
 use pluginSystem;
 use postParser;
 use ReflectionProperty;
-use Newpoints\System\Core;
+use Newpoints\System\Instance;
 
 use function Newpoints\Hooks\Forum\myalerts_register_client_alert_formatters;
 
@@ -687,11 +688,14 @@ function settings_rebuild_cache(array &$settings = []): array
     ];
 
     $query = $db->simple_select('newpoints_settings', 'value, name', '', $options);
+
     while ($setting = $db->fetch_array($query)) {
         //$setting['value']=str_replace("\"", "\\\"", $setting['value']);
         $settings[$setting['name']] = $setting['value'];
+
         $mybb->settings[$setting['name']] = $setting['value'];
     }
+
     $db->free_result($query);
 
     $cache->update('newpoints_settings', $settings);
@@ -1062,7 +1066,7 @@ function rate_group_get(int $group_id)
     return isset($group_rules['rate']) ? (float)$group_rules['rate'] : 1;
 }
 
-function rules_get_group_rate(array $user = [], string $rate_key = 'newpoints_rate_addition'): float
+function rules_get_group_rate(array $user = [], string $rate_key = IncomeRates::RateAddition): float
 {
     global $mybb;
 
@@ -1437,20 +1441,20 @@ function users_update(): bool
 
     foreach ($user_groups as $user_group_data) {
         if (
-            empty($user_group_data['newpoints_income_user_allowance']) ||
-            empty($user_group_data['newpoints_income_user_allowance_minutes']) ||
-            $user_group_data['newpoints_income_user_allowance_last_stamp'] > (TIME_NOW - $user_group_data['newpoints_income_user_allowance_minutes'] * 60)
+            empty($user_group_data[IncomePermissions::UserIncomeUserAllowance]) ||
+            empty($user_group_data[IncomePermissions::UserIncomeUserAllowanceMinutes]) ||
+            $user_group_data[IncomePermissions::UserIncomeUserAllowanceLastStamp] > (TIME_NOW - $user_group_data[IncomePermissions::UserIncomeUserAllowanceMinutes] * 60)
         ) {
             continue;
         }
 
-        $amount = (float)$user_group_data['newpoints_income_user_allowance'];
+        $amount = (float)$user_group_data[IncomePermissions::UserIncomeUserAllowance];
 
         $group_id = (int)$user_group_data['gid'];
 
         $where_clauses = ["`usergroup`='{$group_id}'"];
 
-        if (empty($user_group_data['newpoints_income_user_allowance_primary_only'])) {
+        if (empty($user_group_data[IncomePermissions::UserIncomeUserAllowancePrimaryOnly])) {
             switch ($db->type) {
                 case 'pgsql':
                 case 'sqlite':
@@ -1471,7 +1475,7 @@ function users_update(): bool
 
         $db->update_query(
             'usergroups',
-            ['newpoints_income_user_allowance_last_stamp' => TIME_NOW],
+            [IncomePermissions::UserIncomeUserAllowanceLastStamp => TIME_NOW],
             "gid='{$group_id}'"
         );
     }
@@ -1731,7 +1735,7 @@ function page_build_menu_options(): string
             ]*/
         ];
 
-        if (!empty($mybb->usergroup['newpoints_can_see_stats'])) {
+        if (!empty($mybb->usergroup[Permissions::CanSeeStats])) {
             $menu_items[get_setting('stats_menu_order')] = [
                 'action' => 'stats',
                 'lang_string' => 'newpoints_statistics',
@@ -1739,7 +1743,7 @@ function page_build_menu_options(): string
             ];
         }
 
-        if (!empty($mybb->usergroup['newpoints_can_donate'])) {
+        if (!empty($mybb->usergroup[Permissions::CanDonate])) {
             $menu_items[get_setting('donations_menu_order')] = [
                 'action' => 'donate',
                 'lang_string' => 'newpoints_donate',
@@ -1856,8 +1860,12 @@ function get_income_types(): array
     return $income_types;
 }
 
-function get_income_value(string $income_type, int $user_id = 0, int $forum_id = 0): float
-{
+function get_income_value(
+    string $income_type,
+    int $user_id = 0,
+    int $forum_id = 0,
+    int $instance_id = INSTANCE_DEFAULT_ID
+): float {
     global $mybb;
 
     $current_user_id = (int)$mybb->user['uid'];
@@ -2113,8 +2121,11 @@ function user_get_forum_permissions(int $forum_id, int $user_id): array
     return forum_permissions($forum_id, $user_id);
 }
 
-function user_can_get_points(int $user_id, int $forum_id = 0): bool
-{
+function user_can_get_points(
+    int $user_id,
+    int $forum_id = 0,
+    int $instance_id = INSTANCE_DEFAULT_ID
+): bool {
     $user_data = get_user($user_id);
 
     if (empty($user_data['uid'])) {
@@ -2124,7 +2135,7 @@ function user_can_get_points(int $user_id, int $forum_id = 0): bool
     if ($forum_id) {
         $forum_permissions = user_get_forum_permissions($forum_id, $user_id);
 
-        return !empty($forum_permissions['newpoints_can_get_points']);
+        return !empty($forum_permissions[Permissions::CanGetPoints]);
     }
 
     global $mybb;
@@ -2141,7 +2152,7 @@ function user_can_get_points(int $user_id, int $forum_id = 0): bool
         $group_permissions = usergroup_permissions($user_groups);
     }
 
-    return !empty($group_permissions['newpoints_can_get_points']);
+    return !empty($group_permissions[Permissions::CanGetPoints]);
 }
 
 function user_update(int $user_id, array $update_data): int
@@ -2328,14 +2339,17 @@ function alert_send(int $user_id, int $object_id, string $plugin_code, string $a
     return true;
 }
 
-function instance_object(int $instance_id): Core
+/**
+ * @throws Exception
+ */
+function instance_object(int $instance_id): Instance
 {
     static $instances_cache = [];
 
     if (!isset($instances_cache[$instance_id])) {
-        require_once MYBB_ROOT . 'inc/plugins/newpoints/system/core.php';
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/system/Instance.php';
 
-        $instances_cache[$instance_id] = new Core($instance_id);
+        $instances_cache[$instance_id] = new Instance($instance_id);
     }
 
     return $instances_cache[$instance_id];
@@ -2343,6 +2357,8 @@ function instance_object(int $instance_id): Core
 
 function instance_get(?int $instance_id = null): array
 {
+    global $mybb;
+
     $instance_objects = [
         1 => [
             'instance_id' => 1,
@@ -2351,6 +2367,32 @@ function instance_get(?int $instance_id = null): array
             'enable_notifications_private_message' => get_setting('main_pm_alerts_enabled'),
             'enable_notifications_alert' => get_setting('main_my_alerts_enabled'),
             'users_column_name' => 'newpoints',
+            Permissions::CanGetPoints => $mybb->usergroup[Permissions::CanGetPoints],
+            Permissions::CanSeePage => $mybb->usergroup[Permissions::CanSeePage],
+            Permissions::CanSeeStats => $mybb->usergroup[Permissions::CanSeeStats],
+            Permissions::CanDonate => $mybb->usergroup[Permissions::CanDonate],
+
+            IncomeRates::RateAddition => $mybb->usergroup[IncomeRates::RateAddition],
+            IncomeRates::RateSubtraction => $mybb->usergroup[IncomeRates::RateSubtraction],
+
+            IncomePermissions::UserIncomeThread => $mybb->usergroup[IncomePermissions::UserIncomeThread],
+            IncomePermissions::UserIncomeThreadReply => $mybb->usergroup[IncomePermissions::UserIncomeThreadReply],
+            IncomePermissions::UserIncomeThreadRate => $mybb->usergroup[IncomePermissions::UserIncomeThreadRate],
+            IncomePermissions::UserIncomePost => $mybb->usergroup[IncomePermissions::UserIncomePost],
+            IncomePermissions::UserIncomePostMinimumCharacters => $mybb->usergroup[IncomePermissions::UserIncomePostMinimumCharacters],
+            IncomePermissions::UserIncomePostCharacter => $mybb->usergroup[IncomePermissions::UserIncomePostCharacter],
+            IncomePermissions::UserIncomePageView => $mybb->usergroup[IncomePermissions::UserIncomePageView],
+            IncomePermissions::UserIncomeVisit => $mybb->usergroup[IncomePermissions::UserIncomeVisit],
+            IncomePermissions::UserIncomeVisitMinutes => $mybb->usergroup[IncomePermissions::UserIncomeVisitMinutes],
+            IncomePermissions::UserIncomePoll => $mybb->usergroup[IncomePermissions::UserIncomePoll],
+            IncomePermissions::UserIncomePollVote => $mybb->usergroup[IncomePermissions::UserIncomePollVote],
+            IncomePermissions::UserIncomeUserAllowance => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowance],
+            IncomePermissions::UserIncomeUserAllowanceMinutes => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowanceMinutes],
+            IncomePermissions::UserIncomeUserAllowancePrimaryOnly => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowancePrimaryOnly],
+            IncomePermissions::UserIncomeUserAllowanceLastStamp => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowanceLastStamp],
+            IncomePermissions::UserIncomeUserRegistration => $mybb->usergroup[IncomePermissions::UserIncomeUserRegistration],
+            IncomePermissions::UserIncomeUserReferral => $mybb->usergroup[IncomePermissions::UserIncomeUserReferral],
+            IncomePermissions::UserIncomePrivateMessage => $mybb->usergroup[IncomePermissions::UserIncomePrivateMessage],
         ],
     ];
 
@@ -2368,7 +2410,7 @@ function instance_get(?int $instance_id = null): array
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )
-function control_object(&$obj, string $code)
+function control_object(&$obj, string $code): void
 {
     static $cnt = 0;
     $newname = '_objcont_newpoints_' . (++$cnt);
@@ -2406,7 +2448,7 @@ function control_object(&$obj, string $code)
 if ($GLOBALS['db'] instanceof AbstractPdoDbDriver) {
     $GLOBALS['AbstractPdoDbDriver_lastResult_prop'] = new ReflectionProperty('AbstractPdoDbDriver', 'lastResult');
     $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setAccessible(true);
-    function control_db(string $code)
+    function control_db(string $code): void
     {
         global $db;
         $linkvars = [
@@ -2424,7 +2466,7 @@ if ($GLOBALS['db'] instanceof AbstractPdoDbDriver) {
         $GLOBALS['AbstractPdoDbDriver_lastResult_prop']->setValue($db, $lastResult);
     }
 } elseif ($GLOBALS['db'] instanceof DB_SQLite) {
-    function control_db(string $code)
+    function control_db(string $code): void
     {
         global $db;
         $oldLink = $db->db;
@@ -2433,7 +2475,7 @@ if ($GLOBALS['db'] instanceof AbstractPdoDbDriver) {
         $db->db = $oldLink;
     }
 } else {
-    function control_db(string $code)
+    function control_db(string $code): void
     {
         control_object($GLOBALS['db'], $code);
     }
