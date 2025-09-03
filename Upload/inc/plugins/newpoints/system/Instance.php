@@ -38,6 +38,7 @@ use Newpoints\Core\IncomeRates;
 
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\get_setting;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\points_add_simple;
@@ -113,7 +114,7 @@ class Instance
 
     protected function get_display_name_plural(): string
     {
-        return $this->instance_data['display_name_plural'];
+        return (string)$this->instance_data['display_name_plural'];
     }
 
     public function get_enable_notifications_private_message(): bool
@@ -191,6 +192,13 @@ class Instance
         }
 
         return my_strtolower($this->get_display_name_singular());
+    }
+
+    public function column_exists(): bool
+    {
+        global $db;
+
+        return $db->field_exists($this->instance_data['users_column_name'], 'users');
     }
 
     private function user_can_get_points(): bool
@@ -912,5 +920,10 @@ class Instance
         }
 
         return true;
+    }
+
+    public function settings_get_value(string $setting_key = ''): bool|string|int|float
+    {
+        return get_setting($setting_key, $this->instance_id);
     }
 }

@@ -39,12 +39,13 @@ use function Newpoints\Admin\recount_rebuild_newpoints_recount_from_logs;
 use function Newpoints\Admin\recount_rebuild_newpoints_reset;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
-use function Newpoints\Core\instance_exists;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\points_format;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\url_handler_build;
+use function Newpoints\Core\url_handler_set;
 
 use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
@@ -55,6 +56,7 @@ use const Newpoints\Core\FORM_TYPE_PHP_CODE;
 use const Newpoints\Core\FORM_TYPE_PHP_CODE_LEGACY;
 use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
 use const Newpoints\Core\FORM_TYPE_SELECT_FIELD_LEGACY;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\ROOT;
 
 function admin_config_plugins_deactivate(): bool
@@ -363,7 +365,6 @@ function admin_user_groups_edit_graph(): bool
             ) . '</div>'
         );
     }
-
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $hook_arguments);
 
@@ -730,6 +731,29 @@ function admin_user_users_edit_graph(): bool
 
     $hook_arguments = run_hooks('admin_user_users_edit_graph_intermediate', $hook_arguments);
 
+    $defaultInstanceID = INSTANCE_DEFAULT_ID;
+
+    $instances_select = $form->generate_select_box(
+        'newpoints_recount_from_settings_instance_id',
+        (function (): array {
+            $instance_objects = [];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                $instance_objects[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+            }
+
+            return $instance_objects;
+        })(),
+        [$defaultInstanceID],
+        ['id' => 'newpoints_instance_select']
+    );
+
+    $form_container->output_row(
+        $lang->newpoints_users_amount,
+        '',
+        $instances_select
+    );
+
     $form_container->output_row(
         $lang->newpoints_forums,
         '',
@@ -742,6 +766,63 @@ function admin_user_users_edit_graph(): bool
     $hook_arguments = run_hooks('admin_user_users_edit_graph_end', $hook_arguments);
 
     $form_container->end();
+
+    url_handler_set('index.php');
+
+    $urlParams = [
+        'module' => 'user-users',
+        'action' => 'edit',
+        'uid' => $user['uid'],
+        'instance_id' => $mybb->get_input('instance_id', MyBB::INPUT_INT),
+        'my_post_key' => $mybb->post_code,
+        'newpoints_instance_id' => $defaultInstanceID
+    ];
+
+    $formUrl = url_handler_build($urlParams);
+
+    echo <<<EOL
+    <script type="text/javascript">
+        function newpoints_update_user_balance()
+        {
+            let instance_id = parseInt(document.getElementById('newpoints_instance_select').value);
+            
+            if(!instance_id || instance_id < 1)
+            {
+                instance_id = {$defaultInstanceID};
+            }
+            
+            $.ajax(
+            {
+                url: this.url,
+                async: true,
+                method: 'post',
+                data: postData,
+                complete: function (request)
+                {
+                    this.onComplete(request);
+                }.bind(this)
+            });
+
+            const my_post_request = new Request({
+                method: 'post',
+                url: 'index.php',
+                data: 'module=user-users&amp;action=edit&amp;uid={$user['uid']}&amp;newpoints_instance_id=' + instance_id + '&amp;my_post_key={$mybb->post_code}',
+                onRequest: function() {
+                    //$('newpoints_user_balance').set('html', '<em>{\$lang->newpoints_loading}</em>');
+                },
+                onSuccess: function(response) {
+                    console.log(response);
+                    //$('newpoints_user_balance').set('html', response);
+                }
+            }).send();
+        }
+
+            document.getElementById('newpoints_instance_select').addEventListener('change', function() {
+                newpoints_update_user_balance();
+            });
+        </script>
+EOL;
+
 
     echo "</div>\n";
 

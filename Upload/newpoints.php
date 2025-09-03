@@ -35,7 +35,6 @@ use Newpoints\Core\Permissions;
 use function Newpoints\Core\get_income_types;
 use function Newpoints\Core\get_income_value;
 use function Newpoints\Core\instance_object;
-use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_delete;
 use function Newpoints\Core\log_get;
@@ -78,11 +77,23 @@ if (!function_exists('\Newpoints\Core\language_load')) {
     error_no_permission();
 }
 
+$instance_id = $mybb->get_input('instance_id', MyBB::INPUT_INT);
+
+if ($instance_id < 1) {
+    $instance_id = INSTANCE_DEFAULT_ID;
+}
+
+try {
+    $instance_object = instance_object($instance_id);
+} catch (InvalidArgumentException $e) {
+    error($e->getMessage());
+}
+
 global $mybb, $plugins, $lang, $db, $templates;
 
 $mybb->input['action'] = $mybb->get_input('action');
 
-$newpoints_file = main_file_name();
+$newpoints_file = main_file_name($instance_id);
 
 url_handler_set($newpoints_file);
 
@@ -95,7 +106,7 @@ if (empty($mybb->usergroup[Permissions::CanSeePage])) {
 
 language_load();
 
-$options = page_build_menu_options();
+$options = page_build_menu_options($instance_id);
 
 $newpoints_menu = page_build_menu();
 
@@ -124,8 +135,8 @@ if (!$mybb->get_input('action')) {
 
     $income_amount = $lang->sprintf(
         $lang->newpoints_income_amount,
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
+        $instance_object->get_display_name_upper(),
+        $instance_object->get_display_name_lower(),
     );
 
     $latest_transactions = [];
@@ -154,8 +165,8 @@ if (!$mybb->get_input('action')) {
 
     $user_rate_description = $lang->sprintf(
         $lang->newpoints_home_user_rate_description,
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
+        $instance_object->get_display_name_upper(),
+        $instance_object->get_display_name_lower(),
         $user_group_rate_addition,
         $user_group_rate_subtraction
     );
@@ -197,8 +208,8 @@ if (!$mybb->get_input('action')) {
 
     $description_header = $lang->sprintf(
         $lang->newpoints_home_description_header,
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
+        $instance_object->get_display_name_upper(),
+        $instance_object->get_display_name_lower(),
     );
 
     $page = eval(templates_get('home'));
@@ -230,7 +241,7 @@ if ($mybb->get_input('action') == 'stats') {
         [
             'order_by' => 'newpoints',
             'order_dir' => 'DESC',
-            'limit' => (int)get_setting('main_stats_richestusers')
+            'limit' => (int)$instance_object->settings_get_value('main_stats_richestusers')
         ]
     );
     while ($user = $db->fetch_array($query)) {
@@ -267,7 +278,7 @@ if ($mybb->get_input('action') == 'stats') {
 		LEFT JOIN {$db->table_prefix}users tu ON (tu.uid=l.log_primary_id)
 		WHERE l.action='donation'
 		ORDER BY l.date DESC
-		LIMIT " . (int)get_setting('donations_stats_latest')
+		LIMIT " . (int)$instance_object->settings_get_value('donations_stats_latest')
     );
 
     while ($donation = $db->fetch_array($query)) {
@@ -368,15 +379,20 @@ if ($mybb->get_input('action') == 'stats') {
             'COUNT(lid) as donations',
             'action=\'donation\' AND date>' . (constant(
                     'TIME_NOW'
-                ) - (int)get_setting('donations_flood_minutes') * 60 * 60) . ' AND uid=' . $current_user_id
+                ) - (int)$instance_object->settings_get_value(
+                    'donations_flood_minutes'
+                ) * 60 * 60) . ' AND uid=' . $current_user_id
         );
         $totaldonations = (int)$db->fetch_field($q, 'donations');
-        if ($totaldonations >= (int)get_setting('donations_flood_limit')) {
+        if ($totaldonations >= (int)$instance_object->settings_get_value('donations_flood_limit')) {
             error($lang->sprintf($lang->newpoints_max_donations_control, $totaldonations));
         }
     }
 
-    $amount = round($mybb->get_input('amount', MyBB::INPUT_FLOAT), (int)get_setting('main_decimal'));
+    $amount = round(
+        $mybb->get_input('amount', MyBB::INPUT_FLOAT),
+        (int)$instance_object->settings_get_value('main_decimal')
+    );
 
     // do we have enough points?
     if ($amount <= 0 || $amount > $mybb->user['newpoints']) {
@@ -398,7 +414,7 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     try {
-        instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
+        $instance_object->logger->log_charge(
             'donation_sent',
             $current_user_id,
             $amount,
@@ -411,7 +427,7 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     try {
-        instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
+        $instance_object->logger->log_income(
             'donation',
             $to_user_id,
             $amount,
@@ -424,7 +440,7 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
-    if (get_setting('donations_send_private_message')) {
+    if ($instance_object->settings_get_value('donations_send_private_message')) {
         if ($mybb->get_input('reason')) {
             $message = $lang->sprintf(
                 $lang->newpoints_donate_message_reason,
@@ -464,7 +480,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
 
-    $is_moderator = is_member(get_setting('logs_manage_groups'));
+    $is_moderator = is_member($instance_object->settings_get_value('logs_manage_groups'));
 
     if ($mybb->input['manage'] && $is_moderator) {
         $url_params['manage'] = 1;
@@ -485,7 +501,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $page_url = url_handler_build($url_params);
 
-    $per_page = (int)get_setting('logs_per_page');
+    $per_page = (int)$instance_object->settings_get_value('logs_per_page');
 
     if ($per_page < 1) {
         $per_page = 10;

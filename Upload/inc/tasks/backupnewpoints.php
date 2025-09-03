@@ -35,11 +35,11 @@ use function Newpoints\Core\run_hooks;
 
 function task_backupnewpoints(array &$task): array
 {
-    if (get_setting('disableBackUpSystem')) {
+    if (get_setting('disable_backup')) {
         return $task;
     }
 
-    global $mybb, $db, $lang, $cache, $plugins;
+    global $lang;
 
     language_load();
 

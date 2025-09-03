@@ -73,10 +73,11 @@ $l['no_active_plugins'] = 'There are no active plugins on your forum.';
 $l['no_inactive_plugins'] = 'There are no inactive plugins available.';
 
 ///////////////// Settings
+$l['newpoints_settings_instance'] = '{1} Settings';
 $l['newpoints_settings'] = 'Settings';
-$l['newpoints_settings_description'] = 'Here you can manage NewPoints settings.';
+$l['newpoints_settings_description'] = 'Here you can configure settings for the {1} instance.';
 $l['newpoints_settings_change'] = 'Change';
-$l['newpoints_settings_change_description'] = 'Change settings.';
+$l['newpoints_settings_change_description'] = 'Change the {3} settings for the {1} instance.';
 $l['newpoints_select_plugin'] = 'You must select a group.';
 
 ///////////////// Log
@@ -195,6 +196,23 @@ $l['newpoints_grouprules_edited'] = 'The selected rule has been edited successfu
 $l['newpoints_grouprules_deleted'] = 'The selected rule has been deleted successfully';
 $l['newpoints_grouprules_deleteconfirm'] = 'Are you sure you want to delete the selected rule?';
 
+$l['newpoints_instances'] = 'Instances';
+$l['newpoints_instances_description'] = 'Manage NewPoints instances.';
+$l['newpoints_instances_title'] = 'NewPoints Instances';
+$l['newpoints_instances_thead_id'] = 'ID';
+$l['newpoints_instances_thead_id'] = 'ID';
+$l['newpoints_instances_thead_name'] = 'Name';
+$l['newpoints_instances_thead_column'] = 'Users Column';
+$l['newpoints_instances_thead_main_file'] = 'Main File';
+$l['newpoints_instances_thead_enabled'] = 'Enabled';
+$l['newpoints_instances_thead_options_settings'] = 'Settings';
+$l['newpoints_instances_thead_options_create_column'] = 'Create Column';
+
+$l['newpoints_instances_create_column_success'] = 'The users <code>{1}</code> column for the {2} instance has been created successfully.';
+
+$l['newpoints_instances_new'] = 'New';
+$l['newpoints_instances_new_description'] = 'Create a new NewPoints instance.';
+
 ///////////////// Upgrades
 $l['newpoints_upgrades'] = 'Upgrades';
 $l['newpoints_upgrades_description'] = 'Upgrade NewPoints from here.';
@@ -298,6 +316,8 @@ $l['newpoints_forums'] = 'NewPoints Configuration';
 $l['newpoints_forums_rate'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
 $l['newpoints_forums_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
 $l['newpoints_forums_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
+
+$l['newpoints_users_amount'] = 'NewPoints Amount';
 
 $l['newpoints_forums_rates'] = 'NewPoints Rates Configuration';
 

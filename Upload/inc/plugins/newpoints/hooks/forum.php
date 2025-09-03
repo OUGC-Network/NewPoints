@@ -39,7 +39,6 @@ use Newpoints\Core\Permissions;
 
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
-use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
 use function Newpoints\Core\main_file_name;
@@ -126,7 +125,7 @@ function global_intermediate(): bool
 
     $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
 
-    $newpoints_file = main_file_name();
+    $newpoints_file = main_file_name($instance_id);
 
     language_load();
 
@@ -332,7 +331,7 @@ function postbit(array &$post): array
 
     language_load();
 
-    $newpoints_file = main_file_name();
+    $newpoints_file = main_file_name($instance_id);
 
     $currency = $lang->sprintf(
         $lang->newpoints_home_currency,
@@ -391,7 +390,7 @@ function member_profile_end(): bool
 
     language_load();
 
-    $newpoints_file = main_file_name();
+    $newpoints_file = main_file_name($instance_id);
 
     $currency = $lang->sprintf(
         $lang->newpoints_home_currency,
@@ -1160,7 +1159,7 @@ function _helper_evaluate_forum_post_lock(int $forum_id): bool
 
 function fetch_wol_activity_end(array &$user_activity): array
 {
-    if (my_strpos($user_activity['location'], main_file_name()) === false) {
+    if (my_strpos($user_activity['location'], main_file_name($instance_id)) === false) {
         return $user_activity;
     }
 
@@ -1192,7 +1191,7 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
             $hook_arguments['location_name'] = $lang->sprintf(
                 $lang->newpoints_wol_location_home,
                 $mybb->settings['bburl'],
-                main_file_name()
+                main_file_name($instance_id)
             );
             break;
         case 'newpoints_stats':
@@ -1261,8 +1260,7 @@ function memberlist_user(array &$user_data): array
 
 function myalerts_register_client_alert_formatters(): bool
 {
-    if (!get_setting('main_my_alerts_enabled') ||
-        !class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') ||
+    if (!class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') ||
         !class_exists('MybbStuff_MyAlerts_AlertFormatterManager')) {
         return false;
     }
@@ -1302,10 +1300,6 @@ function myalerts_register_client_alert_formatters(): bool
 
 function myalerts_load_lang(): string
 {
-    if (!get_setting('main_my_alerts_enabled')) {
-        return '';
-    }
-
     $hook_arguments = [];
 
     $hook_arguments = run_hooks('my_alerts_language_load', $hook_arguments);

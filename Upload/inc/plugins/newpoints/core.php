@@ -108,7 +108,7 @@ function add_hooks(string $namespace): bool
 
 function run_hooks(string $hook_name = '', array &$hook_arguments = []): array
 {
-    if (get_setting('disablePlugins') !== false) {
+    if (get_setting('disable_plugins') !== false) {
         return $hook_arguments;
     }
 
@@ -121,12 +121,12 @@ function run_hooks(string $hook_name = '', array &$hook_arguments = []): array
     return (array)$hook_arguments;
 }
 
-function url_handler(string $new_url = ''): string
+function url_handler(string $new_url = '', int $instance_id = \Newpoints\Core\INSTANCE_DEFAULT_ID): string
 {
     static $setUrl = null;
 
     if ($setUrl === null) {
-        $setUrl = main_file_name();
+        $setUrl = main_file_name($instance_id);
     }
 
     if (($new_url = trim($new_url))) {
@@ -164,13 +164,31 @@ function url_handler_build(array $url_append = [], bool $fetch_import_url = fals
     return $PL->url_append(url_handler_get(), $url_append, '&amp;', $encode);
 }
 
-function get_setting(string $setting_key = '')
-{
+function get_setting(
+    string $setting_key = '',
+    int $instance_id = INSTANCE_DEFAULT_ID
+): bool|string|int|float {
     global $mybb;
 
-    return SETTINGS[$setting_key] ?? (
-        $mybb->settings['newpoints_' . $setting_key] ?? false
-    );
+    static $setting_values = [];
+
+    $settings_cache = $mybb->cache->read('newpoints_settings');
+
+    if (isset($setting_values[$instance_id][$setting_key])) {
+        return $setting_values[$instance_id][$setting_key];
+    }
+
+    if (isset(SETTINGS[$instance_id][$setting_key])) {
+        $setting_values[$instance_id][$setting_key] = SETTINGS[$instance_id][$setting_key] ?? false;
+    } elseif (isset($settings_cache[$instance_id]['newpoints_' . $setting_key])) {
+        $setting_values[$instance_id][$setting_key] = $settings_cache[$instance_id]['newpoints_' . $setting_key] ?? false;
+    } elseif (isset(SETTINGS[$setting_key])) {
+        $setting_values[$instance_id][$setting_key] = SETTINGS[$setting_key] ?? false;
+    } else {
+        $setting_values[$instance_id][$setting_key] = $mybb->settings['newpoints_' . $setting_key] ?? false;
+    }
+
+    return $setting_values[$instance_id][$setting_key];
 }
 
 /**
@@ -474,53 +492,64 @@ function settings_add_group(string $plugin, array $settings): bool
 
     $plugin_escaped = $db->escape_string($plugin);
 
-    $db->update_query('newpoints_settings', ['description' => 'NEWPOINTSDELETESETTING'], "plugin='{}'");
-
-    $display_order = 0;
-
-    // Create and/or update settings.
-    foreach ($settings as $key => $setting) {
-        $setting = array_intersect_key(
-            $setting,
-            [
-                'title' => 0,
-                'description' => 0,
-                'type' => 0,
-                'value' => 0
-            ]
-        );
-
-        $setting = array_map([$db, 'escape_string'], $setting);
-
-        $setting = array_merge(
-            [
-                'title' => '',
-                'description' => '',
-                'type' => 'yesno',
-                'value' => 0,
-                'disporder' => ++$display_order
-            ],
-            $setting
-        );
-
-        $setting['plugin'] = $plugin_escaped;
-        $setting['name'] = $db->escape_string($plugin . '_' . $key);
-
-        $query = $db->simple_select(
+    foreach (instance_get() as $instance_id => $instance_data) {
+        $db->update_query(
             'newpoints_settings',
-            'sid',
-            "plugin='{$setting['plugin']}' AND name='{$setting['name']}'"
+            ['description' => 'NEWPOINTSDELETESETTING'],
+            "plugin='{$plugin}' AND instance_id='{$instance_id}'"
         );
 
-        if ($sid = $db->fetch_field($query, 'sid')) {
-            unset($setting['value']);
-            $db->update_query('newpoints_settings', $setting, "sid='{$sid}'");
-        } else {
-            $db->insert_query('newpoints_settings', $setting);
+        $display_order = 0;
+
+        // Create and/or update settings.
+        foreach ($settings as $key => $setting) {
+            $setting = array_intersect_key(
+                $setting,
+                [
+                    'title' => 0,
+                    'description' => 0,
+                    'type' => 0,
+                    'value' => 0,
+                ]
+            );
+
+            $setting = array_map([$db, 'escape_string'], $setting);
+
+            $setting = array_merge(
+                [
+                    'title' => '',
+                    'description' => '',
+                    'type' => 'yesno',
+                    'value' => 0,
+                    'disporder' => ++$display_order,
+                    'instance_id' => $instance_id
+                ],
+                $setting
+            );
+
+            $setting['plugin'] = $plugin_escaped;
+
+            $setting['name'] = $db->escape_string($plugin . '_' . $key);
+
+            $query = $db->simple_select(
+                'newpoints_settings',
+                'sid',
+                "plugin='{$setting['plugin']}' AND name='{$setting['name']}' AND instance_id='{$instance_id}'"
+            );
+
+            if ($sid = $db->fetch_field($query, 'sid')) {
+                unset($setting['value']);
+                $db->update_query('newpoints_settings', $setting, "sid='{$sid}'");
+            } else {
+                $db->insert_query('newpoints_settings', $setting);
+            }
         }
     }
 
-    $db->delete_query('newpoints_settings', "plugin='{$plugin_escaped}' AND description='NEWPOINTSDELETESETTING'");
+    $db->delete_query(
+        'newpoints_settings',
+        "plugin='{$plugin_escaped}' AND description='NEWPOINTSDELETESETTING' AND instance_id='{$instance_id}'"
+    );
 
     settings_rebuild_cache();
 
@@ -569,50 +598,55 @@ function settings_add(
         'disporder' => $display_order
     ];
 
-    if (!$display_order) {
-        $query = $db->simple_select(
-            'newpoints_settings',
-            'disporder',
-            "name='{$setting['name']}' AND plugin='{$setting['plugin']}'"
-        );
+    foreach (instance_get() as $instance_id => $instance_data) {
+        $setting['instance_id'] = $instance_id;
 
-        $current_display_order = (int)$db->fetch_field($query, 'disporder');
-
-        if ($current_display_order > 0) {
-            $setting['disporder'] = $current_display_order;
-        } else {
+        if (!$display_order) {
             $query = $db->simple_select(
                 'newpoints_settings',
-                'MAX(disporder) AS max_display_order',
-                "plugin='{$setting['plugin']}'"
+                'disporder',
+                "name='{$setting['name']}' AND plugin='{$setting['plugin']}' AND instance_id='{$instance_id}'"
             );
 
-            $max_display_order = (int)$db->fetch_field($query, 'max_display_order');
+            $current_display_order = (int)$db->fetch_field($query, 'disporder');
 
-            if ($max_display_order > 0) {
-                $setting['disporder'] = $max_display_order + 1;
+            if ($current_display_order > 0) {
+                $setting['disporder'] = $current_display_order;
+            } else {
+                $query = $db->simple_select(
+                    'newpoints_settings',
+                    'MAX(disporder) AS max_display_order',
+                    "plugin='{$setting['plugin']}'"
+                );
+
+                $max_display_order = (int)$db->fetch_field($query, 'max_display_order');
+
+                if ($max_display_order > 0) {
+                    $setting['disporder'] = $max_display_order + 1;
+                }
             }
         }
-    }
 
-    // Update if setting already exists, insert otherwise.
-    $query = $db->simple_select(
-        'newpoints_settings',
-        'sid',
-        "name='{$setting['name']}' AND plugin='{$setting['plugin']}'"
-    );
+        // Update if setting already exists, insert otherwise.
+        $query = $db->simple_select(
+            'newpoints_settings',
+            'sid',
+            "name='{$setting['name']}' AND plugin='{$setting['plugin']}' instance_id='{$instance_id}'"
+        );
 
-    if ($sid = $db->fetch_field($query, 'sid')) {
-        unset($setting['value']);
-        $db->update_query('newpoints_settings', $setting, "sid='{$sid}'");
-    } else {
-        $db->insert_query('newpoints_settings', $setting);
+        if ($sid = $db->fetch_field($query, 'sid')) {
+            unset($setting['value']);
+
+            $db->update_query('newpoints_settings', $setting, "sid='{$sid}'");
+        } else {
+            $db->insert_query('newpoints_settings', $setting);
+        }
     }
 
     return true;
 }
 
-function settings_load(): bool
+function settings_load(): void
 {
     global $cache;
 
@@ -620,32 +654,28 @@ function settings_load(): bool
 
     global $mybb;
 
-    foreach (SETTINGS as $name => $value) {
-        $mybb->settings["newpoints_{$name}"] = $value;
-    }
-
     if (!empty($settings)) {
         foreach ($settings as $name => $value) {
             $mybb->settings[$name] = $value;
         }
     }
 
-    /* something is wrong so let's rebuild the cache data */
-    if (empty($settings)) {
-        $settings = [];
-
-        settings_rebuild_cache($settings);
+    foreach (SETTINGS as $name => $value) {
+        $mybb->settings["newpoints_{$name}"] = $value;
     }
 
-    return true;
+    /* something is wrong so let's rebuild the cache data */
+    if (empty($settings)) {
+        settings_rebuild_cache();
+    }
 }
 
-function settings_load_init(): bool
+function settings_load_init(): void
 {
     static $done = false;
 
     if ($done) {
-        return true;
+        return;
     }
 
     $done = true;
@@ -664,7 +694,7 @@ function settings_load_init(): bool
         }
     }
 
-    return settings_load();
+    settings_load();
 }
 
 /**
@@ -687,13 +717,17 @@ function settings_rebuild_cache(array &$settings = []): array
         'order_dir' => 'ASC'
     ];
 
-    $query = $db->simple_select('newpoints_settings', 'value, name', '', $options);
+    $query = $db->simple_select('newpoints_settings', 'value, name, instance_id', '', $options);
 
     while ($setting = $db->fetch_array($query)) {
-        //$setting['value']=str_replace("\"", "\\\"", $setting['value']);
-        $settings[$setting['name']] = $setting['value'];
+        $instance_id = (int)$setting['instance_id'];
 
-        $mybb->settings[$setting['name']] = $setting['value'];
+        //$setting['value']=str_replace("\"", "\\\"", $setting['value']);
+        $settings[$instance_id][$setting['name']] = $setting['value'];
+
+        if ($instance_id === INSTANCE_DEFAULT_ID) {
+            $mybb->settings[$setting['name']] = $setting['value'];
+        }
     }
 
     $db->free_result($query);
@@ -808,12 +842,15 @@ function settings_rebuild(): bool
                 //_dump("setting_group_newpoints_{$setting_group}_desc");
             }
 
-            settings(
-                $setting_group,
-                $lang->{"setting_group_newpoints_{$setting_group}"},
-                $lang->{"setting_group_newpoints_{$setting_group}_desc"},
-                $settings_data
-            );
+            foreach (instance_get() as $instance_id => $instance_data) {
+                settings(
+                    $setting_group,
+                    $lang->{"setting_group_newpoints_{$setting_group}"},
+                    $lang->{"setting_group_newpoints_{$setting_group}_desc"},
+                    $settings_data,
+                    $instance_id
+                );
+            }
         }
     }
 
@@ -1059,7 +1096,7 @@ function rules_forum_get_rate(int $forum_id): float
     return isset($forum_data['newpoints_rate']) ? (float)$forum_data['newpoints_rate'] : 1;
 }
 
-function rate_group_get(int $group_id)
+function rate_group_get(int $group_id): float
 {
     $group_rules = rules_group_get($group_id);
 
@@ -1399,7 +1436,7 @@ function load_set_guest_data(): void
 
 function plugins_load(): bool
 {
-    if (get_setting('disablePlugins') !== false) {
+    if (get_setting('disable_plugins') !== false) {
         return false;
     }
 
@@ -1580,8 +1617,13 @@ function group_permission_get_lowest(string $permission_key, int $user_id = 0): 
  * @param string $description Group description that will show up in the group overview.
  * @param array $list The list of settings to be added to that group.
  */
-function settings(string $group_name, string $title, string $description, array $list)
-{
+function settings(
+    string $group_name,
+    string $title,
+    string $description,
+    array $list,
+    int $instance_id = INSTANCE_DEFAULT_ID
+): void {
     global $db;
 
     /* Setting group: */
@@ -1592,7 +1634,7 @@ function settings(string $group_name, string $title, string $description, array 
     $db->update_query(
         'newpoints_settings',
         ['description' => 'NEWPOINTSDELETEMARKER'],
-        "plugin='{$group_name}'"
+        "plugin='{$group_name}' AND instance_id='{$instance_id}'"
     );
 
     foreach ($list as $key => $setting) {
@@ -1618,7 +1660,8 @@ function settings(string $group_name, string $title, string $description, array 
                 'title' => $title,
                 'type' => 'yesno',
                 'value' => 0,
-                'disporder' => ++$display_order
+                'disporder' => ++$display_order,
+                'instance_id' => $instance_id
             ],
             $setting
         );
@@ -1630,7 +1673,7 @@ function settings(string $group_name, string $title, string $description, array 
         $query = $db->simple_select(
             'newpoints_settings',
             'sid',
-            "plugin='{$group_name}' AND name='{$setting['name']}'"
+            "plugin='{$group_name}' AND name='{$setting['name']}' AND instance_id='{$instance_id}'"
         );
 
         if ($sid = (int)$db->fetch_field($query, 'sid')) {
@@ -1645,7 +1688,7 @@ function settings(string $group_name, string $title, string $description, array 
     // Delete deprecated entries.
     $db->delete_query(
         'newpoints_settings',
-        "plugin='{$group_name}' AND description='NEWPOINTSDELETEMARKER'"
+        "plugin='{$group_name}' AND description='NEWPOINTSDELETEMARKER' AND instance_id='{$instance_id}'"
     );
 
     // Rebuild the settings file.
@@ -1720,7 +1763,7 @@ function task_delete(string $plugin_code = ''): bool
     return true;
 }
 
-function page_build_menu_options(): string
+function page_build_menu_options(int $instance_id = \Newpoints\Core\INSTANCE_DEFAULT_ID): string
 {
     global $mybb;
     static $menu = null;
@@ -1736,7 +1779,7 @@ function page_build_menu_options(): string
         ];
 
         if (!empty($mybb->usergroup[Permissions::CanSeeStats])) {
-            $menu_items[get_setting('stats_menu_order')] = [
+            $menu_items[get_setting('stats_menu_order', $instance_id)] = [
                 'action' => 'stats',
                 'lang_string' => 'newpoints_statistics',
                 'category' => 'main'
@@ -1744,7 +1787,7 @@ function page_build_menu_options(): string
         }
 
         if (!empty($mybb->usergroup[Permissions::CanDonate])) {
-            $menu_items[get_setting('donations_menu_order')] = [
+            $menu_items[get_setting('donations_menu_order', $instance_id)] = [
                 'action' => 'donate',
                 'lang_string' => 'newpoints_donate',
                 'category' => 'user'
@@ -1787,7 +1830,7 @@ function page_build_menu_options(): string
             $options = '';
 
             foreach ($menu_items as $option) {
-                if (isset($option['setting']) && !get_setting($option['setting'])) {
+                if (isset($option['setting']) && !get_setting($option['setting'], $instance_id)) {
                     continue;
                 }
 
@@ -1948,7 +1991,7 @@ function post_parser_parse_message(
     ], $options));
 }
 
-function moderation_object()
+function moderation_object(): \Moderation
 {
     static $moderation = null;
 
@@ -2019,7 +2062,7 @@ function page_build_cancel_confirmation(
     int $form_input_value,
     string $table_text,
     string $form_view_name
-): string {
+): never {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
     global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
@@ -2049,7 +2092,7 @@ function page_build_purchase_confirmation(
     int $form_input_value,
     string $form_view_name = '',
     string $extra_rows = ''
-): string {
+): never {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
     global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
@@ -2079,8 +2122,9 @@ function page_build_purchase_confirmation(
 
 function page_build_error(
     string $error_message,
-    bool $no_permission = false
-): string {
+    bool $no_permission = false,
+    int $instance_id = \Newpoints\Core\INSTANCE_DEFAULT_ID
+): never {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
     global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
@@ -2088,7 +2132,7 @@ function page_build_error(
     language_load();
 
     if (!$newpoints_menu) {
-        $newpoints_file = main_file_name();
+        $newpoints_file = main_file_name($instance_id);
 
         add_breadcrumb($lang->newpoints, $newpoints_file);
 
@@ -2191,10 +2235,6 @@ function log_delete(int $log_id): bool
 
 function my_alerts_initiate(): bool
 {
-    if (!get_setting('main_my_alerts_enabled')) {
-        return false;
-    }
-
     if (!function_exists('myalerts_info')) {
         return false;
     }
@@ -2292,7 +2332,7 @@ function alert_send(int $user_id, int $object_id, string $plugin_code, string $a
         return false;
     }
 
-    if (!get_setting('main_my_alerts_enabled')) {
+    if (!get_setting('main_my_alerts_enabled', $instance_id)) {
         return false;
     }
 
@@ -2362,11 +2402,47 @@ function instance_get(?int $instance_id = null): array
     $instance_objects = [
         1 => [
             'instance_id' => 1,
-            'display_name_singular' => get_setting('main_curname'),
-            'display_name_plural' => get_setting('main_curname'),
-            'enable_notifications_private_message' => get_setting('main_pm_alerts_enabled'),
-            'enable_notifications_alert' => get_setting('main_my_alerts_enabled'),
+            'display_name_singular' => get_setting('main_curname', 1),
+            'display_name_plural' => get_setting('main_curname', 1),
+            'enable_notifications_private_message' => get_setting('main_pm_alerts_enabled', 1),
+            'enable_notifications_alert' => get_setting('main_my_alerts_enabled', 1),
             'users_column_name' => 'newpoints',
+            'enabled' => true,
+            Permissions::CanGetPoints => $mybb->usergroup[Permissions::CanGetPoints],
+            Permissions::CanSeePage => $mybb->usergroup[Permissions::CanSeePage],
+            Permissions::CanSeeStats => $mybb->usergroup[Permissions::CanSeeStats],
+            Permissions::CanDonate => $mybb->usergroup[Permissions::CanDonate],
+
+            IncomeRates::RateAddition => $mybb->usergroup[IncomeRates::RateAddition],
+            IncomeRates::RateSubtraction => $mybb->usergroup[IncomeRates::RateSubtraction],
+
+            IncomePermissions::UserIncomeThread => $mybb->usergroup[IncomePermissions::UserIncomeThread],
+            IncomePermissions::UserIncomeThreadReply => $mybb->usergroup[IncomePermissions::UserIncomeThreadReply],
+            IncomePermissions::UserIncomeThreadRate => $mybb->usergroup[IncomePermissions::UserIncomeThreadRate],
+            IncomePermissions::UserIncomePost => $mybb->usergroup[IncomePermissions::UserIncomePost],
+            IncomePermissions::UserIncomePostMinimumCharacters => $mybb->usergroup[IncomePermissions::UserIncomePostMinimumCharacters],
+            IncomePermissions::UserIncomePostCharacter => $mybb->usergroup[IncomePermissions::UserIncomePostCharacter],
+            IncomePermissions::UserIncomePageView => $mybb->usergroup[IncomePermissions::UserIncomePageView],
+            IncomePermissions::UserIncomeVisit => $mybb->usergroup[IncomePermissions::UserIncomeVisit],
+            IncomePermissions::UserIncomeVisitMinutes => $mybb->usergroup[IncomePermissions::UserIncomeVisitMinutes],
+            IncomePermissions::UserIncomePoll => $mybb->usergroup[IncomePermissions::UserIncomePoll],
+            IncomePermissions::UserIncomePollVote => $mybb->usergroup[IncomePermissions::UserIncomePollVote],
+            IncomePermissions::UserIncomeUserAllowance => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowance],
+            IncomePermissions::UserIncomeUserAllowanceMinutes => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowanceMinutes],
+            IncomePermissions::UserIncomeUserAllowancePrimaryOnly => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowancePrimaryOnly],
+            IncomePermissions::UserIncomeUserAllowanceLastStamp => $mybb->usergroup[IncomePermissions::UserIncomeUserAllowanceLastStamp],
+            IncomePermissions::UserIncomeUserRegistration => $mybb->usergroup[IncomePermissions::UserIncomeUserRegistration],
+            IncomePermissions::UserIncomeUserReferral => $mybb->usergroup[IncomePermissions::UserIncomeUserReferral],
+            IncomePermissions::UserIncomePrivateMessage => $mybb->usergroup[IncomePermissions::UserIncomePrivateMessage],
+        ],
+        2 => [
+            'instance_id' => 2,
+            'display_name_singular' => get_setting('main_curname', 2),
+            'display_name_plural' => get_setting('main_curname', 2),
+            'enable_notifications_private_message' => get_setting('main_pm_alerts_enabled', 2),
+            'enable_notifications_alert' => get_setting('main_my_alerts_enabled', 2),
+            'users_column_name' => 'experience',
+            'enabled' => true,
             Permissions::CanGetPoints => $mybb->usergroup[Permissions::CanGetPoints],
             Permissions::CanSeePage => $mybb->usergroup[Permissions::CanSeePage],
             Permissions::CanSeeStats => $mybb->usergroup[Permissions::CanSeeStats],

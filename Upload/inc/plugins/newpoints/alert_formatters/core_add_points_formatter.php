@@ -79,6 +79,6 @@ class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_A
     {
         global $settings;
 
-        return $settings['bburl'] . '/' . main_file_name();
+        return $settings['bburl'] . '/' . main_file_name($instance_id);
     }
 }

@@ -73,10 +73,11 @@ $l['no_active_plugins'] = 'No hay plugins activos en tu foro.';
 $l['no_inactive_plugins'] = 'No hay plugins inactivos disponibles.';
 
 ///////////////// Settings
+$l['newpoints_settings_instance'] = 'Configuraciones de {1}';
 $l['newpoints_settings'] = 'Configuraciones';
-$l['newpoints_settings_description'] = 'Aquí puedes gestionar las configuraciones de NewPoints.';
+$l['newpoints_settings_description'] = 'Aquí puedes gestionar las configuraciones para la instancia {1}.';
 $l['newpoints_settings_change'] = 'Cambiar';
-$l['newpoints_settings_change_description'] = 'Cambiar configuraciones.';
+$l['newpoints_settings_change_description'] = 'Cambiar configuraciones de {3} para la instancia {1}.';
 $l['newpoints_select_plugin'] = 'Debes seleccionar un grupo.';
 
 ///////////////// Log
@@ -195,6 +196,23 @@ $l['newpoints_grouprules_edited'] = 'La regla seleccionada ha sido editada exito
 $l['newpoints_grouprules_deleted'] = 'La regla seleccionada ha sido eliminada exitosamente.';
 $l['newpoints_grouprules_deleteconfirm'] = '¿Estás seguro de que deseas eliminar la regla seleccionada?';
 
+$l['newpoints_instances'] = 'Instancias';
+$l['newpoints_instances_description'] = 'Gestionar instancias de NewPoints.';
+$l['newpoints_instances_title'] = 'Instancias de NewPoints';
+$l['newpoints_instances_thead_id'] = 'ID';
+$l['newpoints_instances_thead_id'] = 'ID';
+$l['newpoints_instances_thead_name'] = 'Nombre';
+$l['newpoints_instances_thead_column'] = 'Columna de Usuarios';
+$l['newpoints_instances_thead_main_file'] = 'Archivo Principal';
+$l['newpoints_instances_thead_enabled'] = 'Habilitada';
+$l['newpoints_instances_thead_options_settings'] = 'Configuraciones';
+$l['newpoints_instances_thead_options_create_column'] = 'Creat Columna';
+
+$l['newpoints_instances_create_column_success'] = 'La columna de usuarios <code>{1}</code> para ka instancia {2} ha sido creada exitosamente.';
+
+$l['newpoints_instances_new'] = 'Nueva';
+$l['newpoints_instances_new_description'] = 'Crear una nueva instancia de NewPoints.';
+
 ///////////////// Upgrades
 $l['newpoints_upgrades'] = 'Actualizaciones';
 $l['newpoints_upgrades_description'] = 'Actualiza NewPoints desde aquí.';
@@ -298,6 +316,8 @@ $l['newpoints_forums'] = 'Configuración de NewPoints';
 $l['newpoints_forums_rate'] = 'Tasa del Foro<br /><small class="input">La tasa de ingresos para este foro. El valor predeterminado es <code>1</code>.</small><br />';
 $l['newpoints_forums_view_lock_points'] = 'Puntos Mínimos para Ver<br /><small class="input">Establece una cantidad de puntos que los usuarios deben tener para poder ver este foro.</small><br />';
 $l['newpoints_forums_post_lock_points'] = 'Puntos Mínimos para Publicar<br /><small class="input">Establece una cantidad de puntos que los usuarios deben tener para poder publicar en este foro.</small><br />';
+
+$l['newpoints_users_amount'] = 'Monto de NewPoints';
 
 $l['newpoints_forums_rates'] = 'Configuración de Tasas de NewPoints';
 

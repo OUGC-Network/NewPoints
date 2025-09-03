@@ -29,6 +29,8 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Core\instance_get;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\run_hooks;
 
@@ -55,11 +57,11 @@ function newpoints_meta(): bool
             'title' => $lang->nav_plugins,
             'link' => 'index.php?module=newpoints-plugins'
         ],
-        15 => [
+        /*15 => [
             'id' => 'settings',
             'title' => $lang->nav_settings,
             'link' => 'index.php?module=newpoints-settings'
-        ],
+        ],*/
         20 => [
             'id' => 'log',
             'title' => $lang->nav_log,
@@ -74,8 +76,21 @@ function newpoints_meta(): bool
             'id' => 'grouprules',
             'title' => $lang->nav_grouprules,
             'link' => 'index.php?module=newpoints-grouprules'
+        ],
+        40 => [
+            'id' => 'instances',
+            'title' => $lang->nav_instances,
+            'link' => 'index.php?module=newpoints-instances'
         ]
     ];
+
+    foreach (instance_get() as $instance_id => $instance_data) {
+        $sub_menu_items[9000 + $instance_id] = [
+            'id' => 'instance_' . $instance_id,
+            'title' => instance_object($instance_id)->get_display_name_upper(),
+            'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance_id
+        ];
+    }
 
     if (function_exists('\Newpoints\Core\run_hooks')) {
         $sub_menu_items = run_hooks('admin_menu', $sub_menu_items);
@@ -113,6 +128,10 @@ function newpoints_action_handler(string $current_action): string
             'active' => 'grouprules',
             'file' => 'grouprules.php'
         ],
+        'instances' => [
+            'active' => 'instances',
+            'file' => 'instances.php'
+        ],
     ];
 
     $action_handlers = run_hooks('admin_action_handler', $action_handlers);
@@ -146,7 +165,15 @@ function newpoints_admin_permissions(): array
         'log' => $lang->can_manage_log,
         'forumrules' => $lang->can_manage_forumrules,
         'grouprules' => $lang->can_manage_grouprules,
+        'instances' => $lang->can_manage_instances,
     ];
+
+    foreach (instance_get() as $instance_id => $instance_data) {
+        $action_handlers['instance_' . $instance_id] = [
+            'active' => 'settings',
+            'file' => 'settings.php'
+        ];
+    }
 
     if (function_exists('\Newpoints\Core\language_load')) {
         $admin_permissions = run_hooks('admin_permissions', $admin_permissions);

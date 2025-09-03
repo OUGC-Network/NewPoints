@@ -183,6 +183,21 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
     db_verify_tables();
 
+    foreach (\Newpoints\Core\instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance_object = \Newpoints\Core\instance_object($instance_id);
+        } catch (InvalidArgumentException $e) {
+        }
+
+        db_verify_columns(
+            [
+                'users' => [
+                    $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                ]
+            ]
+        );
+    }
+
     db_verify_columns();
 
     rules_rebuild_cache();

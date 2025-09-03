@@ -113,6 +113,21 @@ function plugin_activation(): bool
 
     db_verify_tables();
 
+    foreach (\Newpoints\Core\instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance_object = \Newpoints\Core\instance_object($instance_id);
+        } catch (\InvalidArgumentException $e) {
+        }
+
+        db_verify_columns(
+            [
+                'users' => [
+                    $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                ]
+            ]
+        );
+    }
+
     db_verify_columns();
 
     settings_rebuild();
@@ -325,6 +340,21 @@ function plugin_installation(): bool
     plugin_library_load();
 
     db_verify_tables();
+
+    foreach (\Newpoints\Core\instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance_object = \Newpoints\Core\instance_object($instance_id);
+        } catch (\InvalidArgumentException $e) {
+        }
+
+        db_verify_columns(
+            [
+                'users' => [
+                    $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                ]
+            ]
+        );
+    }
 
     db_verify_columns();
 
@@ -717,7 +747,9 @@ function recount_rebuild_newpoints_recount_from_logs(): void
     global $db, $mybb, $lang;
 
     try {
-        $newpoints = instance_object($mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT));
+        $instance_object = instance_object(
+            $mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT)
+        );
     } catch (Exception $e) {
         flash_message($e->getMessage(), 'error');
 
@@ -754,7 +786,7 @@ function recount_rebuild_newpoints_recount_from_logs(): void
             $db->simple_select(
                 'newpoints_log',
                 'SUM(points) AS total_income',
-                "uid='{$user_id}' AND log_type='{$log_type_income}' AND instance_id='{$newpoints->instance_id}'",
+                "uid='{$user_id}' AND log_type='{$log_type_income}' AND instance_id='{$instance_object->instance_id}'",
             ),
             'total_income'
         ) ?? 0);
@@ -763,7 +795,7 @@ function recount_rebuild_newpoints_recount_from_logs(): void
             $db->simple_select(
                 'newpoints_log',
                 'SUM(points) AS total_charges',
-                "uid='{$user_id}' AND log_type='{$log_type_charge}' AND instance_id='{$newpoints->instance_id}'",
+                "uid='{$user_id}' AND log_type='{$log_type_charge}' AND instance_id='{$instance_object->instance_id}'",
             ),
             'total_charges'
         ) ?? 0);
@@ -783,8 +815,8 @@ function recount_rebuild_newpoints_recount_from_logs(): void
         'do_recount_newpoints_from_logs',
         $lang->sprintf(
             $lang->newpoints_recount_from_logs_success,
-            $newpoints->get_display_name_upper(),
-            $newpoints->get_display_name_lower(),
+            $instance_object->get_display_name_upper(),
+            $instance_object->get_display_name_lower(),
         )
     );
 }
@@ -795,7 +827,9 @@ function recount_rebuild_newpoints_recount(): void
     global $db, $mybb, $lang;
 
     try {
-        $newpoints = instance_object($mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT));
+        $instance_object = instance_object(
+            $mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT)
+        );
     } catch (Exception $e) {
         flash_message($e->getMessage(), 'error');
 
@@ -928,7 +962,7 @@ function recount_rebuild_newpoints_recount(): void
 
                 if ($income_value) {
                     try {
-                        $newpoints->logger->log_income(
+                        $instance_object->logger->log_income(
                             'income_' . INCOME_TYPE_THREAD_REPLY,
                             $thread_user_id,
                             $income_value,
@@ -982,7 +1016,7 @@ function recount_rebuild_newpoints_recount(): void
         $db->update_query(
             'users',
             [
-                $newpoints->get_users_column_name() => get_income_value(
+                $instance_object->get_users_column_name() => get_income_value(
                         INCOME_TYPE_USER_REGISTRATION,
                         $user_id
                     ) + $points *
@@ -1004,18 +1038,18 @@ function recount_rebuild_newpoints_recount(): void
         'do_recount_newpoints',
         $lang->sprintf(
             $lang->newpoints_recount_from_logs_success,
-            $newpoints->get_display_name_upper(),
-            $newpoints->get_display_name_lower(),
+            $instance_object->get_display_name_upper(),
+            $instance_object->get_display_name_lower(),
         )
     );
 }
 
-function recount_rebuild_newpoints_reset()
+function recount_rebuild_newpoints_reset(): void
 {
     global $db, $mybb, $lang;
 
     try {
-        $newpoints = instance_object($mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT));
+        $instance_object = instance_object($mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT));
     } catch (Exception $e) {
         flash_message($e->getMessage(), 'error');
 
@@ -1048,7 +1082,12 @@ function recount_rebuild_newpoints_reset()
 
         $db->update_query(
             'users',
-            [$newpoints->get_users_column_name() => $mybb->get_input('newpoints_reset_amount', MyBB::INPUT_FLOAT)],
+            [
+                $instance_object->get_users_column_name() => $mybb->get_input(
+                    'newpoints_reset_amount',
+                    MyBB::INPUT_FLOAT
+                )
+            ],
             "uid='{$user_id}'"
         );
     }
@@ -1068,8 +1107,8 @@ function recount_rebuild_newpoints_reset()
         'do_reset_newpoints',
         $lang->sprintf(
             $lang->newpoints_reset_success,
-            $newpoints->get_display_name_upper(),
-            $newpoints->get_display_name_lower(),
+            $instance_object->get_display_name_upper(),
+            $instance_object->get_display_name_lower(),
         )
     );
 }
