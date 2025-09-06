@@ -37,18 +37,17 @@ use Exception;
 
 use Newpoints\Core\Permissions;
 
+use function Newpoints\Core\build_income_table;
+use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\main_file_name;
 use function Newpoints\Core\my_alerts_initiate;
-use function Newpoints\Core\points_format;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\url_handler_build;
-
-use const Newpoints\Core\INSTANCE_DEFAULT_ID;
+use function Newpoints\Core\url_handler_set;
 
 function global_start09(): bool
 {
@@ -87,12 +86,17 @@ function global_start(): bool
         ],
         'showthread.php' => [
             'newpoints_postbit',
-            'newpoints_postbit_donate'
+            'newpoints_postbit_donate',
         ],
         'member.php' => [
             'newpoints_profile',
-            'newpoints_profile_donate'
-        ]
+            'newpoints_profile_donate',
+        ],
+        'forumdisplay.php' => [
+            'forum_income',
+            'forum_income_row',
+            'forum_income_table',
+        ],
     ];
 
     if (defined('THIS_SCRIPT')) {
@@ -118,20 +122,34 @@ function global_start(): bool
     return true;
 }
 
-function global_intermediate(): bool
+function global_intermediate(): void
 {
-    global $mybb, $lang;
-    global $newpoints_user_balance_formatted, $mypoints, $newpoints_header_menu;
+    global $mybb;
+    global $newpoints_header_menu;
+    global $newpoints_globals;
+    global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    isset($newpoints_header_menu) || $newpoints_header_menu = '';
 
-    $newpoints_file = main_file_name($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-    language_load();
+        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_user_balance_formatted = $mypoints =
+            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
 
-    $newpoints_header_menu = eval(templates_get('header_menu'));
+        $newpoints_file = $instance_object->get_script_file();
 
-    return true;
+        $instance_name_upper = $instance_object->get_display_name_upper();
+
+        $instance_name_lower = $instance_object->get_display_name_lower();
+
+        $newpoints_header_menu .= eval(templates_get('header_menu'));
+    }
 }
 
 /**
@@ -239,12 +257,12 @@ function pre_parse_page(string &$page_contents): string
         }
     }
 
-    $current_user_id = (int)$mybb->user['uid'];
-
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
-
-        $instance_object->set_user($current_user_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -279,18 +297,27 @@ function error(string &$error_message): string
     return $error_message;
 }
 
-function xmlhttp09(): bool
+function xmlhttp09(): void
 {
     load_set_guest_data();
 
     global $mybb;
+    global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
+
+        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_user_balance_formatted = $mypoints =
+            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
+    }
 
     my_alerts_initiate();
-
-    return true;
 }
 
 // Loads plugins from xmlhttp and runs a new hook called 'newpoints_xmlhttp' that can be used by NewPoints plugins (instead of xmlhttp)
@@ -310,9 +337,20 @@ function archive_start(): bool
     load_set_guest_data();
 
     global $mybb;
+    global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
+
+        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_user_balance_formatted = $mypoints =
+            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
+    }
 
     run_hooks('archive_start');
 
@@ -331,35 +369,52 @@ function postbit(array &$post): array
 
     language_load();
 
-    $newpoints_file = main_file_name($instance_id);
+    $replacements = [
+        '<!--NEWPOINTS_POST_USER_DETAILS-->' => &$post['newpoints_postbit'],
+        '<!--NEWPOINTS_POST_USER_POINTS-->' => &$post['newpoints_balance_formatted'],
+    ];
 
-    $currency = $lang->sprintf(
-        $lang->newpoints_home_currency,
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
-    );
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-    $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
+        $newpoints_amount = $post[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $post['newpoints_balance_formatted'] = $points =
+            $instance_object->points_format((float)$post[$instance_object->get_users_column_name()]);
 
-    $user_id = $uid = (int)$post['uid'];
+        $replacements["<!--NewPoints_{$instance_object->get_users_column_name()}-->"] = $newpoints_amount;
 
-    $current_user_id = (int)$mybb->user['uid'];
+        $newpoints_file = $instance_object->get_script_file();
 
-    $post_id = (int)$post['pid'];
+        $instance_name_upper = $instance_object->get_display_name_upper();
 
-    $donate = '';
+        $instance_name_lower = $instance_object->get_display_name_lower();
 
-    if (!empty($mybb->usergroup[Permissions::CanDonate]) && $current_user_id && $user_id !== $current_user_id) {
-        $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'pid' => $post_id, 'modal' => 1]);
+        $user_id = $uid = (int)$post['uid'];
 
-        $donate = eval(templates_get('postbit_donate'));
+        $post_id = (int)$post['pid'];
+
+        $donate = '';
+
+        if ($instance_object->permission_check_boolean(Permissions::CanDonate) &&
+            $user_id !== $instance_object->get_user_id()
+        ) {
+            url_handler_set($instance_object->get_script_file());
+
+            $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'pid' => $post_id, 'modal' => 1]);
+
+            $donate = eval(templates_get('postbit_donate'));
+        }
+
+        $post['newpoints_postbit'] .= eval(templates_get('postbit'));
     }
 
-    $post['newpoints_postbit'] = eval(templates_get('postbit'));
-
     $post['user_details'] = str_replace(
-        ['<!--NEWPOINTS_POST_USER_DETAILS-->', '<!--NEWPOINTS_POST_USER_POINTS-->'],
-        [$post['newpoints_postbit'], $post['newpoints_balance_formatted']],
+        array_keys($replacements),
+        array_values($replacements),
         $post['user_details']
     );
 
@@ -381,7 +436,7 @@ function postbit_announcement(array &$post_data): array
     return postbit($post_data);
 }
 
-function member_profile_end(): bool
+function member_profile_end(): void
 {
     global $mybb, $currency, $points, $memprofile, $newpoints_profile, $lang, $uid;
     global $newpoints_profile_user_balance_formatted;
@@ -390,31 +445,38 @@ function member_profile_end(): bool
 
     language_load();
 
-    $newpoints_file = main_file_name($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-    $currency = $lang->sprintf(
-        $lang->newpoints_home_currency,
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_upper(),
-        instance_object(INSTANCE_DEFAULT_ID)->get_display_name_lower(),
-    );
+        $newpoints_amount = $memprofile[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_profile_user_balance_formatted = $points =
+            $instance_object->points_format((float)$memprofile[$instance_object->get_users_column_name()]);
 
-    $points = $newpoints_profile_user_balance_formatted = points_format((float)$memprofile['newpoints']);
+        $newpoints_file = $instance_object->get_script_file();
 
-    $user_id = $uid = (int)$memprofile['uid'];
+        $instance_name_upper = $instance_object->get_display_name_upper();
 
-    $current_user_id = (int)$mybb->user['uid'];
+        $instance_name_lower = $instance_object->get_display_name_lower();
 
-    $donate = '';
+        $user_id = $uid = (int)$memprofile['uid'];
 
-    if (!empty($mybb->usergroup[Permissions::CanDonate]) && $current_user_id && $user_id !== $current_user_id) {
-        $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'modal' => 1]);
+        $donate = '';
 
-        $donate = eval(templates_get('profile_donate'));
+        if ($instance_object->permission_check_boolean(Permissions::CanDonate) &&
+            $user_id !== $instance_object->get_user_id()) {
+            url_handler_set($instance_object->get_script_file());
+
+            $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'modal' => 1]);
+
+            $donate = eval(templates_get('profile_donate'));
+        }
+
+        $newpoints_profile .= eval(templates_get('profile'));
     }
-
-    $newpoints_profile = eval(templates_get('profile'));
-
-    return true;
 }
 
 // todo, I'm unsure how this is necessary if we already hook at the data handler
@@ -449,8 +511,12 @@ function class_moderation_delete_post_start(&$post_id): int
 
     $thread_id = (int)$thread_data['tid'];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -491,8 +557,12 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -537,8 +607,12 @@ function class_moderation_restore_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -578,8 +652,12 @@ function class_moderation_approve_threads(array &$thread_ids): array
 
         $forum_id = (int)$post_data['fid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -617,8 +695,12 @@ function class_moderation_approve_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -637,8 +719,12 @@ function class_moderation_approve_posts(array &$post_ids): array
             $instance_object->income_post();
         }
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -670,8 +756,12 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
 
         $post_user_id = (int)$post_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -707,8 +797,12 @@ function class_moderation_unapprove_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -764,8 +858,12 @@ function class_moderation_delete_thread(int &$thread_id): int
 
     $thread_data['replies'] = (int)$db->fetch_field($q, 'total_replies');
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -806,8 +904,12 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -822,8 +924,12 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
             }
         }
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -859,8 +965,12 @@ function class_moderation_restore_threads(array &$thread_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -875,8 +985,12 @@ function class_moderation_restore_threads(array &$thread_ids): array
             }
         }
 
-        foreach (instance_get() as $instance_id => $instance_data) {
-            $instance_object = instance_object($instance_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance_object = instance_object($instance_id);
+            } catch (Exception $e) {
+                continue;
+            }
 
             $instance_object->set_forum($forum_id);
 
@@ -905,18 +1019,18 @@ function polls_do_newpoll_process(): bool
 
     $post_id = (int)$thread['firstpost'];
 
-    $current_user_id = (int)$mybb->user['uid'];
-
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
         $instance_object->set_thread($thread_id);
 
         $instance_object->set_post($post_id);
-
-        $instance_object->set_user($current_user_id);
 
         $instance_object->income_poll();
     }
@@ -940,8 +1054,12 @@ function class_moderation_delete_poll(int &$post_id): int
 
     $post_user_id = (int)$post_data['uid'];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -967,18 +1085,18 @@ function polls_vote_process(): bool
 
     $post_id = (int)$thread['firstpost'];
 
-    $current_user_id = (int)$mybb->user['uid'];
-
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
         $instance_object->set_thread($thread_id);
 
         $instance_object->set_post($post_id);
-
-        $instance_object->set_user($current_user_id);
 
         $instance_object->charge_poll_vote();
     }
@@ -992,14 +1110,16 @@ function ratethread_process(): void
 
     $forum_id = (int)$fid;
 
-    $current_user_id = (int)$mybb->user['uid'];
-
     $thread_id = (int)$thread['tid'];
 
     $post_id = (int)$thread['firstpost'];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -1007,19 +1127,61 @@ function ratethread_process(): void
 
         $instance_object->set_post($post_id);
 
-        $instance_object->set_user($current_user_id);
-
         $instance_object->income_thread_rating();
     }
 }
 
-function forumdisplay_start(): bool
+function forumdisplay_start(): void
 {
     global $mybb;
 
     _helper_evaluate_forum_view_lock($mybb->get_input('fid', MyBB::INPUT_INT));
+}
 
-    return true;
+function forumdisplay_end(): void
+{
+    global $lang;
+    global $theme;
+    global $header;
+    global $fid;
+
+    foreach (instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
+
+        language_load();
+
+        $instance_name_upper = $instance_object->get_display_name_upper();
+
+        $instance_name_lower = $instance_object->get_display_name_lower();
+
+        $instance_object->set_forum((int)$fid);
+
+        $user_group_rate_addition = $instance_object->permission_get_rate_addition();
+
+        $user_group_rate_subtraction = $instance_object->permission_get_rate_substraction();
+
+        $user_rate_description = $lang->sprintf(
+            $lang->newpoints_home_user_rate_description,
+            $instance_object->get_display_name_upper(),
+            $instance_object->get_display_name_lower(),
+            $user_group_rate_addition,
+            $user_group_rate_subtraction
+        );
+
+        $description_header = $lang->sprintf(
+            $lang->newpoints_home_description_header,
+            $instance_object->get_display_name_upper(),
+            $instance_object->get_display_name_lower(),
+        );
+
+        $income_settings = build_income_table($instance_object, 'forum');
+
+        $header .= eval(templates_get('forum_income'));
+    }
 }
 
 function showthread_start(): bool
@@ -1105,76 +1267,100 @@ function newthread_do_newthread_start(): bool
     return newreply_start();
 }
 
-function _helper_evaluate_forum_view_lock(int $forum_id): bool
+function _helper_evaluate_forum_view_lock(int $forum_id): void
 {
     $forum_data = get_forum($forum_id);
 
     $minimum_points = (float)$forum_data['newpoints_view_lock_points'];
 
     if (!($minimum_points > 0)) {
-        return false;
+        return;
     }
 
     global $mybb, $lang;
 
-    if ($minimum_points > $mybb->user['newpoints']) {
-        language_load();
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-        \error(
-            $lang->sprintf(
-                $lang->newpoints_not_enough_points,
-                points_format($minimum_points)
-            )
-        );
+        if ($minimum_points > $mybb->user[$instance_object->get_users_column_name()]) {
+            language_load();
+
+            \error(
+                $lang->sprintf(
+                    $lang->newpoints_not_enough_points,
+                    $instance_object->points_format($minimum_points)
+                )
+            );
+        }
     }
-
-    return true;
 }
 
-function _helper_evaluate_forum_post_lock(int $forum_id): bool
+function _helper_evaluate_forum_post_lock(int $forum_id): void
 {
     $forum_data = get_forum($forum_id);
 
     $minimum_points = (float)$forum_data['newpoints_post_lock_points'];
 
     if (!($minimum_points > 0)) {
-        return false;
+        return;
     }
 
     global $mybb, $lang;
 
-    if ($minimum_points > $mybb->user['newpoints']) {
-        language_load();
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-        \error(
-            $lang->sprintf(
-                $lang->newpoints_not_enough_points,
-                points_format($minimum_points)
-            )
-        );
+        if ($minimum_points > $mybb->user[$instance_object->get_users_column_name()]) {
+            language_load();
+
+            \error(
+                $lang->sprintf(
+                    $lang->newpoints_not_enough_points,
+                    $instance_object->points_format($minimum_points)
+                )
+            );
+        }
     }
-
-    return true;
 }
 
 function fetch_wol_activity_end(array &$user_activity): array
 {
-    if (my_strpos($user_activity['location'], main_file_name($instance_id)) === false) {
-        return $user_activity;
-    }
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-    $user_activity['activity'] = 'newpoints_home';
+        if (my_strpos($user_activity['location'], $instance_object->get_script_file()) === false) {
+            continue;
+        }
 
-    if (my_strpos($user_activity['location'], 'action=stats') !== false) {
-        $user_activity['activity'] = 'newpoints_stats';
-    }
+        $user_activity['activity'] = 'newpoints_home';
 
-    if (my_strpos($user_activity['location'], 'action=donate') !== false) {
-        $user_activity['activity'] = 'newpoints_donation';
-    }
+        if (my_strpos($user_activity['location'], 'action=stats') !== false) {
+            $user_activity['activity'] = 'newpoints_stats';
+        }
 
-    if (my_strpos($user_activity['location'], 'action=logs') !== false) {
-        $user_activity['activity'] = 'newpoints_logs';
+        if (my_strpos($user_activity['location'], 'action=donate') !== false) {
+            $user_activity['activity'] = 'newpoints_donation';
+        }
+
+        if (my_strpos($user_activity['location'], 'action=logs') !== false) {
+            $user_activity['activity'] = 'newpoints_logs';
+        }
+
+        $user_activity = run_hooks('wol_fetch', $user_activity);
+
+        break;
     }
 
     return $user_activity;
@@ -1186,35 +1372,49 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
 
     language_load();
 
-    switch ($hook_arguments['user_activity']['activity']) {
-        case 'newpoints_home':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_home,
-                $mybb->settings['bburl'],
-                main_file_name($instance_id)
-            );
-            break;
-        case 'newpoints_stats':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_stats,
-                $mybb->settings['bburl'],
-                url_handler_build(['action' => 'stats'])
-            );
-            break;
-        case 'newpoints_donation':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_donation,
-                $mybb->settings['bburl'],
-                url_handler_build(['action' => 'donate'])
-            );
-            break;
-        case 'newpoints_logs':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_logs,
-                $mybb->settings['bburl'],
-                url_handler_build(['action' => 'logs'])
-            );
-            break;
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
+
+        if (my_strpos($hook_arguments['user_activity']['location'], $instance_object->get_script_file()) === false) {
+            continue;
+        }
+
+        switch ($hook_arguments['user_activity']['activity']) {
+            case 'newpoints_home':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_home,
+                    $mybb->settings['bburl'],
+                    $instance_object->get_script_file()
+                );
+                break;
+            case 'newpoints_stats':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_stats,
+                    $mybb->settings['bburl'],
+                    url_handler_build(['action' => 'stats'])
+                );
+                break;
+            case 'newpoints_donation':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_donation,
+                    $mybb->settings['bburl'],
+                    url_handler_build(['action' => 'donate'])
+                );
+                break;
+            case 'newpoints_logs':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_logs,
+                    $mybb->settings['bburl'],
+                    url_handler_build(['action' => 'logs'])
+                );
+                break;
+        }
+
+        break;
     }
 
     return $hook_arguments;
@@ -1251,9 +1451,19 @@ function memberlist_intermediate(): bool
 
 function memberlist_user(array &$user_data): array
 {
-    $user_data['newpoints'] = (float)($user_data['newpoints'] ?? 0);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
-    $user_data['newpoints_formatted'] = points_format($user_data['newpoints']);
+        $user_data[$instance_object->get_users_column_name()] =
+            (float)($user_data[$instance_object->get_users_column_name()] ?? 0);
+
+        $user_data[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+            $instance_object->points_format($user_data[$instance_object->get_users_column_name()]);
+    }
 
     return $user_data;
 }

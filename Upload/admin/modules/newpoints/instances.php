@@ -29,13 +29,24 @@
 
 declare(strict_types=1);
 
+use function Newpoints\Admin\build_permissions_row;
 use function Newpoints\Admin\db_verify_columns;
+use function Newpoints\Core\cache_update_instances;
 use function Newpoints\Core\instance_get;
+use function Newpoints\Core\instance_insert;
 use function Newpoints\Core\instance_object;
+use function Newpoints\Core\instance_update;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\url_handler_build;
+use function Newpoints\Core\url_handler_get;
 use function Newpoints\Core\url_handler_set;
+
+use const Newpoints\Core\FIELDS_DATA;
+use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
+use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
+use const Newpoints\Core\TABLES_DATA;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -51,23 +62,51 @@ url_handler_set(url_handler_build([
     'module' => 'newpoints-instances',
 ]));
 
+$instance_id = $mybb->get_input('instance_id', MyBB::INPUT_INT);
+
 $sub_tabs = [
     'newpoints_instances' => [
         'title' => $lang->newpoints_instances,
         'link' => url_handler_build(),
         'description' => $lang->newpoints_instances_description
     ],
-    'newpoints_instances_new' => [
-        'title' => $lang->newpoints_instances_new,
-        'link' => url_handler_build(['action' => 'new']),
-        'description' => $lang->newpoints_instances_new_description
-    ],
 ];
 
-run_hooks('admin_instances_begin');
+if (!$mybb->get_input('action') || $mybb->get_input('action') === 'add') {
+    $sub_tabs['newpoints_instances_add'] = [
+        'title' => $lang->newpoints_instances_add,
+        'link' => url_handler_build(['action' => 'add']),
+        'description' => $lang->newpoints_instances_add_description
+    ];
+}
 
-if ($mybb->get_input('action') === 'create_column') {
-    $instance_id = $mybb->get_input('instance_id', MyBB::INPUT_INT);
+if ($mybb->get_input('action') === 'edit') {
+    $sub_tabs['newpoints_instances_edit'] = [
+        'title' => $lang->newpoints_instances_edit,
+        'link' => url_handler_build(['action' => 'edit', 'instance_id' => $instance_id]),
+        'description' => $lang->newpoints_instances_edit_description
+    ];
+}
+
+$page->extra_header .= <<<EOL
+<style type="text/css">
+    .user_settings_bit label {
+        font-weight: normal;
+    }
+</style>
+EOL;
+
+$tables_data = TABLES_DATA;
+
+$groups_cache = (array)$mybb->cache->read('usergroups');
+
+$forums_cache = (array)$mybb->cache->read('forums');
+
+$existing_instances = instance_get(query_fields: ['users_column_name', 'script_name']);
+
+
+if ($mybb->input['action'] == 'clear_group_permission') {
+    $permission_id = $mybb->get_input('permission_id', MyBB::INPUT_INT);
 
     try {
         $instance_object = instance_object($instance_id);
@@ -77,10 +116,1794 @@ if ($mybb->get_input('action') === 'create_column') {
         admin_redirect('index.php?module=newpoints-instances');
     }
 
+    $permission_data = $instance_object->permissions_group_get(
+        ["instance_id='{$instance_id}'", "permission_id='{$permission_id}'"]
+    );
+
+    if (!empty($mybb->input['no']) || !$permission_data) {
+        admin_redirect(
+            url_handler_build(
+                ['action' => 'edit', 'instance_id' => $instance_id]
+            ) . '#tab_group_permissions'
+        );
+    }
+
+    run_hooks('admin_instances_clear_group_permission_start');
+
+    if ($mybb->request_method === 'post') {
+        $instance_object->permissions_group_delete($permission_id);
+
+        run_hooks('admin_instances_clear_group_permission_commit');
+
+        $instance_object->cache_update_group_permissions();
+
+        flash_message($lang->newpoints_admin_instances_permissions_clear_success, 'success');
+
+        admin_redirect(
+            url_handler_build(
+                ['action' => 'edit', 'instance_id' => $instance_id]
+            ) . '#tab_group_permissions'
+        );
+    } else {
+        $page->output_confirm_action(
+            url_handler_build(
+                [
+                    'action' => 'clear_group_permission',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permission_id,
+                    'my_post_key' => $mybb->post_code
+                ]
+            ),
+            $lang->newpoints_admin_instances_permissions_clear_confirm
+        );
+    }
+} elseif ($mybb->input['action'] == 'clear_forum_permission') {
+    $permission_id = $mybb->get_input('permission_id', MyBB::INPUT_INT);
+
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+    }
+
+    $permission_data = $instance_object->permissions_forum_get(
+        ["instance_id='{$instance_id}'", "permission_id='{$permission_id}'"]
+    );
+
+    if (!empty($mybb->input['no']) || !$permission_data) {
+        admin_redirect(
+            url_handler_build(
+                ['action' => 'edit', 'instance_id' => $instance_id]
+            ) . '#tab_forum_permissions'
+        );
+    }
+
+    run_hooks('admin_instances_clear_forum_permission_start');
+
+    if ($mybb->request_method === 'post') {
+        $instance_object->permissions_forum_delete($permission_id);
+
+        run_hooks('admin_instances_clear_forum_permission_commit');
+
+        $instance_object->cache_update_forum_permissions();
+
+        flash_message($lang->newpoints_admin_instances_permissions_clear_success, 'success');
+
+        admin_redirect(
+            url_handler_build(
+                ['action' => 'edit', 'instance_id' => $instance_id]
+            ) . '#tab_forum_permissions'
+        );
+    } else {
+        $page->output_confirm_action(
+            url_handler_build(
+                [
+                    'action' => 'clear_forum_permission',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permission_id,
+                    'my_post_key' => $mybb->post_code
+                ]
+            ),
+            $lang->newpoints_admin_instances_permissions_clear_confirm
+        );
+    }
+} elseif ($mybb->get_input('action') == 'group_permissions') {
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+    }
+
+    $permissions_cache = $instance_object->cache_get_group_permissions();
+
+    $group_id = $mybb->get_input('group_id', MyBB::INPUT_INT);
+
+    $permission_id = $mybb->get_input('permission_id', MyBB::INPUT_INT);
+
+    $where_clauses = ["instance_id='{$instance_id}'"];
+
+    if ($group_id) {
+        $where_clauses[] = "group_id='{$group_id}'";
+    }
+
+    if ($permission_id) {
+        $where_clauses[] = "permission_id='{$permission_id}'";
+    }
+
+    run_hooks('admin_instances_permissions_start');
+
+    $permission_data = $instance_object->permissions_group_get(
+        $where_clauses,
+        array_keys($tables_data['newpoints_group_permissions']),
+        ['limit' => 1]
+    );
+
+    if (!$group_id && !empty($permission_data['instance_id'])) {
+        $permission_id = (int)$permission_data['permission_id'];
+
+        $instance_id = (int)$permission_data['instance_id'];
+
+        $group_id = $permission_data['group_id'];
+    }
+
+    $input_permissions = $mybb->get_input('permissions', MyBB::INPUT_ARRAY);
+
+    $permissions_url = url_handler_build(
+            ['action' => 'edit', 'instance_id' => $instance_id]
+        ) . '#tab_group_permissions';
+
+    $isModal = $mybb->get_input('ajax', MyBB::INPUT_INT);
+
+    if ($mybb->request_method === 'post') {
+        $insert_data = $field_list = [];
+
+        foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+            if (!isset($field_definition['is_permission'])) {
+                continue;
+            }
+
+            if (isset($input_permissions[$field_name])) {
+                $insert_data[$field_name] = $db->escape_string($input_permissions[$field_name]);
+            } else {
+                $insert_data[$field_name] = $field_definition['default'];
+            }
+        }
+
+        if (!$permission_id) {
+            $insert_data['instance_id'] = $instance_id;
+
+            $insert_data['group_id'] = $group_id;
+        }
+
+        $input_permissions = $mybb->get_input('permissions', MyBB::INPUT_ARRAY);
+
+        run_hooks('admin_instances_permissions_commit');
+
+        if ($permission_id) {
+            $instance_object->permissions_group_update($insert_data, $permission_id);
+        } else {
+            $instance_object->permissions_group_insert($insert_data);
+        }
+
+        $instance_object->cache_update_group_permissions();
+
+        log_admin_action($instance_id, $instance_object->get_display_name_upper());
+
+        if ($isModal) {
+            echo json_encode(
+                "<script type=\"text/javascript\">$('#row_{$group_id}').html('" . str_replace(["'", "\t", "\n"],
+                    ["\\'", '', ''],
+                    retrieve_single_group_permissions_row($group_id, $instance_id)
+                ) . "'); QuickPermEditor.init('group_' + {$group_id})</script>"
+            );
+
+            die;
+        } else {
+            flash_message($lang->newpoints_admin_instances_permissions_form_custom_permissions_success, 'success');
+
+            admin_redirect($permissions_url);
+        }
+    }
+
+    if (!$isModal) {
+        $page->add_breadcrumb_item($lang->newpoints_instances, url_handler_build());
+
+        $page->add_breadcrumb_item($instance_object->get_display_name_upper(), url_handler_get());
+
+        $page->add_breadcrumb_item($lang->newpoints_admin_instances_permissions_form_custom_permissions);
+
+        $page->extra_header .= "<script src=\"jscripts/quick_perm_editor.js\" type=\"text/javascript\"></script>\n";
+
+        $permissions_url = url_handler_build(
+                [
+                    'action' => 'group_permissions',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permission_id,
+                    'group_id' => $group_id
+                ]
+            ) . '#tab_group_permissions';
+
+        $sub_tabs['group_permissions'] = [
+            'title' => $lang->newpoints_admin_instances_permissions_form_custom_permissions,
+            'link' => $permissions_url,
+            'description' => $lang->newpoints_admin_instances_permissions_form_custom_permissions_description
+        ];
+
+        $page->output_header($lang->newpoints_admin_instances_permissions_form_custom_permissions);
+
+        $page->output_nav_tabs($sub_tabs, 'group_permissions');
+    } else {
+        echo "
+		<div class=\"modal\" style=\"width: auto\">
+		<script src=\"jscripts/tabs.js\" type=\"text/javascript\"></script>\n
+		<script type=\"text/javascript\">
+<!--
+$(function() {
+	$(\"#modal_form\").on(\"click\", \"#save_permissions\", function(e) {
+		e.preventDefault();
+
+		var datastring = $(\"#modal_form\").serialize();
+		$.ajax({
+			type: \"POST\",
+			url: $(\"#modal_form\").attr('action'),
+			data: datastring,
+			dataType: \"json\",
+			success: function(data) {
+				$(data).filter(\"script\").each(function(e) {
+					eval($(this).text());
+				});
+				$.modal.close();
+			},
+			error: function(){
+			}
+		});
+	});
+});
+// -->
+		</script>
+		<div style=\"overflow-y: auto; max-height: 400px\">";
+    }
+
+    if (!empty($mybb->input['permission_id']) || (!empty($mybb->input['group_id']) && !empty($mybb->input['instance_id']))) {
+        if (!$isModal) {
+            $permissions_url = url_handler_build(
+                    [
+                        'action' => 'group_permissions',
+                        'instance_id' => $instance_id,
+                    ]
+                ) . '#tab_group_permissions';
+
+            $form = new Form($permissions_url, 'post');
+        } else {
+            $permissions_url = url_handler_build(
+                    [
+                        'action' => 'group_permissions',
+                        'instance_id' => $instance_id,
+                        'permission_id' => $permission_id,
+                        'group_id' => $group_id,
+                        'ajax' => 1
+                    ]
+                ) . '#tab_group_permissions';
+
+            $form = new Form(
+                $permissions_url, 'post', 'modal_form'
+            );
+        }
+
+        echo $form->generate_hidden_field('use_custom_permissions', '1');
+
+        $permission_data = $instance_object->permissions_group_get(
+            $where_clauses,
+            array_keys($tables_data['newpoints_group_permissions']),
+            ['limit' => 1]
+        );
+
+        if (!empty($permission_data['permission_id'])) {
+            $permission_data['use_custom_permissions'] = 1;
+        } elseif (!isset($permission_data['permission_id'])) {
+            $permission_data = usergroup_permissions($group_id);
+
+            foreach ($permission_data as $permission_key => $permission_value) {
+                if (str_starts_with($permission_key, 'newpoints_')) {
+                    $permission_data[str_replace('newpoints_', '', $permission_key)] = $permission_value;
+                }
+            }
+        } else {
+            $permission_data = $permissions_cache[$instance_id][$group_id];
+        }
+
+        if ($group_id) {
+            echo $form->generate_hidden_field('group_id', $group_id);
+        }
+
+        if ($permission_id) {
+            echo $form->generate_hidden_field('permission_id', $permission_id);
+        }
+
+        $field_list = [];
+
+        foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+            if (!isset($field_definition['is_permission'])) {
+                continue;
+            }
+
+            $language_key = str_replace('newpoints_', '', $field_name);
+
+            $field_list[$field_definition['form_category']][$field_name] = $lang->{'newpoints_user_groups_' . $language_key};
+        }
+
+        $tabs = [];
+
+        foreach (array_keys($field_list) as $tab_key) {
+            $language_key = str_replace('newpoints_', '', $tab_key);
+
+            $tabs[$tab_key] = $lang->{'newpoints_user_groups_' . $language_key};
+        }
+
+        if ($isModal) {
+            $page->output_tab_control($tabs, false, 'tabs2');
+        } else {
+            $page->output_tab_control($tabs);
+        }
+
+        $existing_permissions = [];
+
+        if (isset($permissions_cache[$instance_id])) {
+            foreach ($permissions_cache[$instance_id] as $instance_permissions) {
+                $existing_permissions[$instance_permissions['group_id']] = $instance_permissions;
+            }
+        }
+
+        if (!$existing_permissions) {
+            $default_checked = true;
+        }
+
+        foreach (array_keys($field_list) as $tab_key) {
+            $lang_group = 'group_' . $tab_key;
+
+            echo "<div id=\"tab_" . $tab_key . "\">\n";
+
+            $form_container = new FormContainer(
+                "\"" . htmlspecialchars_uni(
+                    $groups_cache[$group_id]['title']
+                ) . "\" " . $lang->newpoints_admin_instances_permissions_form_custom_permissions
+            );
+
+            $fields = [];
+
+            foreach ($field_list[$tab_key] as $permission_name => $permission_title) {
+                $field_definition = $tables_data['newpoints_group_permissions'][$permission_name];
+
+                $language_key = str_replace('newpoints_', '', $permission_name);
+
+                switch ($field_definition['form_type']) {
+                    case FORM_TYPE_NUMERIC_FIELD:
+                        $form_input = '<div class="permissions_bit">';
+
+                        $form_input .= $lang->{'newpoints_user_groups_' . $language_key};
+
+                        $form_input .= '<br /><small class="input">';
+
+                        $form_input .= $lang->{'newpoints_user_groups_' . $language_key . '_description'};
+
+                        $form_input .= '</small><br />';
+
+                        $form_input .= $form->generate_numeric_field(
+                            "permissions[{$permission_name}]",
+                            isset($permission_data[$permission_name]) ? (int)$permission_data[$permission_name] : 0,
+                            ['id' => $permission_name, 'class' => $field_definition['form_class'] ?? '']
+                        );
+
+                        $form_input .= '</div>';
+
+                        $fields[] = $form_input;
+
+                        break;
+                    case FORM_TYPE_CHECK_BOX:
+                        $fields[] = $form->generate_check_box(
+                            "permissions[{$permission_name}]",
+                            1,
+                            $permission_title,
+                            ['checked' => !empty($permission_data[$permission_name]), 'id' => $permission_name]
+                        );
+
+                        break;
+                }
+            }
+
+            $form_container->output_row(
+                '',
+                '',
+                "<div class=\"forum_settings_bit\">" . implode(
+                    "</div><div class=\"forum_settings_bit\">",
+                    $fields
+                ) . '</div>'
+            );
+
+            $form_container->end();
+
+            echo '</div>';
+        }
+
+        if ($isModal) {
+            $form->output_submit_wrapper([
+                $form->generate_submit_button(
+                    $lang->cancel,
+                    ['onclick' => '$.modal.close(); return false;']
+                ),
+                $form->generate_submit_button(
+                    $lang->newpoints_admin_instances_permissions_form_save_groups,
+                    ['id' => 'save_permissions']
+                )
+            ]);
+
+            $form->end();
+
+            echo '</div>';
+
+            echo '</div>';
+        } else {
+            $form->output_submit_wrapper(
+                [$form->generate_submit_button($lang->newpoints_admin_instances_permissions_form_save_groups)]
+            );
+
+            $form->end();
+        }
+    }
+
+    run_hooks('admin_instances_permissions_end');
+
+    if ($isModal) {
+        exit;
+    }
+
+    $page->output_footer();
+} elseif ($mybb->get_input('action') == 'forum_permissions') {
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+    }
+
+    $permissions_cache = $instance_object->cache_get_forum_permissions();
+
+    $forum_id = $mybb->get_input('forum_id', MyBB::INPUT_INT);
+
+    $permission_id = $mybb->get_input('permission_id', MyBB::INPUT_INT);
+
+    $where_clauses = ["instance_id='{$instance_id}'"];
+
+    if ($forum_id) {
+        $where_clauses[] = "forum_id='{$forum_id}'";
+    }
+
+    if ($permission_id) {
+        $where_clauses[] = "permission_id='{$permission_id}'";
+    }
+
+    run_hooks('admin_instances_permissions_start');
+
+    $permission_data = $instance_object->permissions_forum_get(
+        $where_clauses,
+        array_keys($tables_data['newpoints_forum_permissions']),
+        ['limit' => 1]
+    );
+
+    if (!$forum_id && !empty($permission_data['instance_id'])) {
+        $permission_id = (int)$permission_data['permission_id'];
+
+        $instance_id = (int)$permission_data['instance_id'];
+
+        $forum_id = $permission_data['forum_id'];
+    }
+
+    $input_permissions = $mybb->get_input('permissions', MyBB::INPUT_ARRAY);
+
+    $permissions_url = url_handler_build(
+            ['action' => 'edit', 'instance_id' => $instance_id]
+        ) . '#tab_forum_permissions';
+
+    $isModal = $mybb->get_input('ajax', MyBB::INPUT_INT);
+
+    if ($mybb->request_method === 'post') {
+        $insert_data = $field_list = [];
+
+        foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+            if (!isset($field_definition['is_permission'])) {
+                continue;
+            }
+
+            if (isset($input_permissions[$field_name])) {
+                $insert_data[$field_name] = $db->escape_string($input_permissions[$field_name]);
+            } else {
+                $insert_data[$field_name] = $field_definition['default'];
+            }
+        }
+
+        if (!$permission_id) {
+            $insert_data['instance_id'] = $instance_id;
+
+            $insert_data['forum_id'] = $forum_id;
+        }
+
+        $input_permissions = $mybb->get_input('permissions', MyBB::INPUT_ARRAY);
+
+        run_hooks('admin_instances_permissions_commit');
+
+        if ($permission_id) {
+            $instance_object->permissions_forum_update($insert_data, $permission_id);
+        } else {
+            $instance_object->permissions_forum_insert($insert_data);
+        }
+
+        $instance_object->cache_update_forum_permissions();
+
+        log_admin_action($instance_id, $instance_object->get_display_name_upper());
+
+        if ($isModal) {
+            echo json_encode(
+                "<script type=\"text/javascript\">$('#row_{$forum_id}').html('" . str_replace(["'", "\t", "\n"],
+                    ["\\'", '', ''],
+                    retrieve_single_forum_permissions_row($forum_id, $instance_id)
+                ) . "'); QuickPermEditor.init('forum_' + {$forum_id})</script>"
+            );
+
+            die;
+        } else {
+            flash_message($lang->newpoints_admin_instances_permissions_form_custom_permissions_success, 'success');
+
+            admin_redirect($permissions_url);
+        }
+    }
+
+    if (!$isModal) {
+        $page->add_breadcrumb_item($lang->newpoints_instances, url_handler_build());
+
+        $page->add_breadcrumb_item($instance_object->get_display_name_upper(), url_handler_get());
+
+        $page->add_breadcrumb_item($lang->newpoints_admin_instances_permissions_form_custom_permissions);
+
+        $page->extra_header .= "<script src=\"jscripts/quick_perm_editor.js\" type=\"text/javascript\"></script>\n";
+
+        $permissions_url = url_handler_build(
+                [
+                    'action' => 'forum_permissions',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permission_id,
+                    'forum_id' => $forum_id
+                ]
+            ) . '#tab_forum_permissions';
+
+        $sub_tabs['forum_permissions'] = [
+            'title' => $lang->newpoints_admin_instances_permissions_form_custom_permissions,
+            'link' => $permissions_url,
+            'description' => $lang->newpoints_admin_instances_permissions_form_custom_permissions_description
+        ];
+
+        $page->output_header($lang->newpoints_admin_instances_permissions_form_custom_permissions);
+
+        $page->output_nav_tabs($sub_tabs, 'forum_permissions');
+    } else {
+        echo "
+		<div class=\"modal\" style=\"width: auto\">
+		<script src=\"jscripts/tabs.js\" type=\"text/javascript\"></script>\n
+		<script type=\"text/javascript\">
+<!--
+$(function() {
+	$(\"#modal_form\").on(\"click\", \"#save_permissions\", function(e) {
+		e.preventDefault();
+
+		var datastring = $(\"#modal_form\").serialize();
+		$.ajax({
+			type: \"POST\",
+			url: $(\"#modal_form\").attr('action'),
+			data: datastring,
+			dataType: \"json\",
+			success: function(data) {
+				$(data).filter(\"script\").each(function(e) {
+					eval($(this).text());
+				});
+				$.modal.close();
+			},
+			error: function(){
+			}
+		});
+	});
+});
+// -->
+		</script>
+		<div style=\"overflow-y: auto; max-height: 400px\">";
+    }
+
+    if (!empty($mybb->input['permission_id']) || (!empty($mybb->input['forum_id']) && !empty($mybb->input['instance_id']))) {
+        if (!$isModal) {
+            $permissions_url = url_handler_build(
+                    [
+                        'action' => 'forum_permissions',
+                        'instance_id' => $instance_id,
+                    ]
+                ) . '#tab_forum_permissions';
+
+            $form = new Form($permissions_url, 'post');
+        } else {
+            $permissions_url = url_handler_build(
+                    [
+                        'action' => 'forum_permissions',
+                        'instance_id' => $instance_id,
+                        'permission_id' => $permission_id,
+                        'forum_id' => $forum_id,
+                        'ajax' => 1
+                    ]
+                ) . '#tab_forum_permissions';
+
+            $form = new Form(
+                $permissions_url, 'post', 'modal_form'
+            );
+        }
+
+        echo $form->generate_hidden_field('use_custom_permissions', '1');
+
+        $permission_data = $instance_object->permissions_forum_get(
+            $where_clauses,
+            array_keys($tables_data['newpoints_forum_permissions']),
+            ['limit' => 1]
+        );
+
+        if (!empty($permission_data['permission_id'])) {
+            $permission_data['use_custom_permissions'] = 1;
+        } elseif (!isset($permission_data['permission_id'])) {
+            $permission_data = $forums_cache[$forum_id];
+
+            foreach ($permission_data as $permission_key => $permission_value) {
+                if (str_starts_with($permission_key, 'newpoints_')) {
+                    $permission_data[str_replace('newpoints_', '', $permission_key)] = $permission_value;
+                }
+            }
+        } else {
+            $permission_data = $permissions_cache[$instance_id][$forum_id];
+        }
+
+        if ($forum_id) {
+            echo $form->generate_hidden_field('forum_id', $forum_id);
+        }
+
+        if ($permission_id) {
+            echo $form->generate_hidden_field('permission_id', $permission_id);
+        }
+
+        $field_list = [];
+
+        foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+            if (!isset($field_definition['is_permission'])) {
+                continue;
+            }
+
+            $language_key = str_replace('newpoints_', '', $field_name);
+
+            $field_list[$field_definition['form_category']][$field_name] = $lang->{'newpoints_field_newpoints_' . $language_key};
+        }
+
+        $tabs = [];
+
+        foreach (array_keys($field_list) as $tab_key) {
+            $language_key = str_replace('newpoints_', '', $tab_key);
+
+            $tabs[$tab_key] = $lang->{'newpoints_forums_' . $language_key};
+        }
+
+        if ($isModal) {
+            $page->output_tab_control($tabs, false, 'tabs2');
+        } else {
+            $page->output_tab_control($tabs);
+        }
+
+        $existing_permissions = [];
+
+        if (isset($permissions_cache[$instance_id])) {
+            foreach ($permissions_cache[$instance_id] as $instance_permissions) {
+                $existing_permissions[$instance_permissions['forum_id']] = $instance_permissions;
+            }
+        }
+
+        if (!$existing_permissions) {
+            $default_checked = true;
+        }
+
+        foreach (array_keys($field_list) as $tab_key) {
+            $lang_forum = 'forum_' . $tab_key;
+
+            echo "<div id=\"tab_" . $tab_key . "\">\n";
+
+            $form_container = new FormContainer(
+                "\"" . strip_tags(
+                    $forums_cache[$forum_id]['name']
+                ) . "\" " . $lang->newpoints_admin_instances_permissions_form_custom_permissions
+            );
+
+            $fields = [];
+
+            foreach ($field_list[$tab_key] as $permission_name => $permission_title) {
+                $field_definition = $tables_data['newpoints_forum_permissions'][$permission_name];
+
+                $language_key = str_replace('newpoints_', '', $permission_name);
+
+                switch ($field_definition['form_type']) {
+                    case FORM_TYPE_NUMERIC_FIELD:
+                        $form_input = '<div class="permissions_bit">';
+
+                        $form_input .= $lang->{'newpoints_field_newpoints_' . $language_key};
+
+                        $form_input .= '<br /><small class="input">';
+
+                        $form_input .= $lang->{'newpoints_field_newpoints_' . $language_key . '_description'};
+
+                        $form_input .= '</small><br />';
+
+                        $form_input .= $form->generate_numeric_field(
+                            "permissions[{$permission_name}]",
+                            isset($permission_data[$permission_name]) ? (float)$permission_data[$permission_name] : 0,
+                            array_merge(
+                                $field_definition['form_options'],
+                                ['id' => $permission_name, 'class' => $field_definition['form_class'] ?? '']
+                            )
+                        );
+
+                        $form_input .= '</div>';
+
+                        $fields[] = $form_input;
+
+                        break;
+                    case FORM_TYPE_CHECK_BOX:
+                        $fields[] = $form->generate_check_box(
+                            "permissions[{$permission_name}]",
+                            1,
+                            $permission_title,
+                            ['checked' => !empty($permission_data[$permission_name]), 'id' => $permission_name]
+                        );
+
+                        break;
+                }
+            }
+
+            $form_container->output_row(
+                '',
+                '',
+                "<div class=\"forum_settings_bit\">" . implode(
+                    "</div><div class=\"forum_settings_bit\">",
+                    $fields
+                ) . '</div>'
+            );
+
+            $form_container->end();
+
+            echo '</div>';
+        }
+
+        if ($isModal) {
+            $form->output_submit_wrapper([
+                $form->generate_submit_button(
+                    $lang->cancel,
+                    ['onclick' => '$.modal.close(); return false;']
+                ),
+                $form->generate_submit_button(
+                    $lang->newpoints_admin_instances_permissions_form_save_forums,
+                    ['id' => 'save_permissions']
+                )
+            ]);
+
+            $form->end();
+
+            echo '</div>';
+
+            echo '</div>';
+        } else {
+            $form->output_submit_wrapper(
+                [$form->generate_submit_button($lang->newpoints_admin_instances_permissions_form_save_forums)]
+            );
+
+            $form->end();
+        }
+    }
+
+    run_hooks('admin_instances_permissions_end');
+
+    if ($isModal) {
+        exit;
+    }
+
+    $page->output_footer();
+} elseif ($mybb->get_input('action') == 'add' || $mybb->get_input('action') == 'edit') {
+    $is_add_page = $mybb->get_input('action') === 'add';
+
+    $is_edit_page = $mybb->get_input('action') === 'edit';
+
+    if ($is_edit_page) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (InvalidArgumentException $e) {
+            flash_message($e->getMessage(), 'error');
+
+            admin_redirect('index.php?module=newpoints-instances');
+        }
+    }
+
+    $permissions_cache = $is_add_page ? [] : $instance_object->cache_get_group_permissions();
+
+    $error_messages = [];
+
+    if ($mybb->request_method === 'post') {
+        $default_permissions = array_filter($tables_data['newpoints_group_permissions'], function ($field_definition) {
+            return isset($field_definition['is_permission']);
+        });
+
+        switch ($mybb->get_input('type')) {
+            case 'main':
+                $insert_data = [];
+
+                foreach ($tables_data['newpoints_instances'] as $field_name => $field_definition) {
+                    if (!isset($field_definition['form_type']) ||
+                        $field_definition['form_category'] !== $mybb->get_input('type')) {
+                        continue;
+                    }
+
+                    if (isset($mybb->input[$field_name])) {
+                        $insert_data[$field_name] = match ($field_definition['type']) {
+                            'INT', 'TINYINT', 'SMALLINT' => (int)$mybb->input[$field_name],
+                            'FLOAT', 'DECIMAL' => (float)$mybb->input[$field_name],
+                            default => $db->escape_string($mybb->input[$field_name]),
+                        };
+                    } elseif ($field_definition['form_type'] === FORM_TYPE_NUMERIC_FIELD) {
+                        $insert_data[$field_name] = $field_definition['default'];
+                    }
+                }
+
+                if (isset($insert_data['users_column_name']) && (!$insert_data['users_column_name'] || in_array(
+                            $insert_data['users_column_name'],
+                            array_column($existing_instances, 'users_column_name')
+                        ) && (function (
+                            string $instance_users_column_name
+                        ) use ($instance_id, $existing_instances): bool {
+                            $duplicated_users_column_name = false;
+
+                            foreach ($existing_instances as $instance_data) {
+                                if ($instance_data['users_column_name'] === $instance_users_column_name && $instance_data['instance_id'] !== $instance_id) {
+                                    $duplicated_users_column_name = true;
+                                }
+                            }
+
+                            return $duplicated_users_column_name;
+                        })(
+                            $insert_data['users_column_name']
+                        ))) {
+                    $error_messages[] = $lang->newpoints_admin_instances_error_duplicated_users_column_name;
+                }
+
+                if (!empty($insert_data['script_name']) && (in_array(
+                            $insert_data['script_name'],
+                            array_column($existing_instances, 'script_name')
+                        ) && (function (
+                            string $scriptName
+                        ) use ($instance_id, $existing_instances): bool {
+                            $duplicateScript = false;
+
+                            foreach ($existing_instances as $instance_data) {
+                                if ($instance_data['script_name'] === $scriptName && $instance_data['instance_id'] !== $instance_id) {
+                                    $duplicateScript = true;
+                                }
+                            }
+
+                            return $duplicateScript;
+                        })(
+                            $insert_data['script_name']
+                        ))) {
+                    $error_messages[] = $lang->newpoints_admin_instances_error_duplicated_script_file;
+                }
+
+                run_hooks('admin_instances_add_edit_commit_main');
+
+                cache_update_instances();
+
+                if (!$error_messages) {
+                    if ($is_add_page) {
+                        $instance_id = instance_insert($insert_data);
+                    } else {
+                        instance_update($insert_data, $instance_id);
+                    }
+
+                    cache_update_instances();
+
+                    if ($is_add_page) {
+                        log_admin_action(['instance_id' => $instance_id]);
+
+                        flash_message($lang->newpoints_admin_instances_success_new_instance, 'success');
+                    } else {
+                        log_admin_action(['instance_id' => $instance_id, 'type' => $mybb->get_input('type')]);
+
+                        flash_message($lang->newpoints_admin_instances_success_updated_instance, 'success');
+                    }
+
+                    admin_redirect(
+                        url_handler_build(
+                            ['action' => 'edit', 'type' => $mybb->get_input('type'), 'instance_id' => $instance_id]
+                        ) . '#tab_main'
+                    );
+                }
+                break;
+            case 'group_permissions':
+            case 'forum_permissions':
+
+                $insert_data = [];
+
+                if (!empty($mybb->input['default_permissions'])) {
+                    $inherit = $mybb->input['default_permissions'];
+                } else {
+                    $inherit = [];
+                }
+
+                if ($mybb->get_input('type') === 'group_permissions') {
+                    $dragging_type = 'group_';
+                } else {
+                    $dragging_type = 'forum_';
+                }
+
+                foreach ($mybb->input as $permission_name => $permission_value) {
+                    // Make sure we're only skipping inputs that don't start with "fields_".$dragging_type and aren't fields_default_ or fields_inherit_
+                    if (!str_contains($permission_name, 'fields_' . $dragging_type) ||
+                        (str_contains($permission_name, 'fields_default_') ||
+                            str_contains($permission_name, 'fields_inherit_'))) {
+                        continue;
+                    }
+
+                    $object_id = (int)str_replace('fields_' . $dragging_type, '', $permission_name);
+
+                    if ($mybb->input['fields_default_' . $object_id] == $permission_value && $mybb->input['fields_inherit_' . $object_id]) {
+                        $inherit[$object_id] = 1;
+
+                        continue;
+                    }
+
+                    $inherit[$object_id] = 0;
+
+                    // If it isn't an array then it came from the javascript form
+                    if (!is_array($permission_value)) {
+                        $permission_value = explode(',', $permission_value);
+
+                        $permission_value = array_flip($permission_value);
+
+                        foreach ($permission_value as $field_name => $value) {
+                            $permission_value[$field_name] = 1;
+                        }
+                    }
+
+                    if ($mybb->get_input('type') === 'group_permissions') {
+                        $permissions_fields = $tables_data['newpoints_group_permissions'];
+                    } else {
+                        $permissions_fields = $tables_data['newpoints_forum_permissions'];
+                    }
+
+                    foreach ($permissions_fields as $field_name => $field_definition) {
+                        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+                            continue;
+                        }
+
+                        if (isset($permission_value[$field_name])) {
+                            $insert_data[$field_name][$object_id] = match ($field_definition['type']) {
+                                'INT', 'TINYINT', 'SMALLINT' => (int)$permission_value[$field_name],
+                                'FLOAT', 'DECIMAL' => (float)$permission_value[$field_name],
+                                default => $db->escape_string($permission_value[$field_name]),
+                            };
+                        } else {
+                            $insert_data[$field_name][$object_id] = $field_definition['default'];
+                        }
+                    }
+                }
+
+                if ($mybb->get_input('type') === 'group_permissions') {
+                    save_quick_group_permissions($instance_id, $insert_data);
+
+                    log_admin_action(['instance_id' => $instance_id]);
+
+                    $instance_object->cache_update_group_permissions();
+
+                    flash_message($lang->newpoints_admin_instances_success_instance_edit_permissions_groups, 'success');
+
+                    admin_redirect(
+                        url_handler_build(
+                            ['action' => 'edit', 'instance_id' => $instance_id]
+                        ) . '#tab_group_permissions'
+                    );
+                } else {
+                    save_quick_forum_permissions($instance_id, $insert_data);
+
+                    log_admin_action(['instance_id' => $instance_id]);
+
+                    $instance_object->cache_update_forum_permissions();
+
+                    flash_message($lang->newpoints_admin_instances_success_instance_edit_permissions_forums, 'success');
+
+                    admin_redirect(
+                        url_handler_build(
+                            ['action' => 'edit', 'instance_id' => $instance_id]
+                        ) . '#tab_forum_permissions'
+                    );
+                }
+
+                break;
+        }
+    }
+
+    $page->add_breadcrumb_item($lang->newpoints_instances, url_handler_build());
+
+    if ($is_edit_page) {
+        $page->add_breadcrumb_item($instance_object->get_display_name_upper(), url_handler_get());
+    }
+
+    $page->add_breadcrumb_item(
+        $lang->newpoints_admin_instances_edit,
+        url_handler_build(['action' => $is_add_page ? 'add' : 'edit', 'instance_id' => $instance_id])
+    );
+
+    $page->extra_header .= "<script src=\"jscripts/quick_perm_editor.js\" type=\"text/javascript\"></script>\n";
+
+    $page->output_header($lang->newpoints_admin_instances_edit);
+
+    if ($error_messages) {
+        $page->output_inline_error($error_messages);
+    }
+
+    $tabs = [
+        'main' => $lang->newpoints_admin_instances_edit_tabs_main,
+    ];
+
+    if ($is_edit_page) {
+        $tabs['group_permissions'] = $lang->newpoints_admin_instances_edit_tabs_permissions;
+
+        $tabs['forum_permissions'] = $lang->newpoints_admin_instances_edit_tabs_forum_permissions;
+    }
+
+    run_hooks('admin_instances_add_edit_start');
+
+    if ($is_add_page) {
+        $page->output_nav_tabs($sub_tabs, 'newpoints_instances_add');
+    } else {
+        $page->output_nav_tabs($sub_tabs, 'newpoints_instances_edit');
+    }
+
+    $page->output_tab_control($tabs);
+
+    //newpoints_get_group_permissions($instance_id);
+    $group_permissions = $permissions_cache[$instance_id] ?? [];
+
+    $mybb->input = array_merge($is_add_page ? [] : $instance_object->get_data(), $mybb->input);
+
+    $row_objects = [
+        'main' => [
+            'single' => [],
+            'grouped' => [],
+        ],
+    ];
+
+    foreach ($tables_data['newpoints_instances'] as $field_name => $field_definition) {
+        if (!isset($field_definition['form_category'])) {
+            continue;
+        }
+
+        if (isset($field_definition['form_section'])) {
+            $row_objects[$field_definition['form_category']]['grouped'][$field_definition['form_section']][$field_name] = $field_definition;
+        } else {
+            $row_objects[$field_definition['form_category']]['single'][$field_name] = $field_definition;
+        }
+    }
+
+    //main options tab
+    echo "<div id=\"tab_main\">\n";
+
+    $form = new Form(
+        url_handler_build(
+            ['action' => $is_add_page ? 'add' : 'edit', 'type' => 'main', 'instance_id' => $instance_id]
+        ) . '#tab_main',
+        'post',
+        $is_add_page ? 'add' : 'edit'
+    );
+
+    $form_container = new FormContainer($lang->newpoints_admin_instances_edit_tabs_main);
+
+    foreach ($row_objects['main']['single'] as $field_name => $field_definition) {
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $form_container->output_row(
+            $lang->{'newpoints_admin_instances_edit_' . $language_key},
+            $lang->{'newpoints_admin_instances_edit_' . $language_key . '_description'},
+            build_permissions_row(
+                $instance_id,
+                $form,
+                $field_name,
+                $field_definition,
+                $language_key,
+                'Main'
+            )
+        );
+    }
+
+    foreach ($row_objects['main']['grouped'] as $form_section => $form_objects) {
+        $sectionKey = ucfirst($form_section);
+
+        $setting_code = '';
+
+        foreach ($form_objects as $field_name => $field_definition) {
+            $language_key = str_replace('newpoints_', '', $field_name);
+
+            $setting_code .= build_permissions_row(
+                $instance_id,
+                $form,
+                $field_name,
+                $field_definition,
+                $language_key,
+                'Main',
+                true,
+            );
+        }
+
+        $form_container->output_row(
+            $lang->{'newpoints_admin_instances_edit_' . $sectionKey},
+            '',
+            $setting_code
+        );
+    }
+
+    $form_container->end();
+
+    $form->output_submit_wrapper([
+        $form->generate_submit_button($lang->newpoints_admin_instances_edit_button_submit),
+        $form->generate_reset_button($lang->newpoints_admin_instances_edit_button_reset)
+    ]);
+
+    $form->end();
+
+    echo "</div>\n";
+
+    if (!$is_edit_page) {
+        run_hooks('admin_instances_add_edit_end');
+
+        $page->output_footer();
+    }
+
+    echo "<div id=\"tab_group_permissions\">\n";
+
+    $form = new Form(
+        url_handler_build(
+            ['action' => $is_add_page ? 'add' : 'edit', 'type' => 'group_permissions', 'instance_id' => $instance_id]
+        ),
+        'post',
+        'group_permissions'
+    );
+
+    echo $form->generate_hidden_field('instance_id', $instance_id);
+
+    $existing_permissions = [];
+
+    foreach (
+        $instance_object->permissions_group_get(
+            ["instance_id='{$instance_id}'"],
+            array_keys($tables_data['newpoints_group_permissions'])
+        ) as $existing
+    ) {
+        $existing_permissions[$existing['group_id']] = $existing;
+    }
+
+    $field_list = [];
+
+    foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $field_list[$field_name] = $lang->{'newpoints_user_groups_' . $language_key};
+    }
+
+    $group_ids = [];
+
+    $form_container = new FormContainer(
+        $lang->newpoints_admin_instances_permissions_form_group_permissions
+    );
+
+    $form_container->output_row_header(
+        $lang->newpoints_admin_instances_permissions_form_group,
+        ['class' => 'align_center', 'style' => 'width: 30%']
+    );
+
+    $form_container->output_row_header(
+        $lang->newpoints_admin_instances_permissions_form_allowed_actions,
+        ['class' => 'align_center']
+    );
+
+    $form_container->output_row_header(
+        $lang->newpoints_admin_instances_permissions_form_disallowed_actions,
+        ['class' => 'align_center']
+    );
+
+    $form_container->output_row_header(
+        $lang->controls,
+        ['class' => 'align_center', 'style' => 'width: 120px', 'colspan' => 2]
+    );
+
+    $input_permissions = $mybb->get_input('permissions', MyBB::INPUT_ARRAY);
+
+    if ($mybb->request_method == 'post') {
+        foreach ($groups_cache as $group_data) {
+            $group_id = (int)$group_data['gid'];
+
+            if (isset($mybb->input['fields_group_' . $group_id])) {
+                $input_permissions = $mybb->input['fields_group_' . $group_id];
+
+                if (!is_array($input_permissions)) {
+                    // Converting the comma separated list from Javascript form into a variable
+                    $input_permissions = explode(',', $input_permissions);
+                }
+                foreach ($input_permissions as $input_permission) {
+                    $input_permissions[$group_id][$input_permission] = 1;
+                }
+            }
+        }
+    }
+
+    foreach ($groups_cache as $group_data) {
+        $group_id = (int)$group_data['gid'];
+
+        $permissions = [];
+
+        if (isset($mybb->input['default_permissions'])) {
+            if ($mybb->input['default_permissions'][$group_id]) {
+                if ($existing_permissions[$group_id]) {
+                    $permissions = $existing_permissions[$group_id];
+
+                    $default_checked = false;
+                } elseif (is_array(
+                        $permissions_cache
+                    ) && $permissions_cache[$instance_id][$group_id]) {
+                    $permissions = $permissions_cache[$instance_id][$group_id];
+
+                    $default_checked = true;
+                } elseif (is_array(
+                        $permissions_cache
+                    ) && $permissions_cache[$instance_id][$group_id]) {
+                    $permissions = $permissions_cache[$instance_id][$group_id];
+
+                    $default_checked = true;
+                }
+            }
+
+            if (!$permissions) {
+                $default_checked = true;
+            }
+        } else {
+            if (isset($existing_permissions) &&
+                is_array($existing_permissions) &&
+                !empty($existing_permissions[$group_id])) {
+                $permissions = $existing_permissions[$group_id];
+
+                $default_checked = false;
+            } elseif (is_array(
+                    $permissions_cache
+                ) && !empty($permissions_cache[$instance_id][$group_id])) {
+                $permissions = $permissions_cache[$instance_id][$group_id];
+
+                $default_checked = true;
+            } elseif (is_array(
+                    $permissions_cache
+                ) && !empty($permissions_cache[$instance_id][$group_id])) {
+                $permissions = $permissions_cache[$instance_id][$group_id];
+
+                $default_checked = true;
+            }
+
+            if (!$permissions) {
+                $permissions = $group_data;
+
+                foreach ($permissions as $permission_key => $permission_value) {
+                    if (str_starts_with($permission_key, 'newpoints_')) {
+                        $permissions[str_replace('newpoints_', '', $permission_key)] = $permission_value;
+                    }
+                }
+
+                $default_checked = true;
+            }
+        }
+
+        $checked_permissions = [];
+
+        foreach ($field_list as $permission_name => $permission_title) {
+            if ($input_permissions) {
+                if (isset($input_permissions[$group_id][$permission_name])) {
+                    $checked_permissions[$permission_name] = 1;
+                } else {
+                    $checked_permissions[$permission_name] = 0;
+                }
+            } elseif (!empty($permissions[$permission_name])) {
+                $checked_permissions[$permission_name] = 1;
+            } else {
+                $checked_permissions[$permission_name] = 0;
+            }
+        }
+
+        $group_title = htmlspecialchars_uni($group_data['title']);
+
+        if (!empty($default_checked)) {
+            $inheritedText = $lang->newpoints_admin_instances_permissions_form_inherited;
+        } else {
+            $inheritedText = $lang->newpoints_admin_instances_permissions_form_custom;
+        }
+
+        $form_container->output_cell(
+            "<strong>{$group_title}</strong> <small style=\"vertical-align: middle;\">({$inheritedText})</small>"
+        );
+
+        $field_select = "<div class=\"quick_perm_fields\">\n";
+
+        $field_select .= "<div class=\"enabled\"><ul id=\"fields_enabled_group_{$group_id}\">\n";
+
+        foreach ($checked_permissions as $permission_name => $permission_value) {
+            if ($permission_value) {
+                $field_select .= "<li id=\"field-{$permission_name}\">{$field_list[$permission_name]}</li>";
+            }
+        }
+
+        $field_select .= "</ul></div>\n";
+
+        $field_select .= "<div class=\"disabled\"><ul id=\"fields_disabled_group_{$group_id}\">\n";
+
+        foreach ($checked_permissions as $permission_name => $permission_value) {
+            if (!$permission_value) {
+                $field_select .= "<li id=\"field-{$permission_name}\">{$field_list[$permission_name]}</li>";
+            }
+        }
+        $field_select .= "</ul></div></div>\n";
+        $field_select .= $form->generate_hidden_field(
+            'fields_group_' . $group_id,
+            implode(',', array_keys($checked_permissions, '1')),
+            ['id' => 'fields_group_' . $group_id]
+        );
+        $field_select .= $form->generate_hidden_field(
+            'fields_inherit_' . $group_id,
+            isset($default_checked) ? (int)$default_checked : 0,
+            ['id' => 'fields_inherit_' . $group_id]
+        );
+        $field_select .= $form->generate_hidden_field(
+            'fields_default_' . $group_id,
+            implode(',', array_keys($checked_permissions, '1')),
+            ['id' => 'fields_default_' . $group_id]
+        );
+        $field_select = str_replace("'", "\\'", $field_select);
+        $field_select = str_replace("\n", '', $field_select);
+
+        $field_select = "<script type=\"text/javascript\">
+//<![CDATA[
+document.write('" . str_replace('/', '\/', $field_select) . "');
+//]]>
+</script>\n";
+
+        $field_options = $field_selected = [];
+
+        foreach ($field_list as $permission_name => $permission_title) {
+            $field_options[$permission_name] = $permission_title;
+
+            if ($checked_permissions[$permission_name]) {
+                $field_selected[] = $permission_name;
+            }
+        }
+
+        $field_select .= '<noscript>' . $form->generate_select_box(
+                'fields_group_' . $group_id . '[]',
+                $field_options,
+                $field_selected,
+                ['id' => 'fields_group_' . $group_id . '[]', 'multiple' => true]
+            ) . "</noscript>\n";
+
+        $form_container->output_cell($field_select, ['colspan' => 2]);
+
+        $permissions_url = url_handler_build(
+                [
+                    'action' => 'group_permissions',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permissions['permission_id'] ?? 0,
+                    'group_id' => $group_id
+                ]
+            ) . '#tab_group_permissions';
+
+        $modal_url = url_handler_build(
+            [
+                'action' => 'group_permissions',
+                'instance_id' => $instance_id,
+                'permission_id' => $permissions['permission_id'] ?? 0,
+                'group_id' => $group_id,
+                'ajax' => 1
+            ]
+        );
+
+        if (empty($default_checked)) {
+            $form_container->output_cell(
+                "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_edit}</a>",
+                ['class' => 'align_center']
+            );
+
+            $clear_group_permissions_url = url_handler_build(
+                [
+                    'action' => 'clear_group_permission',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permissions['permission_id'],
+                    'my_post_key' => $mybb->post_code
+                ]
+            );
+
+            $form_container->output_cell(
+                "<a href=\"{$clear_group_permissions_url}\" onclick=\"return AdminCP.deleteConfirmation(this, '{$lang->newpoints_admin_instances_permissions_form_confirm_clear}')\">{$lang->newpoints_admin_instances_permissions_form_clear}</a>",
+                ['class' => 'align_center']
+            );
+        } else {
+            $form_container->output_cell(
+                "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_set}</a>",
+                ['class' => 'align_center', 'colspan' => 2]
+            );
+        }
+
+        $form_container->construct_row(['id' => 'row_' . $group_id]);
+
+        $group_ids[] = $group_id;
+
+        unset($default_checked);
+    }
+
+    $form_container->end();
+
+    $form->output_submit_wrapper(
+        [$form->generate_submit_button($lang->newpoints_admin_instances_permissions_form_button_submit_groups)]
+    );
+
+    $form->end();
+
+    // Write in our JS based field selector
+    echo "<script type=\"text/javascript\">\n<!--\n";
+
+    foreach ($group_ids as $group_id) {
+        echo '$(function() { QuickPermEditor.init(\'group_\' + ' . $group_id . "); });\n";
+    }
+
+    echo "// -->\n</script>\n";
+
+    echo "</div>\n";
+
+    echo "<div id=\"tab_forum_permissions\">\n";
+
+    $form = new Form(
+        url_handler_build(
+            ['action' => $is_add_page ? 'add' : 'edit', 'type' => 'forum_permissions', 'instance_id' => $instance_id]
+        ),
+        'post',
+        'forum_permissions'
+    );
+
+    echo $form->generate_hidden_field('instance_id', $instance_id);
+
+    $existing_permissions = [];
+
+    foreach (
+        $instance_object->permissions_forum_get(
+            ["instance_id='{$instance_id}'"],
+            array_keys($tables_data['newpoints_forum_permissions'])
+        ) as $existing
+    ) {
+        $existing_permissions[$existing['forum_id']] = $existing;
+    }
+
+    $field_list = [];
+
+    foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $field_list[$field_name] = $lang->{'newpoints_field_newpoints_' . $language_key};
+    }
+
+    $forum_ids = [];
+
+    $form_container = new FormContainer(
+        $lang->newpoints_admin_instances_permissions_form_forum_permissions
+    );
+
+    $form_container->output_row_header(
+        $lang->newpoints_admin_instances_permissions_form_forum,
+        ['class' => 'align_center', 'style' => 'width: 30%']
+    );
+
+    $form_container->output_row_header(
+        $lang->newpoints_admin_instances_permissions_form_allowed_actions,
+        ['class' => 'align_center']
+    );
+
+    $form_container->output_row_header(
+        $lang->newpoints_admin_instances_permissions_form_disallowed_actions,
+        ['class' => 'align_center']
+    );
+
+    $form_container->output_row_header(
+        $lang->controls,
+        ['class' => 'align_center', 'style' => 'width: 120px', 'colspan' => 2]
+    );
+
+    $input_permissions = $mybb->get_input('permissions', MyBB::INPUT_ARRAY);
+
+    if ($mybb->request_method == 'post') {
+        foreach ($forums_cache as $forum_data) {
+            $forum_id = (int)$forum_data['fid'];
+
+            if (isset($mybb->input['fields_forum_' . $forum_id])) {
+                $input_permissions = $mybb->input['fields_forum_' . $forum_id];
+
+                if (!is_array($input_permissions)) {
+                    // Converting the comma separated list from Javascript form into a variable
+                    $input_permissions = explode(',', $input_permissions);
+                }
+                foreach ($input_permissions as $input_permission) {
+                    $input_permissions[$forum_id][$input_permission] = 1;
+                }
+            }
+        }
+    }
+
+    foreach ($forums_cache as $forum_data) {
+        $forum_id = (int)$forum_data['fid'];
+
+        $permissions = [];
+
+        if (isset($mybb->input['default_permissions'])) {
+            if ($mybb->input['default_permissions'][$forum_id]) {
+                if ($existing_permissions[$forum_id]) {
+                    $permissions = $existing_permissions[$forum_id];
+
+                    $default_checked = false;
+                } elseif (is_array(
+                        $permissions_cache
+                    ) && $permissions_cache[$instance_id][$forum_id]) {
+                    $permissions = $permissions_cache[$instance_id][$forum_id];
+
+                    $default_checked = true;
+                } elseif (is_array(
+                        $permissions_cache
+                    ) && $permissions_cache[$instance_id][$forum_id]) {
+                    $permissions = $permissions_cache[$instance_id][$forum_id];
+
+                    $default_checked = true;
+                }
+            }
+
+            if (!$permissions) {
+                $default_checked = true;
+            }
+        } else {
+            if (isset($existing_permissions) &&
+                is_array($existing_permissions) &&
+                !empty($existing_permissions[$forum_id])) {
+                $permissions = $existing_permissions[$forum_id];
+
+                $default_checked = false;
+            } elseif (is_array(
+                    $permissions_cache
+                ) && !empty($permissions_cache[$instance_id][$forum_id])) {
+                $permissions = $permissions_cache[$instance_id][$forum_id];
+
+                $default_checked = true;
+            } elseif (is_array(
+                    $permissions_cache
+                ) && !empty($permissions_cache[$instance_id][$forum_id])) {
+                $permissions = $permissions_cache[$instance_id][$forum_id];
+
+                $default_checked = true;
+            }
+
+            if (!$permissions) {
+                $permissions = $forum_data;
+
+                foreach ($permissions as $permission_key => $permission_value) {
+                    if (str_starts_with($permission_key, 'newpoints_')) {
+                        $permissions[str_replace('newpoints_', '', $permission_key)] = $permission_value;
+                    }
+                }
+
+                $default_checked = true;
+            }
+        }
+
+        $checked_permissions = [];
+
+        foreach ($field_list as $permission_name => $permission_title) {
+            if ($input_permissions) {
+                if (isset($input_permissions[$forum_id][$permission_name])) {
+                    $checked_permissions[$permission_name] = 1;
+                } else {
+                    $checked_permissions[$permission_name] = 0;
+                }
+            } elseif (!empty($permissions[$permission_name])) {
+                $checked_permissions[$permission_name] = 1;
+            } else {
+                $checked_permissions[$permission_name] = 0;
+            }
+        }
+
+        $forum_name = strip_tags($forum_data['name']);
+
+        if (!empty($default_checked)) {
+            $inheritedText = $lang->newpoints_admin_instances_permissions_form_inherited;
+        } else {
+            $inheritedText = $lang->newpoints_admin_instances_permissions_form_custom;
+        }
+
+        $form_container->output_cell(
+            "<strong>{$forum_name}</strong> <small style=\"vertical-align: middle;\">({$inheritedText})</small>"
+        );
+
+        $field_select = "<div class=\"quick_perm_fields\">\n";
+
+        $field_select .= "<div class=\"enabled\"><ul id=\"fields_enabled_forum_{$forum_id}\">\n";
+
+        foreach ($checked_permissions as $permission_name => $permission_value) {
+            if ($permission_value) {
+                $field_select .= "<li id=\"field-{$permission_name}\">{$field_list[$permission_name]}</li>";
+            }
+        }
+
+        $field_select .= "</ul></div>\n";
+
+        $field_select .= "<div class=\"disabled\"><ul id=\"fields_disabled_forum_{$forum_id}\">\n";
+
+        foreach ($checked_permissions as $permission_name => $permission_value) {
+            if (!$permission_value) {
+                $field_select .= "<li id=\"field-{$permission_name}\">{$field_list[$permission_name]}</li>";
+            }
+        }
+        $field_select .= "</ul></div></div>\n";
+        $field_select .= $form->generate_hidden_field(
+            'fields_forum_' . $forum_id,
+            implode(',', array_keys($checked_permissions, '1')),
+            ['id' => 'fields_forum_' . $forum_id]
+        );
+        $field_select .= $form->generate_hidden_field(
+            'fields_inherit_' . $forum_id,
+            isset($default_checked) ? (int)$default_checked : 0,
+            ['id' => 'fields_inherit_' . $forum_id]
+        );
+        $field_select .= $form->generate_hidden_field(
+            'fields_default_' . $forum_id,
+            implode(',', array_keys($checked_permissions, '1')),
+            ['id' => 'fields_default_' . $forum_id]
+        );
+        $field_select = str_replace("'", "\\'", $field_select);
+        $field_select = str_replace("\n", '', $field_select);
+
+        $field_select = "<script type=\"text/javascript\">
+//<![CDATA[
+document.write('" . str_replace('/', '\/', $field_select) . "');
+//]]>
+</script>\n";
+
+        $field_options = $field_selected = [];
+
+        foreach ($field_list as $permission_name => $permission_title) {
+            $field_options[$permission_name] = $permission_title;
+
+            if ($checked_permissions[$permission_name]) {
+                $field_selected[] = $permission_name;
+            }
+        }
+
+        $field_select .= '<noscript>' . $form->generate_select_box(
+                'fields_forum_' . $forum_id . '[]',
+                $field_options,
+                $field_selected,
+                ['id' => 'fields_forum_' . $forum_id . '[]', 'multiple' => true]
+            ) . "</noscript>\n";
+
+        $form_container->output_cell($field_select, ['colspan' => 2]);
+
+        $permissions_url = url_handler_build(
+                [
+                    'action' => 'forum_permissions',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permissions['permission_id'] ?? 0,
+                    'forum_id' => $forum_id
+                ]
+            ) . '#tab_forum_permissions';
+
+        $modal_url = url_handler_build(
+            [
+                'action' => 'forum_permissions',
+                'instance_id' => $instance_id,
+                'permission_id' => $permissions['permission_id'] ?? 0,
+                'forum_id' => $forum_id,
+                'ajax' => 1
+            ]
+        );
+
+        if (empty($default_checked)) {
+            $form_container->output_cell(
+                "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_edit}</a>",
+                ['class' => 'align_center']
+            );
+
+            $clear_forum_permissions_url = url_handler_build(
+                [
+                    'action' => 'clear_forum_permission',
+                    'instance_id' => $instance_id,
+                    'permission_id' => $permissions['permission_id'],
+                    'my_post_key' => $mybb->post_code
+                ]
+            );
+
+            $form_container->output_cell(
+                "<a href=\"{$clear_forum_permissions_url}\" onclick=\"return AdminCP.deleteConfirmation(this, '{$lang->newpoints_admin_instances_permissions_form_confirm_clear}')\">{$lang->newpoints_admin_instances_permissions_form_clear}</a>",
+                ['class' => 'align_center']
+            );
+        } else {
+            $form_container->output_cell(
+                "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_set}</a>",
+                ['class' => 'align_center', 'colspan' => 2]
+            );
+        }
+
+        $form_container->construct_row(['id' => 'row_' . $forum_id]);
+
+        $forum_ids[] = $forum_id;
+
+        unset($default_checked);
+    }
+
+    $form_container->end();
+
+    $form->output_submit_wrapper(
+        [$form->generate_submit_button($lang->newpoints_admin_instances_permissions_form_button_submit_forums)]
+    );
+
+    $form->end();
+
+    // Write in our JS based field selector
+    echo "<script type=\"text/javascript\">\n<!--\n";
+
+    foreach ($forum_ids as $forum_id) {
+        echo '$(function() { QuickPermEditor.init(\'forum_\' + ' . $forum_id . "); });\n";
+    }
+
+    echo "// -->\n</script>\n";
+
+    echo "</div>\n";
+
+    run_hooks('admin_instances_add_edit_end');
+
+    $page->output_footer();
+} elseif ($mybb->get_input('action') === 'create_column') {
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+    }
+
+    run_hooks('admin_instances_create_column_start');
+
     db_verify_columns(
         [
             'users' => [
-                $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
             ]
         ]
     );
@@ -94,6 +1917,8 @@ if ($mybb->get_input('action') === 'create_column') {
     $page->output_header($lang->newpoints_instances);
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_instances');
+
+    run_hooks('admin_instances_start');
 
     $table = new Table();
 
@@ -117,7 +1942,9 @@ if ($mybb->get_input('action') === 'create_column') {
 
     $permissions_settings = check_admin_permissions(['module' => $page->active_module, 'action' => 'settings'], false);
 
-    foreach (instance_get() as $instance_id => $instance_data) {
+    foreach (
+        instance_get(query_fields: ['users_column_name', 'is_enabled']) as $instance_id => $instance_data
+    ) {
         $table->construct_cell($instance_id, ['class' => 'align_center']);
 
         try {
@@ -130,7 +1957,7 @@ if ($mybb->get_input('action') === 'create_column') {
         } catch (Exception $e) {
         }
 
-        if ($instance_object->column_exists()) {
+        if ($instance_object->users_column_exists()) {
             $table->construct_cell(
                 "<code style='color: darkgreen;'>{$instance_data['users_column_name']}</code>",
                 ['class' => 'align_center']
@@ -142,21 +1969,21 @@ if ($mybb->get_input('action') === 'create_column') {
             );
         }
 
-        $main_file = \Newpoints\Core\get_setting('main_file', $instance_id);
+        $newpoints_file = $instance_object->get_script_file();
 
-        if ($main_file_exists = file_exists(MYBB_ROOT . $main_file)) {
+        if ($main_file_exists = file_exists(MYBB_ROOT . $newpoints_file)) {
             $table->construct_cell(
-                "<code style='color: darkgreen;'>" . $main_file . "</code>",
+                "<code style='color: darkgreen;'>" . $newpoints_file . '</code>',
                 ['class' => 'align_center']
             );
         } else {
             $table->construct_cell(
-                "<code style='color: darkgreen;'>" . $main_file . "</code>",
+                "<code style='color: darkred;'>" . $newpoints_file . '</code>',
                 ['class' => 'align_center']
             );
         }
 
-        if ($instance_data['enabled']) {
+        if ($instance_data['is_enabled']) {
             $phrase = $lang->disable;
 
             $icon = "on.png\" alt=\"({$lang->alt_enabled})\" title=\"{$lang->alt_enabled}";
@@ -187,8 +2014,8 @@ if ($mybb->get_input('action') === 'create_column') {
             'index.php?module=newpoints-instances&amp;action=edit&amp;instance_id=' . $instance_id,
         );
 
-        if ($instance_id !== \Newpoints\Core\INSTANCE_DEFAULT_ID) {
-            if (!$instance_object->column_exists()) {
+        if ($instance_id !== INSTANCE_DEFAULT_ID) {
+            if (!$instance_object->users_column_exists()) {
                 $popup->add_item(
                     $lang->newpoints_instances_thead_options_create_column,
                     'index.php?module=newpoints-instances&amp;action=create_column&amp;instance_id=' . $instance_id,
@@ -196,19 +2023,7 @@ if ($mybb->get_input('action') === 'create_column') {
             }
         }
 
-        if ($main_file_exists && !$instance_data['enabled']) {
-            $popup->add_item(
-                $lang->enable,
-                'index.php?module=newpoints-instances&amp;action=enable&amp;instance_id=' . $instance_id,
-            );
-        } else {
-            $popup->add_item(
-                $lang->disable,
-                'index.php?module=newpoints-instances&amp;action=disable&amp;instance_id=' . $instance_id,
-            );
-        }
-
-        if ($instance_id !== \Newpoints\Core\INSTANCE_DEFAULT_ID) {
+        if ($instance_id !== INSTANCE_DEFAULT_ID) {
             $popup->add_item(
                 $lang->delete,
                 'index.php?module=newpoints-instances&amp;action=delete&amp;instance_id=' . $instance_id,
@@ -220,9 +2035,515 @@ if ($mybb->get_input('action') === 'create_column') {
         $table->construct_row();
     }
 
+    run_hooks('admin_instances_end');
+
     $table->output($lang->newpoints_instances_title);
+
+    $page->output_footer();
 }
 
-run_hooks('admin_instances_terminate');
+/**
+ * @param int $group_id
+ *
+ * @return string
+ */
+function retrieve_single_group_permissions_row(int $group_id, int $instance_id): string
+{
+    global $mybb, $lang;
+    global $tables_data, $groups_cache;
 
-$page->output_footer();
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+    }
+
+    $group_data = $groups_cache[$group_id];
+
+    $existing_permissions = [];
+
+    foreach (
+        $instance_object->permissions_group_get(
+            ["instance_id='{$instance_id}'"],
+            array_keys($tables_data['newpoints_group_permissions'])
+        ) as $existing
+    ) {
+        $existing_permissions[$existing['group_id']] = $existing;
+    }
+
+    $permissions_cache = $instance_object->cache_get_group_permissions();
+
+    $field_list = [];
+
+    foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $field_list[$field_name] = $lang->{'newpoints_user_groups_' . $language_key};
+    }
+
+    $form = new Form('', '', '', 0, '', true);
+
+    $form_container = new FormContainer();
+
+    $permissions = [];
+
+    if ($existing_permissions[$group_id]) {
+        $permissions = $existing_permissions[$group_id];
+
+        $default_checked = false;
+    } elseif ($permissions_cache[$instance_id][$group_id]) {
+        $permissions = $permissions_cache[$instance_id][$group_id];
+
+        $default_checked = true;
+    }
+
+    if (!$permissions) {
+        $permissions = $group_data;
+
+        $default_checked = true;
+    }
+
+    $perms_checked = [];
+
+    foreach ($field_list as $forum_permission => $forum_perm_title) {
+        if ($permissions[$forum_permission] == 1) {
+            $perms_checked[$forum_permission] = 1;
+        } else {
+            $perms_checked[$forum_permission] = 0;
+        }
+    }
+
+    $group_title = htmlspecialchars_uni($group_data['title']);
+
+    if (!empty($default_checked)) {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_inherited;
+    } else {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_custom;
+    }
+
+    $form_container->output_cell(
+        "<strong>{$group_title}</strong> <small style=\"vertical-align: middle;\">({$inherited_text})</small>"
+    );
+
+    $field_select = "<div class=\"quick_perm_fields\">\n";
+
+    $field_select .= "<div class=\"enabled\"><ul id=\"fields_enabled_group_{$group_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 1) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div>\n";
+
+    $field_select .= "<div class=\"disabled\"><ul id=\"fields_disabled_group_{$group_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 0) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div></div>\n";
+
+    $field_select .= $form->generate_hidden_field(
+        'fields_group_' . $group_id,
+        implode(',', array_keys($perms_checked, 1)),
+        ['id' => 'fields_group_' . $group_id]
+    );
+
+    $field_select = str_replace("\n", '', $field_select);
+
+    $form_container->output_cell($field_select, ['colspan' => 2]);
+
+    $permissions_url = url_handler_build(
+            [
+                'action' => 'group_permissions',
+                'instance_id' => $instance_id,
+                'permission_id' => $permissions['permission_id'] ?? 0,
+                'group_id' => $group_id
+            ]
+        ) . '#tab_group_permissions';
+
+    $modal_url = url_handler_build(
+        [
+            'action' => 'group_permissions',
+            'instance_id' => $instance_id,
+            'permission_id' => $permissions['permission_id'] ?? 0,
+            'group_id' => $group_id,
+            'ajax' => 1
+        ]
+    );
+
+    if (empty($default_checked)) {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_edit}</a>",
+            ['class' => 'align_center']
+        );
+
+        $clear_group_permissions_url = url_handler_build(
+            [
+                'action' => 'clear_group_permission',
+                'instance_id' => $instance_id,
+                'permission_id' => $permissions['permission_id'],
+                'my_post_key' => $mybb->post_code
+            ]
+        );
+
+        $form_container->output_cell(
+            "<a href=\"{$clear_group_permissions_url}\" onclick=\"return AdminCP.deleteConfirmation(this, '{$lang->newpoints_admin_instances_permissions_clear_confirm}')\">{$lang->newpoints_admin_instances_permissions_form_clear}</a>",
+            ['class' => 'align_center']
+        );
+    } else {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_set}</a>",
+            ['class' => 'align_center', 'colspan' => 2]
+        );
+    }
+
+    $form_container->construct_row();
+
+    return $form_container->output_row_cells(0, true);
+}
+
+/**
+ * @param int $instance_id
+ */
+function save_quick_group_permissions(int $instance_id, array $permissions_data): void
+{
+    global $db, $inherit, $cache;
+    global $tables_data, $instance_id, $groups_cache;
+
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (Exception $e) {
+        return;
+    }
+
+    $permissions_cache = $instance_object->cache_get_group_permissions();
+
+    $permission_fields = [];
+
+    foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $permission_fields[$field_name] = $field_definition['default'];
+    }
+
+    foreach ($groups_cache as $group_data) {
+        $group_id = (int)$group_data['gid'];
+
+        $existing_permissions = [];
+
+        foreach ($permissions_cache[$instance_id] ?? [] as $instance_permissions) {
+            $existing_permissions[$instance_permissions['group_id']] = $instance_permissions;
+        }
+
+        if (!$existing_permissions) {
+            foreach ($permission_fields as $field => $value) {
+                $existing_permissions[$field] = $group_data[$field];
+            }
+        }
+
+        $instance_object->permissions_group_delete(
+            (int)($instance_object->permissions_group_get(
+                ["instance_id='{$instance_id}'", "group_id='{$group_id}'"],
+                query_options: ['limit' => 1]
+            )['permission_id'] ?? 0)
+        );
+
+        // Only insert the new ones if we're using group permissions
+        if (empty($inherit[$group_id])) {
+            $insert_data = [
+                'instance_id' => $instance_id,
+                'group_id' => $group_id,
+            ];
+
+            foreach ($permissions_data as $permissions_name => $permissions_value) {
+                if (isset($permissions_value[$group_id])) {
+                    $insert_data[$permissions_name] = $permissions_value[$group_id];
+                }
+            }
+
+            foreach ($permission_fields as $permissions_name => $value) {
+                if (isset($insert_data[$permissions_name])) {
+                    continue;
+                }
+
+                $insert_data[$permissions_name] = isset($existing_permissions[$permissions_name]) ? (int)$existing_permissions[$permissions_name] : 0;
+            }
+
+            $instance_object->permissions_group_insert($insert_data);
+        }
+    }
+
+    $cache->update_usergroups();
+
+    $cache->update_forumpermissions();
+}
+
+/**
+ * @param int $group_id
+ *
+ * @return string
+ */
+function retrieve_single_forum_permissions_row(int $forum_id, int $instance_id): string
+{
+    global $mybb, $lang;
+    global $tables_data, $forums_cache;
+
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+    }
+
+    $forum_data = $forums_cache[$forum_id];
+
+    $existing_permissions = [];
+
+    foreach (
+        $instance_object->permissions_forum_get(
+            ["instance_id='{$instance_id}'"],
+            array_keys($tables_data['newpoints_forum_permissions'])
+        ) as $existing
+    ) {
+        $existing_permissions[$existing['forum_id']] = $existing;
+    }
+
+    $permissions_cache = $instance_object->cache_get_group_permissions();
+
+    $field_list = [];
+
+    foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $field_list[$field_name] = $lang->{'newpoints_field_newpoints_' . $language_key};
+    }
+
+    $form = new Form('', '', '', 0, '', true);
+
+    $form_container = new FormContainer();
+
+    $permissions = [];
+
+    if ($existing_permissions[$forum_id]) {
+        $permissions = $existing_permissions[$forum_id];
+
+        $default_checked = false;
+    } elseif ($permissions_cache[$instance_id][$forum_id]) {
+        $permissions = $permissions_cache[$instance_id][$forum_id];
+
+        $default_checked = true;
+    }
+
+    if (!$permissions) {
+        $permissions = $forum_data;
+
+        $default_checked = true;
+    }
+
+    $perms_checked = [];
+
+    foreach ($field_list as $forum_permission => $forum_perm_title) {
+        if ($permissions[$forum_permission] == 1) {
+            $perms_checked[$forum_permission] = 1;
+        } else {
+            $perms_checked[$forum_permission] = 0;
+        }
+    }
+
+    $forum_title = strip_tags($forum_data['name']);
+
+    if (!empty($default_checked)) {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_inherited;
+    } else {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_custom;
+    }
+
+    $form_container->output_cell(
+        "<strong>{$forum_title}</strong> <small style=\"vertical-align: middle;\">({$inherited_text})</small>"
+    );
+
+    $field_select = "<div class=\"quick_perm_fields\">\n";
+
+    $field_select .= "<div class=\"enabled\"><ul id=\"fields_enabled_forum_{$forum_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 1) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div>\n";
+
+    $field_select .= "<div class=\"disabled\"><ul id=\"fields_disabled_forum_{$forum_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 0) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div></div>\n";
+
+    $field_select .= $form->generate_hidden_field(
+        'fields_forum_' . $forum_id,
+        implode(',', array_keys($perms_checked, 1)),
+        ['id' => 'fields_forum_' . $forum_id]
+    );
+
+    $field_select = str_replace("\n", '', $field_select);
+
+    $form_container->output_cell($field_select, ['colspan' => 2]);
+
+    $permissions_url = url_handler_build(
+            [
+                'action' => 'forum_permissions',
+                'instance_id' => $instance_id,
+                'permission_id' => $permissions['permission_id'] ?? 0,
+                'forum_id' => $forum_id
+            ]
+        ) . '#tab_forum_permissions';
+
+    $modal_url = url_handler_build(
+        [
+            'action' => 'forum_permissions',
+            'instance_id' => $instance_id,
+            'permission_id' => $permissions['permission_id'] ?? 0,
+            'forum_id' => $forum_id,
+            'ajax' => 1
+        ]
+    );
+
+    if (empty($default_checked)) {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_edit}</a>",
+            ['class' => 'align_center']
+        );
+
+        $clear_forum_permissions_url = url_handler_build(
+            [
+                'action' => 'clear_forum_permission',
+                'instance_id' => $instance_id,
+                'permission_id' => $permissions['permission_id'],
+                'my_post_key' => $mybb->post_code
+            ]
+        );
+
+        $form_container->output_cell(
+            "<a href=\"{$clear_forum_permissions_url}\" onclick=\"return AdminCP.deleteConfirmation(this, '{$lang->newpoints_admin_instances_permissions_clear_confirm}')\">{$lang->newpoints_admin_instances_permissions_form_clear}</a>",
+            ['class' => 'align_center']
+        );
+    } else {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_set}</a>",
+            ['class' => 'align_center', 'colspan' => 2]
+        );
+    }
+
+    $form_container->construct_row();
+
+    return $form_container->output_row_cells(0, true);
+}
+
+/**
+ * @param int $instance_id
+ */
+function save_quick_forum_permissions(int $instance_id, array $permissions_data): void
+{
+    global $db, $inherit, $cache;
+    global $tables_data, $instance_id, $forums_cache;
+
+    try {
+        $instance_object = instance_object($instance_id);
+    } catch (Exception $e) {
+        return;
+    }
+
+    $permissions_cache = $instance_object->cache_get_forum_permissions();
+
+    $permission_fields = [];
+
+    foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $permission_fields[$field_name] = $field_definition['default'];
+    }
+
+    foreach ($forums_cache as $forum_data) {
+        $forum_id = (int)$forum_data['fid'];
+
+        $existing_permissions = [];
+
+        foreach ($permissions_cache[$instance_id] ?? [] as $instance_permissions) {
+            $existing_permissions[$instance_permissions['forum_id']] = $instance_permissions;
+        }
+
+        if (!$existing_permissions) {
+            foreach ($permission_fields as $field => $value) {
+                $forum_permissions = fetch_forum_permissions(
+                    $forum_id,
+                    '',
+                    []
+                );
+
+                $existing_permissions[$field] = $forum_permissions[$field] ?? TABLES_DATA['newpoints_forum_permissions'][$field]['default'];
+            }
+        }
+
+        $instance_object->permissions_forum_delete(
+            (int)($instance_object->permissions_forum_get(
+                ["instance_id='{$instance_id}'", "forum_id='{$forum_id}'"],
+                query_options: ['limit' => 1]
+            )['permission_id'] ?? 0)
+        );
+
+        // Only insert the new ones if we're using forum permissions
+        if (empty($inherit[$forum_id])) {
+            $insert_data = [
+                'instance_id' => $instance_id,
+                'forum_id' => $forum_id,
+            ];
+
+            foreach ($permissions_data as $permissions_name => $permissions_value) {
+                if (isset($permissions_value[$forum_id])) {
+                    $insert_data[$permissions_name] = $permissions_value[$forum_id];
+                }
+            }
+
+            foreach ($permission_fields as $permissions_name => $value) {
+                if (isset($insert_data[$permissions_name])) {
+                    continue;
+                }
+
+                $insert_data[$permissions_name] = isset($existing_permissions[$permissions_name]) ? (int)$existing_permissions[$permissions_name] : 0;
+            }
+
+            $instance_object->permissions_forum_insert($insert_data);
+        }
+    }
+
+    $cache->update_usergroups();
+
+    $cache->update_forumpermissions();
+}
+
+//todo review hooks here

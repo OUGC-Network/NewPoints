@@ -34,6 +34,8 @@ use function Newpoints\Admin\db_verify_tables;
 use function Newpoints\Admin\my_alerts_install;
 use function Newpoints\Admin\plugin_library_load;
 use function Newpoints\Core\get_setting;
+use function Newpoints\Core\instance_get;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
@@ -43,6 +45,8 @@ use function Newpoints\Core\templates_rebuild;
 use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_get;
 use function Newpoints\Core\url_handler_set;
+
+use const Newpoints\Core\FIELDS_DATA;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -183,16 +187,16 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
     db_verify_tables();
 
-    foreach (\Newpoints\Core\instance_get() as $instance_id => $instance_data) {
+    foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = \Newpoints\Core\instance_object($instance_id);
+            $instance_object = instance_object($instance_id);
         } catch (InvalidArgumentException $e) {
         }
 
         db_verify_columns(
             [
                 'users' => [
-                    $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                    $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
                 ]
             ]
         );

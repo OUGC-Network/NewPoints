@@ -1,8 +1,4 @@
 {
-  "curname": {
-    "type": "text",
-    "value": "Points"
-  },
   "curprefix": {
     "type": "text",
     "value": ""
@@ -22,18 +18,6 @@
   "group_rate_primary_only": {
     "type": "yesno",
     "value": 1
-  },
-  "file": {
-    "type": "text",
-    "value": "newpoints.php"
-  },
-  "my_alerts_enabled": {
-    "type": "yesno",
-    "value": 0
-  },
-  "pm_alerts_enabled": {
-    "type": "yesno",
-    "value": 0
   },
   "plugins_repositories": {
     "type": "textarea",

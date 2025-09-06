@@ -210,8 +210,11 @@ $l['newpoints_instances_thead_options_create_column'] = 'Create Column';
 
 $l['newpoints_instances_create_column_success'] = 'The users <code>{1}</code> column for the {2} instance has been created successfully.';
 
-$l['newpoints_instances_new'] = 'New';
-$l['newpoints_instances_new_description'] = 'Create a new NewPoints instance.';
+$l['newpoints_instances_add'] = 'Add';
+$l['newpoints_instances_add_description'] = 'Add a new NewPoints instance.';
+
+$l['newpoints_instances_edit'] = 'Edit';
+$l['newpoints_instances_edit_description'] = 'Update a new NewPoints instance.';
 
 ///////////////// Upgrades
 $l['newpoints_upgrades'] = 'Upgrades';
@@ -247,8 +250,6 @@ $l['setting_newpoints_stats_menu_order_desc'] = 'Order in the NewPoints menu ite
 
 $l['setting_group_newpoints_main'] = 'Main';
 $l['setting_group_newpoints_main_desc'] = 'These settings come with NewPoints by default.';
-$l['setting_newpoints_main_curname'] = 'Currency Name';
-$l['setting_newpoints_main_curname_desc'] = 'Currency name to use in the forums.';
 $l['setting_newpoints_main_curprefix'] = 'Currency Prefix';
 $l['setting_newpoints_main_curprefix_desc'] = 'Currency prefix to render before the format of points.';
 $l['setting_newpoints_main_cursuffix'] = 'Currency Suffix';
@@ -259,12 +260,6 @@ $l['setting_newpoints_main_stats_richestusers'] = 'Stats: Richest Users';
 $l['setting_newpoints_main_stats_richestusers_desc'] = 'Maximum number of richest users to display in the stats page.';
 $l['setting_newpoints_main_group_rate_primary_only'] = 'Group Rate For Primary Group Only';
 $l['setting_newpoints_main_group_rate_primary_only_desc'] = 'If you set this to yes, group rate rules will be calculated using only the primary user group. If you turn this off, all group rate rules wil be pondered and the closest value to <code>1</code> will always be used.';
-$l['setting_newpoints_main_file'] = 'Main File Name';
-$l['setting_newpoints_main_file_desc'] = 'If you rename the main NewPoints file, update this setting. Default: <code>newpoints.php</code>';
-$l['setting_newpoints_main_my_alerts_enabled'] = 'Enable MyAlerts Integration';
-$l['setting_newpoints_main_my_alerts_enabled_desc'] = 'If you enable this, users will be able to get MyAlerts notifications when receiving or losing points. This setting also applies to NewPoints plugins that support alerts.';
-$l['setting_newpoints_main_pm_alerts_enabled'] = 'Enable Private Message Notifications';
-$l['setting_newpoints_main_pm_alerts_enabled_desc'] = 'Enable this to send PM notifications when users receive or lose points.';
 $l['setting_newpoints_main_plugins_repositories'] = 'Plugins Repositories';
 $l['setting_newpoints_main_plugins_repositories_desc'] = 'Insert your custom plugin repositories for updates. Leave as default if unsure. Default <code>community.mybb.com</code>';
 
@@ -292,30 +287,52 @@ $l['newpoints_user_groups_can_see_stats'] = 'Can see the stats page?';
 $l['newpoints_user_groups_can_donate'] = 'Can donate points?';
 
 $l['newpoints_user_groups_rate_addition'] = 'Group Rate for Additions<br /><small class="input">The income rate for this group, used when adding points to users (i.e: income earnings). Default is <code>1</code>.</small><br />';
+$l['newpoints_user_groups_rate_addition_description'] = '';
 $l['newpoints_user_groups_rate_subtraction'] = 'Group Rate for Subtraction <code style="color: darkorange;">This works as a percentage. So "0" = user does not pay anything "100" = users pay full points, "200" = user pays twice the points, etc.</code><br /><small class="input">The income rate for this group, used when subtracting points from users (i.e: selling, purchasing, etc). Default is <code>100</code>.</small><br />';
+$l['newpoints_user_groups_rate_subtraction_description'] = '';
 
 $l['newpoints_user_groups_income_thread'] = 'New Thread<br /><small class="input">Amount of points received for each new thread.</small><br />';
+$l['newpoints_user_groups_income_thread_description'] = '';
 $l['newpoints_user_groups_income_thread_reply'] = 'New Thread Reply<br /><small class="input">Amount of points received for each reply to a thread.</small><br />';
+$l['newpoints_user_groups_income_thread_reply_description'] = '';
 $l['newpoints_user_groups_income_thread_rate'] = 'New Thread Rate<br /><small class="input">Amount of points received for each new thread rate received.</small><br />';
+$l['newpoints_user_groups_income_thread_rate_description'] = '';
 $l['newpoints_user_groups_income_post'] = 'New Post<br /><small class="input">Amount of points received for each new post.</small><br />';
+$l['newpoints_user_groups_income_post_description'] = '';
 $l['newpoints_user_groups_income_post_minimum_characters'] = 'Minimum Characters<br /><small class="input">Minimum characters required in order to receive the amount of points per character for new threads or posts.</small><br />';
+$l['newpoints_user_groups_income_post_minimum_characters_description'] = '';
 $l['newpoints_user_groups_income_post_character'] = 'Post Character<br /><small class="input">Amount of points received for each character in a thread or post.</small><br />';
+$l['newpoints_user_groups_income_post_character_description'] = '';
 $l['newpoints_user_groups_income_page_view'] = 'Page View<br /><small class="input">Amount of points received for each page view.</small><br />';
+$l['newpoints_user_groups_income_page_view_description'] = '';
 $l['newpoints_user_groups_income_visit'] = 'Visit<br /><small class="input">Amount of points received for each visit.</small><br />';
+$l['newpoints_user_groups_income_visit_description'] = '';
 $l['newpoints_user_groups_income_visit_minutes'] = 'Visit Interval<br /><small class="input">Time in minutes that the user must wait to receive the points again.</small><br />';
+$l['newpoints_user_groups_income_visit_minutes_description'] = '';
 $l['newpoints_user_groups_income_poll'] = 'New Poll<br /><small class="input">Amount of points received for each new poll.</small><br />';
+$l['newpoints_user_groups_income_poll_description'] = '';
 $l['newpoints_user_groups_income_poll_vote'] = 'New Poll Vote<br /><small class="input">Amount of points received for each poll vote.</small><br />';
+$l['newpoints_user_groups_income_poll_vote_description'] = '';
 $l['newpoints_user_groups_income_user_allowance'] = 'User Allowance<br /><small class="input">Amount of points received.</small><br />';
+$l['newpoints_user_groups_income_user_allowance_description'] = '';
 $l['newpoints_user_groups_income_user_allowance_minutes'] = 'User Allowance Interval<br /><small class="input">Time in minutes that the user must wait to receive the points again.</small><br />';
+$l['newpoints_user_groups_income_user_allowance_minutes_description'] = '';
 $l['newpoints_user_groups_income_user_allowance_primary_only'] = 'Grant allowance if this is the user primary group only?';
+$l['newpoints_user_groups_income_user_allowance_primary_only_description'] = '';
 $l['newpoints_user_groups_income_user_registration'] = 'New Registration<br /><small class="input">Amount of points received when users register to the forum.</small><br />';
+$l['newpoints_user_groups_income_user_registration_description'] = '';
 $l['newpoints_user_groups_income_user_referral'] = 'New Referral<br /><small class="input">Amount of points received for each user referred to the forum.</small><br />';
+$l['newpoints_user_groups_income_user_referral_description'] = '';
 $l['newpoints_user_groups_income_private_message'] = 'New Private Message<br /><small class="input">Amount of points received for each private message sent.</small><br />';
+$l['newpoints_user_groups_income_private_message_description'] = '';
 
 $l['newpoints_forums'] = 'NewPoints Configuration';
-$l['newpoints_forums_rate'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
-$l['newpoints_forums_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
-$l['newpoints_forums_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
+$l['newpoints_field_newpoints_rate_addition'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
+$l['newpoints_field_newpoints_rate_addition_description'] = '';
+$l['newpoints_field_newpoints_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
+$l['newpoints_field_newpoints_view_lock_points_description'] = '';
+$l['newpoints_field_newpoints_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
+$l['newpoints_field_newpoints_post_lock_points_description'] = '';
 
 $l['newpoints_users_amount'] = 'NewPoints Amount';
 
@@ -329,4 +346,78 @@ $l['newpoints_users_title'] = 'NewPoints Information';
 $l['newpoints_user_newpoints'] = 'NewPoints<br /><small class="input">Update the curren NewPoints for this user.</small><br />';
 
 $l['group_newpoints'] = 'NewPoints';
-$l['newpoints_field_newpoints_can_get_points'] = 'Can get points posting in this forum?';
+$l['newpoints_field_newpoints_can_get_points'] = 'Can get points posting in this forum?';$l['newpoints_field_newpoints_can_get_points_description'] = 'Can get points posting in this forum?';
+
+$l = array_merge($l, [
+    'newpoints_admin_instances_success_new_instance' => 'The NewPoints instance was successfully added.',
+    'newpoints_admin_instances_success_updated_instance' => 'The NewPoints instance settings were successfully updated.',
+    'newpoints_admin_instances_success_instance_edit_permissions_groups' => 'The instance custom group permissions were successfully edited.',
+    'newpoints_admin_instances_success_instance_edit_permissions_forums' => 'The instance custom forum permissions were successfully edited.',
+
+    'newpoints_admin_instances_error_duplicated_users_column_name' => 'The selected users column name is already in use.',
+    'newpoints_admin_instances_error_duplicated_script_file' => 'The selected script file is already in use.',
+
+    'newpoints_admin_instances_edit_tabs_main' => 'Main',
+    'newpoints_admin_instances_edit_tabs_permissions' => 'Group Permissions',
+    'newpoints_admin_instances_edit_tabs_forum_permissions' => 'Forum Permissions',
+
+    'newpoints_admin_instances_edit' => 'Edit',
+    'newpoints_admin_instances_edit_description' => 'Edit a new instance.',
+
+    'newpoints_admin_instances_edit_currency_name_singular' => 'Display Name (Singular)',
+    'newpoints_admin_instances_edit_currency_name_singular_description' => 'Enter the display name for this instance (singular).',
+    'newpoints_admin_instances_edit_currency_name_plural' => 'Display Name (Plural)',
+    'newpoints_admin_instances_edit_currency_name_plural_description' => 'Enter the display name for this instance (plural).',
+    'newpoints_admin_instances_edit_users_column_name' => 'Users Column Name',
+    'newpoints_admin_instances_edit_users_column_name_description' => 'Enter the name of the column in the users table that will store the NewPoints for this instance.',
+    'newpoints_admin_instances_edit_enable_notifications_private_message' => 'Enable Private Message Notifications?',
+    'newpoints_admin_instances_edit_enable_notifications_private_message_description' => 'If you enable this, users will receive a private message when they gain or lose points in this instance.',
+    'newpoints_admin_instances_edit_enable_notifications_alert' => 'Enable MyAlerts Notifications?',
+    'newpoints_admin_instances_edit_enable_notifications_alert_description' => 'If you enable this, users will receive a MyAlerts notification when they gain or lose points in this instance.',
+    'newpoints_admin_instances_edit_is_enabled' => 'Enabled?',
+    'newpoints_admin_instances_edit_is_enabled_description' => 'Select whether you want this instance to be enabled or disabled.',
+    'newpoints_admin_instances_edit_display_order' => 'Display Order',
+    'newpoints_admin_instances_edit_display_order_description' => 'Enter the display order for this instance.',
+    'newpoints_admin_instances_edit_script_name' => 'Script Name',
+    'newpoints_admin_instances_edit_script_name_description' => 'Script for this instance. Default: <code>newpoints.php</code>.',
+
+    'newpoints_admin_instances_edit_button_submit' => 'Submit',
+    'newpoints_admin_instances_edit_button_reset' => 'Reset',
+
+    'newpoints_admin_instances_permissions_form_group' => 'Group',
+    'newpoints_admin_instances_permissions_form_group_permissions' => 'Group Permissions',
+    'newpoints_admin_instances_permissions_form_allowed_actions' => 'Overview: Allowed Actions',
+    'newpoints_admin_instances_permissions_form_disallowed_actions' => 'Overview: Disallowed Actions',
+    'newpoints_admin_instances_permissions_form_inherited' => 'inherited',
+    'newpoints_admin_instances_permissions_form_custom' => 'custom',
+    'newpoints_admin_instances_permissions_form_edit' => 'Edit Custom Permissions',
+    'newpoints_admin_instances_permissions_form_clear' => 'Clear Custom Permissions',
+    'newpoints_admin_instances_permissions_form_set' => 'Set Custom Permissions',
+    'newpoints_admin_instances_permissions_form_save_groups' => 'Save Group Permissions',
+
+    'newpoints_admin_instances_permissions_form_custom_permissions' => 'Custom Permissions',
+    'newpoints_admin_instances_permissions_form_custom_permissions_description' => 'Here you can modify the full custom permissions for an individual group for a single instance.',
+
+    'newpoints_admin_instances_permissions_form_custom_permissions_success' => 'The instance custom group permissions have been saved successfully.',
+
+    'newpoints_admin_instances_permissions_form_confirm_clear' => 'Are you sure you wish to clear this custom permission?',
+
+    'newpoints_admin_instances_permissions_form_button_submit_groups' => 'Save Group Permissions',
+
+    'newpoints_admin_instances_permissions_clear_confirm' => 'Are you sure you wish to clear this custom permission?',
+    'newpoints_admin_instances_permissions_clear_success' => 'The custom group permissions for this instance have been cleared successfully.',
+
+    'newpoints_user_groups_general' => 'General',
+    'newpoints_user_groups_rates' => 'Rates',
+    'newpoints_user_groups_income' => 'Income',
+
+    'newpoints_admin_instances_permissions_form_forum' => 'Forum',
+    'newpoints_admin_instances_permissions_form_forum_permissions' => 'Forum Permissions',
+    'newpoints_admin_instances_permissions_form_save_forums' => 'Save Forum Permissions',
+
+    'newpoints_admin_instances_permissions_form_button_submit_forums' => 'Save Forum Permissions',
+
+    'newpoints_forums_general' => 'General',
+    'newpoints_forums_rates' => 'Rates',
+    'newpoints_forums_income' => 'Income',
+]);

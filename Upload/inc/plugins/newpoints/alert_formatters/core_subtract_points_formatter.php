@@ -31,13 +31,13 @@ declare(strict_types=1);
 
 namespace NewPoints\MyAlerts\Formatters;
 
+use Exception;
 use MybbStuff_MyAlerts_Entity_Alert;
 use MybbStuff_MyAlerts_Formatter_AbstractFormatter;
 
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_get;
-use function Newpoints\Core\main_file_name;
-use function Newpoints\Core\points_format;
 
 class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
@@ -55,17 +55,27 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
      */
     public function formatAlert(MybbStuff_MyAlerts_Entity_Alert $alert, array $outputAlert): string
     {
-        $details = $alert->toArray();
+        $instance_id = (int)($alert->getExtraDetails()['instance_id'] ?? 0);
 
-        $log_id = (int)$details['object_id'];
+        try {
+            $instance_object = instance_object($instance_id);
 
-        $log_data = log_get($log_id);
+            $details = $alert->toArray();
 
-        return $this->lang->sprintf(
-            $this->lang->newpoints_alert_text_core_subtract_points,
-            $outputAlert['username'],
-            points_format((float)$log_data['points'])
-        );
+            $log_id = (int)$details['object_id'];
+
+            $log_data = log_get($log_id, $instance_id);
+
+            return $this->lang->sprintf(
+                $this->lang->newpoints_alert_text_core_subtract_points,
+                $instance_object->get_display_name_upper(),
+                $instance_object->get_display_name_lower(),
+                $outputAlert['username'],
+                $instance_object->points_format((float)$log_data['points'])
+            );
+        } catch (Exception $e) {
+            return '';
+        }
     }
 
     /**
@@ -77,8 +87,16 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
      */
     public function buildShowLink(MybbStuff_MyAlerts_Entity_Alert $alert): string
     {
+        $instance_id = (int)($alert->getExtraDetails()['instance_id'] ?? 0);
+
         global $settings;
 
-        return $settings['bburl'] . '/' . main_file_name();
+        try {
+            $instance_object = instance_object($instance_id);
+
+            return $settings['bburl'] . '/' . $instance_object->get_script_file();
+        } catch (Exception $e) {
+            return $settings['bburl'];
+        }
     }
 }

@@ -175,14 +175,21 @@ Follow the next steps in order to update your copy of this plugin.
 
 To display NewPoints data it is required that you edit the following template for each of your themes.
 
-1. Place `{$newpoints_user_balance_formatted}` or `{$GLOBALS['newpoints_user_balance_formatted']}` in any template to
-   display the current user points.
-2. Place `{$newpoints_profile_user_balance_formatted}` or `{$GLOBALS['newpoints_profile_user_balance_formatted']}` in
-   any `member_profile*` template to display the profile user points.
+1. Place `{$newpoints_globals['newpoints_user_balance_formatted']}` or
+   `{$GLOBALS['newpoints_globals']['newpoints_user_balance_formatted']}` in any template to display the current user
+   points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name. Note
+   that `{$newpoints_user_balance_formatted}` and `{$mypoints}` has been deprecated and will be removed in
+   the future.
+2. Place `{$memprofile['newpoints_user_balance_formatted']}` or
+   `{$GLOBALS['memprofile']['newpoints_user_balance_formatted']}` in any `member_profile*` template to display the
+   profile user points. Where `newpoints` in
+   `newpoints_user_balance_formatted` is the instance users column name. Note that
+   `{$newpoints_profile_user_balance_formatted}` and `{$points}` has been deprecated and will be removed in the future.
 3. Place `{$post['newpoints_postbit']}` in the `postbit` or `postbit_classic` templates to display the post user
    NewPoints details.
-4. Place `{$post['newpoints_balance_formatted']}` in the `postbit` or `postbit_classic` templates to display the post
-   user points.
+4. Place `{$post['newpoints_user_balance_formatted']}` in the `postbit` or `postbit_classic` templates to display the
+   post user points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name. Note
+   that `{$post['newpoints_balance_formatted']}` and `{$points}` has been deprecated and will be removed in the future.
 5. Place `<!--NEWPOINTS_POST_USER_DETAILS-->` in the `postbit_author_user` template to display the post user NewPoints
    details inside the author template.
 6. Place `<!--NEWPOINTS_POST_USER_POINTS-->` in the `postbit_author_user` template to display the post user points
@@ -191,8 +198,10 @@ To display NewPoints data it is required that you edit the following template fo
    NewPoints details.
 8. Place `{$newpoints_header_menu}` after `{$menu_calendar}`in the `header` template to display a link to the NewPoints
    main page.
-9. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
-   `memberlist_user` template to display the user NewPoints amount formatted.
+9. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_user_balance_formatted']}</td>` before
+   `{$referral_bit}` in the `memberlist_user` template to display the user NewPoints amount formatted. Where `newpoints`
+   in `newpoints_user_balance_formatted` is the instance users column name. Note that `{$user['newpoints_formatted']}`
+   and `{$user['newpoints_formatted']}` has been deprecated and will be removed in the future.
 10. Place
     `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
     after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
@@ -229,7 +238,7 @@ configuration. Use the setting key as shown below:
 
 ```PHP
 define('Newpoints\Core\SETTINGS', [
-    'main_file' => 'newpoints.php',
+    'disable_plugins' => true
 ]);
 ```
 

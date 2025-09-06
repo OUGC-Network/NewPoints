@@ -2,7 +2,7 @@
 
 /***************************************************************************
  *
- *    NewPoints Hello plugin (/inc/plugins/newpoints/languages/english/newpoints_hello.lang.php)
+ *    NewPoints Hello plugin (/inc/plugins/newpoints/languages/espanol/newpoints_hello.lang.php)
  *    Author: Pirata Nervo
  *    Copyright: © 2009 Pirata Nervo
  *    Copyright: © 2024 Omar Gonzalez
@@ -27,4 +27,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-$l['newpoints_hello_message'] = '<p>Hello World!<br />This is a sample NewPoints plugin that displays this message on all pages. As you can see, it works just like MyBB plugins do. This plugin is enabled for the {1} instance.</p>';
+$l['newpoints_hello_message'] = '<p>Hello World!<br />Este es un complemento muestra para NewPoints que muestra un mensaje en todas las paginas. Como puedes observar, el funcionamiento es similar a un complemento para MyBB. Este complemento esta habilitado para la instancia </p>';

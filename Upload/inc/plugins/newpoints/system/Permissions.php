@@ -37,4 +37,7 @@ class Permissions
     public const CanSeePage = 'newpoints_can_see_page';
     public const CanSeeStats = 'newpoints_can_see_stats';
     public const CanDonate = 'newpoints_can_donate';
+    public const Rate = 'newpoints_rate_addition';
+    public const ViewLockCost = 'newpoints_view_lock_points';
+    public const PostLockCost = 'newpoints_post_lock_points';
 }

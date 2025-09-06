@@ -181,8 +181,8 @@ $l['newpoints_log_pm_add_message'] = 'Hola {3}, {4} {2} fueron añadidos a tu cu
 $l['newpoints_log_pm_subtract_subject'] = '{3} {2} fueron restados de tu cuenta.';
 $l['newpoints_log_pm_subtract_message'] = 'Hola {3}, {4} {2} fueron restados de tu cuenta.';
 
-$l['newpoints_alert_text_core_add_points'] = '{2} fueron añadidos a tu cuenta.';
-$l['newpoints_alert_text_core_subtract_points'] = '{2} fueron restados de tu cuenta.';
+$l['newpoints_alert_text_core_add_points'] = '{4} {1} fueron añadidos a tu cuenta.';
+$l['newpoints_alert_text_core_subtract_points'] = '{4} {1} fueron restados de tu cuenta.';
 
 $l['myalerts_setting_newpoints_core_add_points'] = '¿Recibir alerta al recibir puntos?';
 $l['myalerts_setting_newpoints_core_subtract_points'] = '¿Recibir alerta al perder puntos?';

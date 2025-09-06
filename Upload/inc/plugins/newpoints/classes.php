@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace Newpoints\Core;
 
+use Exception;
+
 use const Newpoints\DECIMAL_DATA_TYPE_SIZE;
 use const Newpoints\DECIMAL_DATA_TYPE_STEP;
 
@@ -46,6 +48,8 @@ const TASK_DEACTIVATE = 0;
 
 const TASK_DELETE = -1;
 
+const FORM_TYPE_TEXT_FIELD = 'text_field';
+
 const FORM_TYPE_CHECK_BOX = 'check_box';
 
 const FORM_TYPE_CHECK_BOX_LEGACY = 'checkBox';
@@ -54,13 +58,15 @@ const FORM_TYPE_NUMERIC_FIELD = 'numeric_field';
 
 const FORM_TYPE_NUMERIC_FIELD_LEGACY = 'numericField';
 
-const FORM_TYPE_SELECT_FIELD = 'select_field';
-
 const FORM_TYPE_SELECT_FIELD_LEGACY = 'selectField';
 
 const FORM_TYPE_PHP_CODE = 'php_function';
 
 const FORM_TYPE_PHP_CODE_LEGACY = 'phpFunction';
+
+const FORM_TYPE_SELECT_FIELD = 'select_field';
+
+const FORM_TYPE_YES_NO_FIELD = 'yes_no_field';
 
 const POST_VISIBLE_STATUS_DRAFT = -2;
 
@@ -122,33 +128,97 @@ const PRIVATE_MESSAGE_CURRENT_USER_ID = 0;
 
 const INSTANCE_DEFAULT_ID = 1;
 
+const ALL_UNLIMITED_VALUE = -1;
+
+const GUEST_GROUP_ID = 1;
+
 const FORUM_PERMISSIONS = [
     Permissions::CanGetPoints => [
         'type' => 'TINYINT',
         'unsigned' => true,
+        'default' => 0,
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'dragging_permission' => true,
+        'form_category' => 'general',
+    ],
+    Permissions::Rate => [
+        'type' => 'DECIMAL',
+        'unsigned' => true,
+        'size' => DECIMAL_DATA_TYPE_SIZE,
         'default' => 1,
-        'form_type' => FORM_TYPE_CHECK_BOX
-    ]
+        'form_type' => FORM_TYPE_NUMERIC_FIELD,
+        'is_permission' => true,
+        'form_category' => 'rates',
+        'form_options' => [
+            //'min' => 0,
+            'step' => DECIMAL_DATA_TYPE_STEP,
+        ]
+    ],
+    Permissions::ViewLockCost => [
+        'type' => 'DECIMAL',
+        'unsigned' => true,
+        'size' => DECIMAL_DATA_TYPE_SIZE,
+        'default' => 0,
+        'form_type' => FORM_TYPE_NUMERIC_FIELD,
+        'is_permission' => true,
+        'form_category' => 'rates',
+        'form_options' => [
+            //'min' => 0,
+            'step' => DECIMAL_DATA_TYPE_STEP,
+        ]
+    ],
+    Permissions::PostLockCost => [
+        'type' => 'DECIMAL',
+        'unsigned' => true,
+        'size' => DECIMAL_DATA_TYPE_SIZE,
+        'default' => 0,
+        'form_type' => FORM_TYPE_NUMERIC_FIELD,
+        'is_permission' => true,
+        'form_category' => 'rates',
+        'form_options' => [
+            //'min' => 0,
+            'step' => DECIMAL_DATA_TYPE_STEP,
+        ]
+    ],
 ];
 
 const GROUP_PERMISSIONS = [
+    Permissions::CanGetPoints => [
+        'type' => 'TINYINT',
+        'unsigned' => true,
+        'default' => 0,
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'dragging_permission' => true,
+        'form_category' => 'general',
+    ],
     Permissions::CanSeePage => [
         'type' => 'TINYINT',
         'unsigned' => true,
-        'default' => 1,
-        'form_type' => FORM_TYPE_CHECK_BOX
+        'default' => 0,
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'dragging_permission' => true,
+        'form_category' => 'general',
     ],
     Permissions::CanSeeStats => [
         'type' => 'TINYINT',
         'unsigned' => true,
-        'default' => 1,
-        'form_type' => FORM_TYPE_CHECK_BOX
+        'default' => 0,
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'dragging_permission' => true,
+        'form_category' => 'general',
     ],
     Permissions::CanDonate => [
         'type' => 'TINYINT',
         'unsigned' => true,
         'default' => 0,
-        'form_type' => FORM_TYPE_CHECK_BOX
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'dragging_permission' => true,
+        'form_category' => 'general',
     ],
     IncomeRates::RateAddition => [
         'type' => 'DECIMAL',
@@ -159,7 +229,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'rates',
     ],
     IncomeRates::RateSubtraction => [
         'type' => 'INT',
@@ -168,7 +240,9 @@ const GROUP_PERMISSIONS = [
         'form_type' => FORM_TYPE_NUMERIC_FIELD,
         'form_options' => [
             //'max' => 100,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'rates',
     ],
     IncomePermissions::UserIncomeThread => [
         'type' => 'DECIMAL',
@@ -179,7 +253,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeThreadReply => [
         'type' => 'DECIMAL',
@@ -190,7 +266,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeThreadRate => [
         'type' => 'DECIMAL',
@@ -201,7 +279,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePost => [
         'type' => 'DECIMAL',
@@ -212,13 +292,18 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePostMinimumCharacters => [
         'type' => 'INT',
         'unsigned' => true,
         'default' => 0,
         'form_type' => FORM_TYPE_NUMERIC_FIELD,
+
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePostCharacter => [
         'type' => 'DECIMAL',
@@ -229,7 +314,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePageView => [
         'type' => 'DECIMAL',
@@ -240,7 +327,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeVisit => [
         'type' => 'DECIMAL',
@@ -251,7 +340,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeVisitMinutes => [
         'type' => 'INT',
@@ -261,7 +352,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePoll => [
         'type' => 'DECIMAL',
@@ -272,7 +365,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePollVote => [
         'type' => 'DECIMAL',
@@ -283,7 +378,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeUserAllowance => [
         'type' => 'DECIMAL',
@@ -294,7 +391,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeUserAllowanceMinutes => [
         'type' => 'DECIMAL',
@@ -302,17 +401,23 @@ const GROUP_PERMISSIONS = [
         'size' => DECIMAL_DATA_TYPE_SIZE,
         'default' => 0,
         'form_type' => FORM_TYPE_NUMERIC_FIELD,
+
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeUserAllowancePrimaryOnly => [
         'type' => 'TINYINT',
         'unsigned' => true,
         'default' => 0,
-        'form_type' => FORM_TYPE_CHECK_BOX
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
+    // todo, how does this work with group permissions?
     IncomePermissions::UserIncomeUserAllowanceLastStamp => [
         'type' => 'INT',
         'unsigned' => true,
-        'default' => 0
+        'default' => 0,
     ],
     IncomePermissions::UserIncomeUserRegistration => [
         'type' => 'DECIMAL',
@@ -323,7 +428,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomeUserReferral => [
         'type' => 'DECIMAL',
@@ -334,7 +441,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ],
     IncomePermissions::UserIncomePrivateMessage => [
         'type' => 'DECIMAL',
@@ -345,7 +454,9 @@ const GROUP_PERMISSIONS = [
         'form_options' => [
             //'min' => 0,
             'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
+        ],
+        'is_permission' => true,
+        'form_category' => 'income',
     ]
 ];
 
@@ -545,38 +656,120 @@ define('Newpoints\Core\TABLES_DATA', [
             'auto_increment' => true,
             'primary_key' => true
         ],
-        'display_name_singular' => [
+        'currency_name_singular' => [
             'type' => 'VARCHAR',
             'size' => 50,
-            'default' => ''
+            'default' => '',
+            'form_type' => FORM_TYPE_TEXT_FIELD,
+            'form_category' => 'main',
         ],
-        'display_name_plural' => [
+        'currency_name_plural' => [
             'type' => 'VARCHAR',
             'size' => 50,
-            'default' => ''
+            'default' => '',
+            'form_type' => FORM_TYPE_TEXT_FIELD,
+            'form_category' => 'main',
         ],
         'enable_notifications_private_message' => [
             'type' => 'TINYINT',
             'unsigned' => true,
-            'default' => 0
+            'default' => 0,
+            'form_type' => FORM_TYPE_YES_NO_FIELD,
+            'form_category' => 'main',
         ],
         'enable_notifications_alert' => [
             'type' => 'TINYINT',
             'unsigned' => true,
-            'default' => 0
+            'default' => 0,
+            'form_type' => FORM_TYPE_YES_NO_FIELD,
+            'form_category' => 'main',
+        ],
+        'script_name' => [
+            'type' => 'VARCHAR',
+            'size' => 50,
+            'default' => '',
+            'form_category' => 'main',
+            'form_type' => FORM_TYPE_TEXT_FIELD,
         ],
         'users_column_name' => [
             'type' => 'VARCHAR',
             'size' => 50,
             'unique' => true,
+            'form_type' => FORM_TYPE_TEXT_FIELD,
+            'form_category' => 'main',
+            'is_disabled' => function (int $instance_id): bool {
+                if ($instance_id === INSTANCE_DEFAULT_ID) {
+                    return $instance_id === INSTANCE_DEFAULT_ID;
+                }
+
+                $instance_data = instance_get($instance_id);
+
+                try {
+                    $instance_object = instance_object($instance_id);
+                } catch (Exception $e) {
+                    return false;
+                }
+
+                return $instance_object->users_column_exists();
+            }
+        ],
+        'is_enabled' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 0,
+            'form_type' => FORM_TYPE_YES_NO_FIELD,
+            'form_category' => 'main',
+        ],
+        'display_order' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0,
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
+            'form_category' => 'main',
         ],
         'unique_key' => [
             'users_column_name' => 'users_column_name',
         ],
     ], GROUP_PERMISSIONS),
+    'newpoints_group_permissions' => array_merge([
+        'permission_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'auto_increment' => true,
+            'primary_key' => true
+        ],
+        'instance_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'group_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ]
+    ], GROUP_PERMISSIONS),
+    'newpoints_forum_permissions' => array_merge([
+        'permission_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'auto_increment' => true,
+            'primary_key' => true
+        ],
+        'instance_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'forum_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ]
+    ], FORUM_PERMISSIONS),
 ]);
 
-define('Newpoints\Core\FIELDS_DATA', [
+const FIELDS_DATA = [
     'users' => [
         'newpoints' => [
             'type' => 'DECIMAL',
@@ -589,41 +782,7 @@ define('Newpoints\Core\FIELDS_DATA', [
             ]
         ],
     ],
-    'usergroups' => array_merge(FORUM_PERMISSIONS, GROUP_PERMISSIONS),
+    'usergroups' => GROUP_PERMISSIONS,
     'forumpermissions' => FORUM_PERMISSIONS,
-    'forums' => [
-        'newpoints_rate' => [
-            'type' => 'DECIMAL',
-            'unsigned' => true,
-            'size' => DECIMAL_DATA_TYPE_SIZE,
-            'default' => 1,
-            'form_type' => FORM_TYPE_NUMERIC_FIELD,
-            'form_options' => [
-                //'min' => 0,
-                'step' => DECIMAL_DATA_TYPE_STEP,
-            ]
-        ],
-        'newpoints_view_lock_points' => [
-            'type' => 'DECIMAL',
-            'unsigned' => true,
-            'size' => DECIMAL_DATA_TYPE_SIZE,
-            'default' => 0,
-            'form_type' => FORM_TYPE_NUMERIC_FIELD,
-            'form_options' => [
-                //'min' => 0,
-                'step' => DECIMAL_DATA_TYPE_STEP,
-            ]
-        ],
-        'newpoints_post_lock_points' => [
-            'type' => 'DECIMAL',
-            'unsigned' => true,
-            'size' => DECIMAL_DATA_TYPE_SIZE,
-            'default' => 0,
-            'form_type' => FORM_TYPE_NUMERIC_FIELD,
-            'form_options' => [
-                //'min' => 0,
-                'step' => DECIMAL_DATA_TYPE_STEP,
-            ]
-        ],
-    ],
-]);
+    'forums' => FORUM_PERMISSIONS,
+];

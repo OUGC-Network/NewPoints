@@ -31,11 +31,13 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Shared;
 
+use Exception;
 use MyBB;
 use PMDataHandler;
 use postDatahandler;
 use userDataHandler;
 
+use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
@@ -72,8 +74,12 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
     $thread_user_id = (int)$thread_data['uid'];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -83,8 +89,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
         if ($thread_user_id !== $post_user_id) {
             $instance_object->set_user($thread_user_id);
-
-            $instance_object->income_thread_reply();
+            // $instance_object->income_thread_reply();
         }
 
         $instance_object->set_user($post_user_id);
@@ -125,8 +130,12 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
         return $data_handler;
     }
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -166,8 +175,12 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
 
     $post_id = (int)$data_handler->pid;
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_forum($forum_id);
 
@@ -189,8 +202,12 @@ function datahandler_pm_insert_end(PMDataHandler &$data_handler): PMDataHandler
 {
     $user_id = (int)$data_handler->pm_insert_data['fromid'];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
 
         $instance_object->set_user($user_id);
 
@@ -229,7 +246,7 @@ function datahandler_user_validate(userDataHandler &$data_handler): userDataHand
     $user_data = &$data_handler->data;
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -273,7 +290,7 @@ function datahandler_user_update(userDataHandler &$data_handler): userDataHandle
     global $mybb, $db;
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type']) ||
             (!isset($user_data[$data_field_key]) && !isset($mybb->input[$data_field_key]))) {
@@ -300,7 +317,7 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
 
     $referrer_user_id = (int)($data_handler->user_insert_data['referrer'] ?? 0);
 
-    foreach (instance_get() as $instance_id => $instance_data) {
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
         $instance_object = instance_object($instance_id);
 
         $instance_object->set_user($user_id);

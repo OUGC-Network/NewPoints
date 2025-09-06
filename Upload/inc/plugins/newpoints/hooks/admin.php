@@ -31,22 +31,24 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Admin;
 
+use Exception;
 use FormContainer;
 use MyBB;
 
 use function Newpoints\Admin\recount_rebuild_newpoints_recount;
 use function Newpoints\Admin\recount_rebuild_newpoints_recount_from_logs;
 use function Newpoints\Admin\recount_rebuild_newpoints_reset;
+use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\points_format;
 use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_set;
 
+use const Newpoints\ROOT;
 use const Newpoints\Core\FIELDS_DATA;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
 use const Newpoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
@@ -57,7 +59,6 @@ use const Newpoints\Core\FORM_TYPE_PHP_CODE_LEGACY;
 use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
 use const Newpoints\Core\FORM_TYPE_SELECT_FIELD_LEGACY;
 use const Newpoints\Core\INSTANCE_DEFAULT_ID;
-use const Newpoints\ROOT;
 
 function admin_config_plugins_deactivate(): bool
 {
@@ -89,9 +90,20 @@ function admin_load(): bool
     load_set_guest_data();
 
     global $mybb;
+    global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    foreach (instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance_object = instance_object($instance_id);
+        } catch (Exception $e) {
+            continue;
+        }
+
+        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_user_balance_formatted = $mypoints =
+            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
+    }
 
     run_hooks('admin_load');
 
@@ -189,7 +201,7 @@ function admin_user_groups_edit_graph(): bool
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -440,7 +452,7 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
     $hook_arguments = run_hooks('admin_formcontainer_end_start', $hook_arguments);
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -448,7 +460,12 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
         $setting_language_string = $data_field_key;
 
-        if (strpos($data_field_key, 'newpoints_forums_') !== 0) {
+        if (!str_starts_with($data_field_key, 'newpoints_field_newpoints_')) {
+            $setting_language_string = str_replace('newpoints_', 'newpoints_field_newpoints_', $data_field_key);
+        }
+
+        //backwards compatibility, to be removed in future versions
+        if (!isset($lang->{$setting_language_string}) && !str_starts_with($data_field_key, 'newpoints_forums_')) {
             $setting_language_string = str_replace('newpoints_', 'newpoints_forums_', $data_field_key);
         }
 
@@ -589,13 +606,77 @@ function admin_forum_management_edit_commit(): bool
 
 function admin_forum_management_permission_groups(array &$groups): array
 {
+    global $hidefields;
+
     language_load();
 
-    foreach (FIELDS_DATA['forumpermissions'] as $column_name => $column_data) {
-        $groups[$column_name] = 'newpoints';
+    $fields_data = FIELDS_DATA['forumpermissions'];
+
+    foreach ($fields_data as $field_name => $field_definition) {
+        if (!empty($field_definition['form_options']) && !empty($field_definition['form_options']['disabled_for_guest_group'])) {
+            global $usergroup;
+
+            if ((int)$usergroup['gid'] === 1) {
+                $hidefields[] = $field_name;
+            }
+        }
+
+        $groups[$field_name] = 'newpoints';
     }
 
     return $groups;
+}
+
+function admin_formcontainer_output_row(array &$hook_arguments): array
+{
+    global $group;
+
+    if (empty($group) || $group !== 'newpoints') {
+        return $hook_arguments;
+    }
+
+    global $form, $lang;
+    global $permission_data, $fields;
+
+    $fields_data = FIELDS_DATA['forumpermissions'];
+
+    $fields = [];
+
+    foreach ($fields_data as $field_name => $field_definition) {
+        if (empty($field_definition['form_type'])) {
+            continue;
+        }
+
+        $lang_field = str_replace('newpoints_', 'newpoints_field_newpoints_', $field_name);
+
+        switch ($field_definition['form_type']) {
+            case FORM_TYPE_NUMERIC_FIELD:
+                $fields[] = "{$lang->{$lang_field}}<br /><small class=\"input\">{$lang->{"{$lang_field}_description"}}</small><br />" . $form->generate_numeric_field(
+                        "permissions[{$field_name}]",
+                        $permission_data[$field_name] ?? 0,
+                        $field_definition['form_options']
+                    );
+                break;
+            case FORM_TYPE_CHECK_BOX:
+                $fields[] = $form->generate_check_box(
+                    "permissions[{$field_name}]",
+                    1,
+                    $lang->{$lang_field},
+                    array_merge(
+                        $field_definition['form_options'] ?? [],
+                        ['checked' => !empty($permission_data[$field_name]), 'id' => $field_name]
+                    )
+                );
+                break;
+        }
+    }
+
+    $hook_arguments['content'] = '<div class="forum_settings_bit">' . implode(
+            '</div><div class="forum_settings_bit">',
+            $fields
+        ) . '</div>';
+
+    return $hook_arguments;
 }
 
 function admin_forum_management_permissions_commit(): bool
@@ -608,11 +689,11 @@ function admin_forum_management_permissions_commit(): bool
 
     global $update_array;
 
-    foreach (FIELDS_DATA['forumpermissions'] as $column_name => $column_data) {
-        if (isset($mybb->input['permissions'][$column_name])) {
-            $update_array[$column_name] = 1;
+    foreach (FIELDS_DATA['forumpermissions'] as $field_name => $field_definition) {
+        if (isset($mybb->input['permissions'][$field_name])) {
+            $update_array[$field_name] = 1;
         } else {
-            $update_array[$column_name] = 0;
+            $update_array[$field_name] = 0;
         }
     }
 
@@ -650,7 +731,7 @@ function admin_user_users_edit_graph(): bool
     $hook_arguments = run_hooks('admin_user_users_edit_graph', $hook_arguments);
 
     foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;

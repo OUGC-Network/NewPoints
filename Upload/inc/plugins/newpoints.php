@@ -83,7 +83,6 @@ defined('IN_MYBB') || die('Direct initialization of this file is not allowed.');
 
 // You can uncomment the lines below to avoid storing some settings in the DB
 define('Newpoints\Core\SETTINGS', [
-    //'main_file' => 'newpoints.php',
     //'disable_plugins' => true
     //'income_post' => 10,
     'my_alerts_version' => '2.1.0',
@@ -217,9 +216,9 @@ function newpoints_addpoints(
     return points_add($uid, $points, $forumrate = 1, $grouprate = 1, $isstring = false, $immediate);
 }
 
-function newpoints_update_addpoints()
+function newpoints_update_addpoints(): void
 {
-    return points_update();
+    points_update();
 }
 
 function newpoints_getrules(string $type, int $id): array
@@ -330,3 +329,11 @@ plugins_load();
 
     $fpermfields[] = Permissions::CanGetPoints;
 })();
+
+global $newpoints_globals, $newpoints_profile;
+
+$newpoints_globals = $newpoints_profile = [];
+
+//todo, build an income table in forums, so users can see their income rates per forum if there are custom forum permissions
+
+//todo, refactor url handler to class

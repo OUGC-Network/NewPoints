@@ -32,6 +32,7 @@ declare(strict_types=1);
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\url_handler_build;
 use function Newpoints\Core\url_handler_get;
@@ -101,7 +102,7 @@ if ($mybb->get_input('action') == 'change') {
     $plugin_title = '';
 
     $plugin_code = trim($mybb->get_input('plugin'));
-    
+
     $lang_var = 'setting_group_newpoints_' . $plugin_code;
 
     if (in_array($plugin_code, ['main', 'donations', 'stats', 'logs'], true)) {
@@ -114,7 +115,7 @@ if ($mybb->get_input('action') == 'change') {
 
     $sub_tabs['newpoints_settings_change'] = [
         'title' => $lang->newpoints_settings_change,
-        'link' => url_handler_build(['action' => 'change']),
+        'link' => url_handler_build(['action' => 'change', 'plugin' => $mybb->get_input('plugin')]),
         'description' => $lang->sprintf(
             $lang->newpoints_settings_change_description,
             $instance_object->get_display_name_upper(),
@@ -631,7 +632,7 @@ if ($mybb->get_input('action') == 'change') {
 
     $page->output_footer();
 } else {
-    \Newpoints\Core\settings_rebuild();
+    settings_rebuild();
 
     run_hooks('admin_settings_start');
 

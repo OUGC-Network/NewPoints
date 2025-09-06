@@ -31,20 +31,23 @@ declare(strict_types=1);
 
 namespace Newpoints\Admin;
 
+use Form;
+use InvalidArgumentException;
 use MyBB;
 use MybbStuff_MyAlerts_AlertTypeManager;
 use MybbStuff_MyAlerts_Entity_AlertType;
+use Newpoints\Core\Permissions;
 use PluginLibrary;
 use stdClass;
 use Exception;
 use Newpoints\Core\IncomePermissions;
 use Newpoints\Core\IncomeRates;
 
-use function Newpoints\Core\get_income_value;
+use function Newpoints\Core\instance_get;
+use function Newpoints\Core\instance_insert;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\get_setting;
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\points_add_simple;
 use function Newpoints\Core\rules_get_all;
 use function Newpoints\Core\rules_rebuild_cache;
 use function Newpoints\Core\run_hooks;
@@ -54,11 +57,14 @@ use function Newpoints\Core\task_disable;
 use function Newpoints\Core\task_enable;
 use function Newpoints\Core\templates_rebuild;
 use function NewPoints\Core\templates_remove;
-use function Newpoints\Core\user_can_get_points;
 use function Newpoints\Core\user_update;
-use function Newpoints\Core\users_get_group_permissions;
 
 use const Newpoints\Core\FIELDS_DATA;
+use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
+use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
+use const Newpoints\Core\FORM_TYPE_TEXT_FIELD;
+use const Newpoints\Core\FORM_TYPE_YES_NO_FIELD;
 use const Newpoints\Core\INCOME_TYPE_POLL;
 use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
 use const Newpoints\Core\INCOME_TYPE_POST;
@@ -67,6 +73,7 @@ use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
 use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\TABLES_DATA;
@@ -111,18 +118,32 @@ function plugin_activation(): bool
 
     plugin_library_load();
 
+    /*~*~* RUN UPDATES START *~*~*/
+
+    if ($db->field_exists('newpoints_rate', 'forums') &&
+        !$db->field_exists(Permissions::Rate, 'forums')) {
+        $db->rename_column(
+            'forums',
+            'newpoints_rate',
+            Permissions::Rate,
+            db_build_field_definition(FIELDS_DATA['forums'][Permissions::Rate])
+        );
+    }
+
+    /*~*~* RUN UPDATES END *~*~*/
+
     db_verify_tables();
 
-    foreach (\Newpoints\Core\instance_get() as $instance_id => $instance_data) {
+    foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = \Newpoints\Core\instance_object($instance_id);
-        } catch (\InvalidArgumentException $e) {
+            $instance_object = instance_object($instance_id);
+        } catch (InvalidArgumentException $e) {
         }
 
         db_verify_columns(
             [
                 'users' => [
-                    $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                    $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
                 ]
             ]
         );
@@ -164,6 +185,16 @@ function plugin_activation(): bool
     my_alerts_install();
 
     /*~*~* RUN UPDATES START *~*~*/
+
+    if (!($default_instance = instance_get(INSTANCE_DEFAULT_ID))) {
+        instance_insert([
+            'instance_id' => INSTANCE_DEFAULT_ID,
+            'currency_name_singular' => 'Credit',
+            'currency_name_plural' => 'Credits',
+            'users_column_name' => 'newpoints',
+            'script_name' => 'newpoints.php',
+        ]);
+    }
 
     if ($plugins_list['newpoints'] <= 3104) {
         $action_types = implode("','", [
@@ -341,16 +372,16 @@ function plugin_installation(): bool
 
     db_verify_tables();
 
-    foreach (\Newpoints\Core\instance_get() as $instance_id => $instance_data) {
+    foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = \Newpoints\Core\instance_object($instance_id);
-        } catch (\InvalidArgumentException $e) {
+            $instance_object = instance_object($instance_id);
+        } catch (InvalidArgumentException $e) {
         }
 
         db_verify_columns(
             [
                 'users' => [
-                    $instance_object->get_users_column_name() => \Newpoints\Core\FIELDS_DATA['users']['newpoints']
+                    $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
                 ]
             ]
         );
@@ -412,6 +443,9 @@ function plugin_uninstallation(): bool
     $cache->delete('newpoints_rules');
     $cache->delete('newpoints_settings');
     $cache->delete('newpoints_plugins');
+    $cache->delete('newpoints_instances');
+    $cache->delete('newpoints_group_permissions');
+    $cache->delete('newpoints_forum_permissions');
 
     db_drop_tables(TABLES_DATA);
 
@@ -481,21 +515,21 @@ function db_tables(array $tables_objects = TABLES_DATA): array
 {
     $tables_data = [];
 
-    foreach ($tables_objects as $table_name => $table_columns) {
-        foreach ($table_columns as $field_name => $field_data) {
-            if (!isset($field_data['type'])) {
+    foreach ($tables_objects as $table_name => $table_data) {
+        foreach ($table_data as $field_name => $field_definition) {
+            if (!isset($field_definition['type'])) {
                 continue;
             }
 
-            $tables_data[$table_name][$field_name] = db_build_field_definition($field_data);
+            $tables_data[$table_name][$field_name] = db_build_field_definition($field_definition);
         }
 
-        foreach ($table_columns as $field_name => $field_data) {
-            if (isset($field_data['primary_key'])) {
+        foreach ($table_data as $field_name => $field_definition) {
+            if (isset($field_definition['primary_key'])) {
                 $tables_data[$table_name]['primary_key'] = $field_name;
             }
             if ($field_name === 'unique_key') {
-                $tables_data[$table_name]['unique_key'] = $field_data;
+                $tables_data[$table_name]['unique_key'] = $field_definition;
             }
         }
     }
@@ -509,27 +543,27 @@ function db_verify_tables(array $tables_objects = TABLES_DATA): bool
 
     $collation = $db->build_create_table_collation();
 
-    foreach (db_tables($tables_objects) as $table_name => $table_columns) {
+    foreach (db_tables($tables_objects) as $table_name => $table_data) {
         if ($db->table_exists($table_name)) {
-            foreach ($table_columns as $field_name => $field_data) {
+            foreach ($table_data as $field_name => $field_definition) {
                 if ($field_name == 'primary_key' || $field_name == 'unique_key') {
                     continue;
                 }
 
                 if ($db->field_exists($field_name, $table_name)) {
-                    $db->modify_column($table_name, "`{$field_name}`", $field_data);
+                    $db->modify_column($table_name, "`{$field_name}`", $field_definition);
                 } else {
-                    $db->add_column($table_name, $field_name, $field_data);
+                    $db->add_column($table_name, $field_name, $field_definition);
                 }
             }
         } else {
             $query_string = "CREATE TABLE IF NOT EXISTS `{$db->table_prefix}{$table_name}` (";
 
-            foreach ($table_columns as $field_name => $field_data) {
+            foreach ($table_data as $field_name => $field_definition) {
                 if ($field_name == 'primary_key') {
-                    $query_string .= "PRIMARY KEY (`{$field_data}`)";
+                    $query_string .= "PRIMARY KEY (`{$field_definition}`)";
                 } elseif ($field_name != 'unique_key') {
-                    $query_string .= "`{$field_name}` {$field_data},";
+                    $query_string .= "`{$field_name}` {$field_definition},";
                 }
             }
 
@@ -548,13 +582,13 @@ function db_verify_indexes(array $tables_objects = TABLES_DATA): bool
 {
     global $db;
 
-    foreach (db_tables($tables_objects) as $table_name => $table_columns) {
+    foreach (db_tables($tables_objects) as $table_name => $table_data) {
         if (!$db->table_exists($table_name)) {
             continue;
         }
 
-        if (isset($table_columns['unique_key'])) {
-            foreach ($table_columns['unique_key'] as $key_name => $key_value) {
+        if (isset($table_data['unique_key'])) {
+            foreach ($table_data['unique_key'] as $key_name => $key_value) {
                 if ($db->index_exists($table_name, $key_name)) {
                     continue;
                 }
@@ -569,59 +603,59 @@ function db_verify_indexes(array $tables_objects = TABLES_DATA): bool
     return true;
 }
 
-function db_build_field_definition(array $field_data): string
+function db_build_field_definition(array $field_definition): string
 {
-    $field_definition = '';
+    $definition_string = '';
 
-    $field_definition .= $field_data['type'];
+    $definition_string .= $field_definition['type'];
 
-    if (isset($field_data['size'])) {
-        $field_definition .= "({$field_data['size']})";
+    if (isset($field_definition['size'])) {
+        $definition_string .= "({$field_definition['size']})";
     }
 
-    if (isset($field_data['unsigned'])) {
-        if ($field_data['unsigned'] === true) {
-            $field_definition .= ' UNSIGNED';
+    if (isset($field_definition['unsigned'])) {
+        if ($field_definition['unsigned'] === true) {
+            $definition_string .= ' UNSIGNED';
         } else {
-            $field_definition .= ' SIGNED';
+            $definition_string .= ' SIGNED';
         }
     }
 
-    if (!isset($field_data['null'])) {
-        $field_definition .= ' NOT';
+    if (!isset($field_definition['null'])) {
+        $definition_string .= ' NOT';
     }
 
-    $field_definition .= ' NULL';
+    $definition_string .= ' NULL';
 
-    if (isset($field_data['auto_increment'])) {
-        $field_definition .= ' AUTO_INCREMENT';
+    if (isset($field_definition['auto_increment'])) {
+        $definition_string .= ' AUTO_INCREMENT';
     }
 
-    if (isset($field_data['default'])) {
-        $field_definition .= " DEFAULT '{$field_data['default']}'";
+    if (isset($field_definition['default'])) {
+        $definition_string .= " DEFAULT '{$field_definition['default']}'";
     }
 
-    return $field_definition;
+    return $definition_string;
 }
 
 function db_verify_columns(array $fields_objects = FIELDS_DATA): bool
 {
     global $db;
 
-    foreach ($fields_objects as $table_name => $table_columns) {
+    foreach ($fields_objects as $table_name => $table_data) {
         if (!$db->table_exists($table_name)) {
             continue;
         }
 
-        foreach ($table_columns as $field_name => $field_data) {
-            if (!isset($field_data['type'])) {
+        foreach ($table_data as $field_name => $field_definition) {
+            if (!isset($field_definition['type'])) {
                 continue;
             }
 
             if ($db->field_exists($field_name, $table_name)) {
-                $db->modify_column($table_name, "`{$field_name}`", db_build_field_definition($field_data));
+                $db->modify_column($table_name, "`{$field_name}`", db_build_field_definition($field_definition));
             } else {
-                $db->add_column($table_name, $field_name, db_build_field_definition($field_data));
+                $db->add_column($table_name, $field_name, db_build_field_definition($field_definition));
             }
         }
     }
@@ -648,15 +682,15 @@ function db_verify_columns_exists(array $fields_objects = FIELDS_DATA): bool
 
     $is_installed_each = true;
 
-    foreach ($fields_objects as $table_name => $table_columns) {
+    foreach ($fields_objects as $table_name => $table_data) {
         if (!$db->table_exists($table_name)) {
             $is_installed_each = false;
 
             continue;
         }
 
-        foreach ($table_columns as $field_name => $field_data) {
-            if (!isset($field_data['type'])) {
+        foreach ($table_data as $field_name => $field_definition) {
+            if (!isset($field_definition['type'])) {
                 continue;
             }
 
@@ -671,7 +705,7 @@ function db_drop_tables(array $tables_objects = TABLES_DATA): bool
 {
     global $db;
 
-    foreach ($tables_objects as $table_name => $table_columns) {
+    foreach ($tables_objects as $table_name => $table_data) {
         $db->drop_table($table_name);
     }
 
@@ -682,9 +716,9 @@ function db_drop_columns(array $tables_objects = FIELDS_DATA): bool
 {
     global $db;
 
-    foreach ($tables_objects as $table_name => $table_columns) {
+    foreach ($tables_objects as $table_name => $table_data) {
         if ($db->table_exists($table_name)) {
-            foreach ($table_columns as $field_name => $field_data) {
+            foreach ($table_data as $field_name => $field_definition) {
                 if ($db->field_exists($field_name, $table_name)) {
                     $db->drop_column($table_name, $field_name);
                 }
@@ -862,9 +896,9 @@ function recount_rebuild_newpoints_recount(): void
 
         $user_id = (int)$user_data['uid'];
 
-        $user_group_permissions = users_get_group_permissions($user_id);
+        $instance_object->set_user($user_id);
 
-        if (empty($user_group_permissions[IncomeRates::RateAddition])) {
+        if (!$instance_object->permission_get_rate_addition()) {
             //continue;
         }
 
@@ -879,7 +913,9 @@ function recount_rebuild_newpoints_recount(): void
         while ($thread = $db->fetch_array($threads_query)) {
             $forum_id = (int)$thread['fid'];
 
-            if (!get_income_value(INCOME_TYPE_THREAD, $user_id, $forum_id)) {
+            $instance_object->set_forum($forum_id);
+
+            if (!$instance_object->get_income_value(INCOME_TYPE_THREAD)) {
                 continue;
             }
 
@@ -893,17 +929,17 @@ function recount_rebuild_newpoints_recount(): void
 
             if (($character_count = my_strlen(
                     $mybb->get_input('message')
-                )) >= $user_group_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
-                $bonus = $character_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $user_id, $forum_id);
+                )) >= $instance_object->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
+                $bonus = $character_count * $instance_object->get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
 
-            $points += (get_income_value(INCOME_TYPE_THREAD, $user_id, $forum_id) + $bonus) *
+            $points += ($instance_object->get_income_value(INCOME_TYPE_THREAD) + $bonus) *
                 $forum_rules[$thread['fid']]['rate'];
 
             if (!empty($thread['poll'])) {
-                $points += get_income_value(INCOME_TYPE_POLL, $user_id, $forum_id) *
+                $points += $instance_object->get_income_value(INCOME_TYPE_POLL) *
                     $forum_rules[$thread['fid']]['rate'];
             }
 
@@ -923,7 +959,9 @@ function recount_rebuild_newpoints_recount(): void
 
             $forum_id = (int)$post_data['fid'];
 
-            if (!get_income_value(INCOME_TYPE_POST, $user_id, $forum_id)) {
+            $instance_object->set_forum($forum_id);
+
+            if (!$instance_object->get_income_value(INCOME_TYPE_POST)) {
                 continue;
             }
 
@@ -937,14 +975,14 @@ function recount_rebuild_newpoints_recount(): void
 
             if (($character_count = my_strlen(
                     $post_data['message']
-                )) >= $user_group_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
+                )) >= $instance_object->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
                 $bonus = $character_count *
-                    get_income_value(INCOME_TYPE_POST_CHARACTER, $user_id, $forum_id);
+                    $instance_object->get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
 
-            $points += (get_income_value(INCOME_TYPE_POST, $user_id, $forum_id) + $bonus) *
+            $points += ($instance_object->get_income_value(INCOME_TYPE_POST) + $bonus) *
                 $forum_rules[$post_data['fid']]['rate'];
 
             $thread_data = get_thread($post_data['tid']);
@@ -953,12 +991,12 @@ function recount_rebuild_newpoints_recount(): void
 
             $forum_id = (int)$post_data['fid'];
 
-            if ($thread_user_id !== $user_id && user_can_get_points($thread_user_id, $forum_id)) {
-                $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+            $instance_object->set_user($thread_user_id);
 
-                $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+            if ($thread_user_id !== $user_id && $instance_object->permission_check_boolean(Permissions::CanGetPoints)) {
+                $income_value = $instance_object->get_income_value(INCOME_TYPE_THREAD_REPLY);
 
-                $income_value = $income_value * $thread_user_group_permissions[IncomeRates::RateAddition];
+                $income_value = $income_value * $instance_object->permission_get_rate_addition();
 
                 if ($income_value) {
                     try {
@@ -971,7 +1009,7 @@ function recount_rebuild_newpoints_recount(): void
                             $forum_id,
                         );
 
-                        points_add_simple(
+                        $instance_object->points_add(
                             $thread_user_id,
                             $income_value
                         );
@@ -980,6 +1018,8 @@ function recount_rebuild_newpoints_recount(): void
                     }
                 }
             }
+
+            $instance_object->set_user($user_id);
         }
 
         $query_polls = $db->simple_select(
@@ -991,14 +1031,16 @@ function recount_rebuild_newpoints_recount(): void
         while ($vote_data = $db->fetch_array($query_polls)) {
             $forum_id = (int)$vote_data['fid'];
 
-            $income_value = get_income_value(INCOME_TYPE_POLL_VOTE, $user_id, $forum_id);
+            $instance_object->set_forum($forum_id);
+
+            $income_value = $instance_object->get_income_value(INCOME_TYPE_POLL_VOTE);
 
             if ($income_value) {
                 $points += $income_value;
             }
         }
 
-        $income_value = get_income_value(INCOME_TYPE_PRIVATE_MESSAGE, $user_id);
+        $income_value = $instance_object->get_income_value(INCOME_TYPE_PRIVATE_MESSAGE);
 
         if ($income_value) {
             $pms_sent = $db->fetch_field(
@@ -1013,14 +1055,15 @@ function recount_rebuild_newpoints_recount(): void
             $points += $pms_sent * $income_value;
         }
 
+        $instance_object->set_forum(0);
+
         $db->update_query(
             'users',
             [
-                $instance_object->get_users_column_name() => get_income_value(
+                $instance_object->get_users_column_name() => $instance_object->get_income_value(
                         INCOME_TYPE_USER_REGISTRATION,
-                        $user_id
                     ) + $points *
-                    $user_group_permissions[IncomeRates::RateAddition]
+                    $instance_object->permission_get_rate_addition()
             ],
             "uid='{$user_id}'"
         );
@@ -1207,4 +1250,129 @@ function my_alerts_uninstall(): bool
     }
 
     return false;
+}
+
+function build_permissions_row(
+    int $instance_id,
+    Form $form,
+    string $field_name,
+    array $field_definition,
+    string $key,
+    string $section = 'Main',
+    bool $extra_text = false,
+    string $language_prefix = 'newpoints_admin_instances_edit_'
+): string {
+    global $mybb, $lang;
+
+    $form_input = '';
+
+    $options = ['id' => $field_name, 'class' => $field_definition['form_class'] ?? ''];
+
+    if (isset($field_definition['is_disabled']) && $field_definition['is_disabled']($instance_id) === true) {
+        $options['id'] .= '" disabled="disabled';
+    }
+
+    switch ($field_definition['form_type']) {
+        case FORM_TYPE_TEXT_FIELD:
+            if ($extra_text) {
+                $form_input .= '<div class="group_settings_bit">';
+
+                $form_input .= $lang->{$language_prefix . $section . $key};
+
+                $form_input .= '<br /><small class="input">';
+
+                $form_input .= $lang->{$language_prefix . $section . $key . 'Description'};
+
+                $form_input .= '</small><br />';
+            }
+
+            $options['max'] = $field_definition['size'];
+
+            $form_input .= $form->generate_text_box(
+                $field_name,
+                $mybb->get_input($field_name),
+                $options
+            );
+
+            if ($extra_text) {
+                $form_input .= '</div>';
+            }
+
+            break;
+        case FORM_TYPE_NUMERIC_FIELD:
+            if ($extra_text) {
+                $form_input .= '<div class="group_settings_bit">';
+
+                $form_input .= $lang->{$language_prefix . $section . $key};
+
+                $form_input .= '<br /><small class="input">';
+
+                $form_input .= $lang->{$language_prefix . $section . $key . '_description'};
+
+                $form_input .= '</small><br />';
+            }
+
+            $form_input .= $form->generate_numeric_field(
+                $field_name,
+                $mybb->get_input($field_name, MyBB::INPUT_INT),
+                $options
+            );
+
+            if ($extra_text) {
+                $form_input .= '</div>';
+            }
+
+            break;
+        case FORM_TYPE_YES_NO_FIELD:
+            $form_input .= $form->generate_yes_no_radio(
+                $field_name,
+                $mybb->get_input($field_name, MyBB::INPUT_INT),
+                $options
+            );
+
+            break;
+        case FORM_TYPE_SELECT_FIELD:
+            if ($extra_text) {
+                $form_input .= '<div class="group_settings_bit">';
+
+                $form_input .= $lang->{$language_prefix . $section . $key};
+
+                $form_input .= '<br /><small class="input">';
+
+                $form_input .= $lang->{$language_prefix . $section . $key . '_description'};
+
+                $form_input .= '</small><br />';
+            }
+
+            $form_input .= $form->generate_select_box(
+                $field_name,
+                isset($field_definition['form_function']) ? $field_definition['form_function'](
+                ) : $field_definition['form_array'],
+                [$mybb->get_input($field_name, MyBB::INPUT_INT)],
+                $options
+            );
+
+            if ($extra_text) {
+                $form_input .= '</div>';
+            }
+
+            break;
+        case FORM_TYPE_CHECK_BOX:
+            $form_input .= '<div class="user_settings_bit">';
+
+            $options['checked'] = $mybb->get_input($field_name, MyBB::INPUT_INT);
+
+            $form_input .= $form->generate_check_box(
+                $field_name,
+                1,
+                $lang->{$language_prefix . $section . $key},
+                $options
+            );
+
+            $form_input .= '</div>';
+
+            break;
+    }
+
+    return $form_input;
 }

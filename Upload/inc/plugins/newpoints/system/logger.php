@@ -35,7 +35,7 @@ use InvalidArgumentException;
 use RuntimeException;
 
 use function Newpoints\Core\alert_send;
-use function Newpoints\Core\points_format;
+use function Newpoints\Core\language_load;
 use function Newpoints\Core\private_message_send;
 
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
@@ -72,7 +72,7 @@ class Logger
         int $tertiary_id = 0,
         int $log_type = 0
     ): int {
-        if ($log_action) {
+        if (!$log_action) {
             throw new InvalidArgumentException('Log action cannot be empty.');
         }
 
@@ -83,6 +83,8 @@ class Logger
         $log_points = abs($log_points);
 
         global $db;
+
+        language_load();
 
         $log_id = (int)$db->insert_query(
             'newpoints_log',
@@ -106,7 +108,7 @@ class Logger
 
         switch ($log_type) {
             case LOGGING_TYPE_CHARGE:
-                if ($this->core->get_enable_notifications_private_message()) {
+                if ($this->core->notifications_private_message_enabled()) {
                     private_message_send(
                         [
                             'language' => $user_data['language'],
@@ -114,14 +116,14 @@ class Logger
                                 'newpoints_log_pm_subtract_subject',
                                 $this->core->get_display_name_upper($log_points),
                                 $this->core->get_display_name_lower($log_points),
-                                strip_tags(points_format($log_points)),
+                                strip_tags($this->core->points_format($log_points)),
                             ],
                             'message' => [
                                 'newpoints_log_pm_subtract_message',
                                 $this->core->get_display_name_upper($log_points),
                                 $this->core->get_display_name_lower($log_points),
                                 $user_data['username'],
-                                strip_tags(points_format($log_points)),
+                                strip_tags($this->core->points_format($log_points)),
                             ],
                             'touid' => $user_id
                         ],
@@ -134,11 +136,12 @@ class Logger
                     $user_id,
                     $log_id,
                     'core',
-                    'subtract_points'
+                    'subtract_points',
+                    $this->core->instance_id,
                 );
                 break;
             default:
-                if ($this->core->get_enable_notifications_private_message()) {
+                if ($this->core->notifications_private_message_enabled()) {
                     private_message_send(
                         [
                             'language' => $user_data['language'],
@@ -146,14 +149,14 @@ class Logger
                                 'newpoints_log_pm_add_subject',
                                 $this->core->get_display_name_upper($log_points),
                                 $this->core->get_display_name_lower($log_points),
-                                strip_tags(points_format($log_points)),
+                                strip_tags($this->core->points_format($log_points)),
                             ],
                             'message' => [
                                 'newpoints_log_pm_add_message',
                                 $this->core->get_display_name_upper($log_points),
                                 $this->core->get_display_name_lower($log_points),
                                 $user_data['username'],
-                                strip_tags(points_format($log_points)),
+                                strip_tags($this->core->points_format($log_points)),
                             ],
                             'touid' => $user_id
                         ],
@@ -166,7 +169,8 @@ class Logger
                     $user_id,
                     $log_id,
                     'core',
-                    'add_points'
+                    'add_points',
+                    $this->core->instance_id,
                 );
                 break;
         }

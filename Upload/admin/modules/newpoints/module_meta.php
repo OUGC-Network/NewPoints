@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\instance_get;
+use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\run_hooks;
@@ -84,12 +84,14 @@ function newpoints_meta(): bool
         ]
     ];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        $sub_menu_items[9000 + $instance_id] = [
-            'id' => 'instance_' . $instance_id,
-            'title' => instance_object($instance_id)->get_display_name_upper(),
-            'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance_id
-        ];
+    if (\Newpoints\Core\DEBUG) {
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            $sub_menu_items[9000 + $instance_id] = [
+                'id' => 'instance_' . $instance_id,
+                'title' => instance_object($instance_id)->get_display_name_upper(),
+                'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance_id
+            ];
+        }
     }
 
     if (function_exists('\Newpoints\Core\run_hooks')) {
@@ -168,7 +170,7 @@ function newpoints_admin_permissions(): array
         'instances' => $lang->can_manage_instances,
     ];
 
-    foreach (instance_get() as $instance_id => $instance_data) {
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
         $action_handlers['instance_' . $instance_id] = [
             'active' => 'settings',
             'file' => 'settings.php'

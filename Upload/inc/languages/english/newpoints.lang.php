@@ -35,7 +35,6 @@ $l['newpoints_header_menu'] = 'NewPoints';
 
 $l['newpoints_home'] = 'Home';
 $l['newpoints_menu'] = 'Menu';
-$l['newpoints_home_currency'] = '{1}';
 $l['newpoints_donate'] = 'Donate';
 $l['newpoints_donated'] = 'You have successfully donated {1} to the selected user.';
 $l['newpoints_user'] = 'User';
@@ -188,8 +187,8 @@ $l['newpoints_log_pm_add_message'] = 'Hello {3}, {4} {2} were added to your acco
 $l['newpoints_log_pm_subtract_subject'] = '{3} {2} were subtracted from your account.';
 $l['newpoints_log_pm_subtract_message'] = 'Hello {3}, {4} {2} were subtracted from your account.';
 
-$l['newpoints_alert_text_core_add_points'] = '{2} were added to your account.';
-$l['newpoints_alert_text_core_subtract_points'] = '{2} were subtracted from your account.';
+$l['newpoints_alert_text_core_add_points'] = '{4} {1} were added to your account.';
+$l['newpoints_alert_text_core_subtract_points'] = '{4} {1} were subtracted from your account.';
 
 $l['myalerts_setting_newpoints_core_add_points'] = 'Receive alert when receiving points?';
 $l['myalerts_setting_newpoints_core_subtract_points'] = 'Receive alert when losing points?';
