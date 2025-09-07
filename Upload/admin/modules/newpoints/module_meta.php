@@ -32,7 +32,10 @@ declare(strict_types=1);
 use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
+use function Newpoints\Core\log_error;
 use function Newpoints\Core\run_hooks;
+
+use const Newpoints\Core\DEBUG;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -57,40 +60,26 @@ function newpoints_meta(): bool
             'title' => $lang->nav_plugins,
             'link' => 'index.php?module=newpoints-plugins'
         ],
-        /*15 => [
-            'id' => 'settings',
-            'title' => $lang->nav_settings,
-            'link' => 'index.php?module=newpoints-settings'
-        ],*/
         20 => [
-            'id' => 'log',
-            'title' => $lang->nav_log,
-            'link' => 'index.php?module=newpoints-log'
-        ],
-        25 => [
-            'id' => 'forumrules',
-            'title' => $lang->nav_forumrules,
-            'link' => 'index.php?module=newpoints-forumrules'
-        ],
-        30 => [
-            'id' => 'grouprules',
-            'title' => $lang->nav_grouprules,
-            'link' => 'index.php?module=newpoints-grouprules'
-        ],
-        40 => [
             'id' => 'instances',
             'title' => $lang->nav_instances,
             'link' => 'index.php?module=newpoints-instances'
         ]
     ];
 
-    if (\Newpoints\Core\DEBUG) {
+    if (DEBUG) {
         foreach (cache_get_instances() as $instance_id => $instance_data) {
-            $sub_menu_items[9000 + $instance_id] = [
-                'id' => 'instance_' . $instance_id,
-                'title' => instance_object($instance_id)->get_display_name_upper(),
-                'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance_id
-            ];
+            try {
+                $instance = instance_object($instance_id);
+
+                $sub_menu_items[9000 + $instance->instance_id] = [
+                    'id' => 'instance_' . $instance->instance_id,
+                    'title' => $instance->get_display_name_upper(),
+                    'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance->instance_id
+                ];
+            } catch (Exception $e) {
+                log_error($instance_id, $e->getMessage());
+            }
         }
     }
 
@@ -117,18 +106,6 @@ function newpoints_action_handler(string $current_action): string
         'settings' => [
             'active' => 'settings',
             'file' => 'settings.php'
-        ],
-        'log' => [
-            'active' => 'log',
-            'file' => 'log.php'
-        ],
-        'forumrules' => [
-            'active' => 'forumrules',
-            'file' => 'forumrules.php'
-        ],
-        'grouprules' => [
-            'active' => 'grouprules',
-            'file' => 'grouprules.php'
         ],
         'instances' => [
             'active' => 'instances',
@@ -164,17 +141,18 @@ function newpoints_admin_permissions(): array
         'newpoints' => $lang->can_manage_newpoints,
         'plugins' => $lang->can_manage_plugins,
         'settings' => $lang->can_manage_settings,
-        'log' => $lang->can_manage_log,
-        'forumrules' => $lang->can_manage_forumrules,
-        'grouprules' => $lang->can_manage_grouprules,
         'instances' => $lang->can_manage_instances,
     ];
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
-        $action_handlers['instance_' . $instance_id] = [
-            'active' => 'settings',
-            'file' => 'settings.php'
-        ];
+        try {
+            $action_handlers['instance_' . instance_object($instance_id)->instance_id] = [
+                'active' => 'settings',
+                'file' => 'settings.php'
+            ];
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
     }
 
     if (function_exists('\Newpoints\Core\language_load')) {

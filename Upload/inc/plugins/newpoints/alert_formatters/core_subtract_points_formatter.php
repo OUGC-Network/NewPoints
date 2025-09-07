@@ -32,12 +32,12 @@ declare(strict_types=1);
 namespace NewPoints\MyAlerts\Formatters;
 
 use Exception;
+use InvalidArgumentException;
 use MybbStuff_MyAlerts_Entity_Alert;
 use MybbStuff_MyAlerts_Formatter_AbstractFormatter;
 
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_get;
 
 class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
@@ -55,27 +55,30 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
      */
     public function formatAlert(MybbStuff_MyAlerts_Entity_Alert $alert, array $outputAlert): string
     {
-        $instance_id = (int)($alert->getExtraDetails()['instance_id'] ?? 0);
-
         try {
-            $instance_object = instance_object($instance_id);
-
-            $details = $alert->toArray();
-
-            $log_id = (int)$details['object_id'];
-
-            $log_data = log_get($log_id, $instance_id);
-
-            return $this->lang->sprintf(
-                $this->lang->newpoints_alert_text_core_subtract_points,
-                $instance_object->get_display_name_upper(),
-                $instance_object->get_display_name_lower(),
-                $outputAlert['username'],
-                $instance_object->points_format((float)$log_data['points'])
-            );
+            $instance = instance_object((int)($alert->getExtraDetails()['instance_id'] ?? 0));
         } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                (int)($alert->getExtraDetails()['instance_id'] ?? 0),
+                $e->getMessage(),
+            );
+
             return '';
         }
+
+        $details = $alert->toArray();
+
+        $log_id = (int)$details['object_id'];
+
+        $log_data = $instance->logger->get($log_id);
+
+        return $this->lang->sprintf(
+            $this->lang->newpoints_alert_text_core_subtract_points,
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
+            $outputAlert['username'],
+            $instance->points_format((float)$log_data['points'])
+        );
     }
 
     /**
@@ -87,15 +90,18 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
      */
     public function buildShowLink(MybbStuff_MyAlerts_Entity_Alert $alert): string
     {
-        $instance_id = (int)($alert->getExtraDetails()['instance_id'] ?? 0);
-
         global $settings;
 
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object((int)($alert->getExtraDetails()['instance_id'] ?? 0));
 
-            return $settings['bburl'] . '/' . $instance_object->get_script_file();
+            return $settings['bburl'] . '/' . $instance->get_script_name();
         } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                (int)($alert->getExtraDetails()['instance_id'] ?? 0),
+                $e->getMessage(),
+            );
+
             return $settings['bburl'];
         }
     }

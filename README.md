@@ -203,7 +203,8 @@ To display NewPoints data it is required that you edit the following template fo
    in `newpoints_user_balance_formatted` is the instance users column name. Note that `{$user['newpoints_formatted']}`
    and `{$user['newpoints_formatted']}` has been deprecated and will be removed in the future.
 10. Place
-    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
+    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`.
+    Where `newpoints` is the instance users column name.
     after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
 
 [Go up to Table of Contents](#table_of_contents)

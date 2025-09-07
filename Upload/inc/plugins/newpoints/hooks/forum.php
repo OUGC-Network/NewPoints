@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Newpoints\Hooks\Forum;
 
+use InvalidArgumentException;
 use MyBB;
 use MybbStuff_MyAlerts_AlertFormatterManager;
 use Exception;
@@ -43,11 +44,10 @@ use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\load_set_guest_data;
+use function Newpoints\Core\log_error;
 use function Newpoints\Core\my_alerts_initiate;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\url_handler_build;
-use function Newpoints\Core\url_handler_set;
 
 function global_start09(): bool
 {
@@ -133,20 +133,22 @@ function global_intermediate(): void
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
         } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
             continue;
         }
 
-        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
         $newpoints_user_balance_formatted = $mypoints =
-            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
+            $instance->points_format($instance->get_user_column_value());
 
-        $newpoints_file = $instance_object->get_script_file();
+        $newpoints_file = $instance->get_script_name();
 
-        $instance_name_upper = $instance_object->get_display_name_upper();
+        $instance_name_upper = $instance->get_display_name_upper();
 
-        $instance_name_lower = $instance_object->get_display_name_lower();
+        $instance_name_lower = $instance->get_display_name_lower();
 
         $newpoints_header_menu .= eval(templates_get('header_menu'));
     }
@@ -259,20 +261,21 @@ function pre_parse_page(string &$page_contents): string
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->income_page_view()
+                ->income_visit();
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->income_page_view();
-
-        $instance_object->income_visit();
     }
 
     return $page_contents;
@@ -301,20 +304,19 @@ function xmlhttp09(): void
 {
     load_set_guest_data();
 
-    global $mybb;
     global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
-        } catch (Exception $e) {
-            continue;
-        }
+            $instance = instance_object($instance_id);
 
-        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
-        $newpoints_user_balance_formatted = $mypoints =
-            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
+            $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+            $newpoints_user_balance_formatted = $mypoints =
+                $instance->points_format($instance->get_user_column_value());
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
     }
 
     my_alerts_initiate();
@@ -336,20 +338,19 @@ function archive_start(): bool
 {
     load_set_guest_data();
 
-    global $mybb;
     global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
-        } catch (Exception $e) {
-            continue;
-        }
+            $instance = instance_object($instance_id);
 
-        $newpoints_globals[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
-        $newpoints_user_balance_formatted = $mypoints =
-            $instance_object->points_format($mybb->user[$instance_object->get_users_column_name()]);
+            $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+            $newpoints_user_balance_formatted = $mypoints =
+                $instance->points_format($instance->get_user_column_value());
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
     }
 
     run_hooks('archive_start');
@@ -370,28 +371,29 @@ function postbit(array &$post): array
     language_load();
 
     $replacements = [
-        '<!--NEWPOINTS_POST_USER_DETAILS-->' => &$post['newpoints_postbit'],
         '<!--NEWPOINTS_POST_USER_POINTS-->' => &$post['newpoints_balance_formatted'],
     ];
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
         } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
             continue;
         }
 
-        $newpoints_amount = $post[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_amount = $post[$instance->users_column_get() . '_user_balance_formatted'] =
         $post['newpoints_balance_formatted'] = $points =
-            $instance_object->points_format((float)$post[$instance_object->get_users_column_name()]);
+            $instance->points_format((float)$post[$instance->users_column_get()]);
 
-        $replacements["<!--NewPoints_{$instance_object->get_users_column_name()}-->"] = $newpoints_amount;
+        $replacements["<!--NewPoints_{$instance->users_column_get()}-->"] = $newpoints_amount;
 
-        $newpoints_file = $instance_object->get_script_file();
+        $newpoints_file = $instance->get_script_name();
 
-        $instance_name_upper = $instance_object->get_display_name_upper();
+        $instance_name_upper = $instance->get_display_name_upper();
 
-        $instance_name_lower = $instance_object->get_display_name_lower();
+        $instance_name_lower = $instance->get_display_name_lower();
 
         $user_id = $uid = (int)$post['uid'];
 
@@ -399,12 +401,12 @@ function postbit(array &$post): array
 
         $donate = '';
 
-        if ($instance_object->permission_check_boolean(Permissions::CanDonate) &&
-            $user_id !== $instance_object->get_user_id()
+        if ($instance->user_permissions[Permissions::CanDonate] &&
+            $user_id !== $instance->get_user_id()
         ) {
-            url_handler_set($instance_object->get_script_file());
-
-            $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'pid' => $post_id, 'modal' => 1]);
+            $donate_url = $instance->url->build(
+                ['action' => 'donate', 'uid' => $user_id, 'pid' => $post_id, 'modal' => 1]
+            );
 
             $donate = eval(templates_get('postbit_donate'));
         }
@@ -447,30 +449,30 @@ function member_profile_end(): void
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
         } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
             continue;
         }
 
-        $newpoints_amount = $memprofile[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
+        $newpoints_amount = $memprofile[$instance->users_column_get() . '_user_balance_formatted'] =
         $newpoints_profile_user_balance_formatted = $points =
-            $instance_object->points_format((float)$memprofile[$instance_object->get_users_column_name()]);
+            $instance->points_format((float)$memprofile[$instance->users_column_get()]);
 
-        $newpoints_file = $instance_object->get_script_file();
+        $newpoints_file = $instance->get_script_name();
 
-        $instance_name_upper = $instance_object->get_display_name_upper();
+        $instance_name_upper = $instance->get_display_name_upper();
 
-        $instance_name_lower = $instance_object->get_display_name_lower();
+        $instance_name_lower = $instance->get_display_name_lower();
 
         $user_id = $uid = (int)$memprofile['uid'];
 
         $donate = '';
 
-        if ($instance_object->permission_check_boolean(Permissions::CanDonate) &&
-            $user_id !== $instance_object->get_user_id()) {
-            url_handler_set($instance_object->get_script_file());
-
-            $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'modal' => 1]);
+        if ($instance->user_permissions[Permissions::CanDonate] &&
+            $user_id !== $instance->get_user_id()) {
+            $donate_url = $instance->url->build(['action' => 'donate', 'uid' => $user_id, 'modal' => 1]);
 
             $donate = eval(templates_get('profile_donate'));
         }
@@ -513,28 +515,41 @@ function class_moderation_delete_post_start(&$post_id): int
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->charge_post()
+                ->charge_post_characters($post_data['message']);
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
 
         if ($thread_user_id !== $post_user_id) {
-            $instance_object->set_user($thread_user_id);
-
-            $instance_object->charge_thread_reply();
+            try {
+                instance_object($instance_id, $thread_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->charge_thread_reply();
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $thread_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
+            }
         }
-
-        $instance_object->set_user($post_user_id);
-
-        $instance_object->charge_post();
-
-        $instance_object->charge_post_characters($post_data['message']);
     }
 
     return $post_id;
@@ -559,28 +574,41 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->charge_post()
+                    ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
 
             if ($thread_user_id !== $post_user_id) {
-                $instance_object->set_user($thread_user_id);
-
-                $instance_object->charge_thread_reply();
+                try {
+                    instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id)
+                        ->charge_thread_reply();
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
             }
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->charge_post();
-
-            $instance_object->charge_post_characters($post_data['message']);
         }
     }
 
@@ -609,28 +637,41 @@ function class_moderation_restore_posts(array &$post_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->income_post()
+                    ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
 
             if ($thread_user_id !== $post_user_id) {
-                $instance_object->set_user($thread_user_id);
-
-                $instance_object->income_thread_reply();
+                try {
+                    instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id)
+                        ->income_thread_reply();
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
             }
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->income_post();
-
-            $instance_object->income_post_characters($post_data['message']);
         }
     }
 
@@ -654,22 +695,22 @@ function class_moderation_approve_threads(array &$thread_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->income_thread()
+                    ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->income_thread();
-
-            $instance_object->income_post_characters($post_data['message']);
         }
     }
 
@@ -697,44 +738,41 @@ function class_moderation_approve_posts(array &$post_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->income_post()
+                    ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
 
             if ($thread_user_id !== $post_user_id) {
-                $instance_object->set_user($thread_user_id);
-
-                $instance_object->income_thread_reply();
+                try {
+                    instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id)
+                        ->income_thread_reply();
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
             }
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->income_post();
-        }
-
-        foreach (cache_get_instances() as $instance_id => $instance_data) {
-            try {
-                $instance_object = instance_object($instance_id);
-            } catch (Exception $e) {
-                continue;
-            }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->income_post_characters($post_data['message']);
         }
     }
 
@@ -758,22 +796,22 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->charge_thread()
+                    ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->charge_thread();
-
-            $instance_object->charge_post_characters($post_data['message']);
         }
     }
 
@@ -799,28 +837,41 @@ function class_moderation_unapprove_posts(array &$post_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->charge_post()
+                    ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
 
             if ($thread_user_id !== $post_user_id) {
-                $instance_object->set_user($thread_user_id);
-
-                $instance_object->charge_thread_reply();
+                try {
+                    instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id)
+                        ->charge_thread_reply();
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
             }
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->charge_post();
-
-            $instance_object->charge_post_characters($post_data['message']);
         }
     }
 
@@ -860,27 +911,23 @@ function class_moderation_delete_thread(int &$thread_id): int
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->charge_thread()
+                ->charge_post_characters($post_data['message'])
+                ->charge_thread_reply($thread_data['replies'])
+                ->charge_poll();
         } catch (Exception $e) {
-            continue;
-        }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->set_user($post_user_id);
-
-        $instance_object->charge_thread();
-
-        $instance_object->charge_post_characters($post_data['message']);
-
-        $instance_object->charge_thread_reply($thread_data['replies']);
-
-        if (!empty($thread_data['poll'])) {
-            $instance_object->charge_poll();
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
     }
 
@@ -906,42 +953,39 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $thread_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->charge_thread_reply();
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $thread_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
 
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
-            if ($thread_user_id !== $post_user_id) {
-                $instance_object->set_user($thread_user_id);
-
-                $instance_object->charge_thread_reply();
-            }
-        }
-
-        foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->charge_thread()
+                    ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
-            $instance_object->set_user($post_user_id);
-            $instance_object->charge_thread();
-
-
-            $instance_object->charge_post_characters($post_data['message']);
         }
     }
 
@@ -966,43 +1010,42 @@ function class_moderation_restore_threads(array &$thread_ids): array
         $thread_user_id = (int)$thread_data['uid'];
 
         foreach (cache_get_instances() as $instance_id => $instance_data) {
-            try {
-                $instance_object = instance_object($instance_id);
-            } catch (Exception $e) {
-                continue;
-            }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
             if ($thread_user_id !== $post_user_id) {
-                $instance_object->set_user($thread_user_id);
-
-                $instance_object->income_thread_reply();
+                try {
+                    instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id)
+                        ->income_thread_reply();
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
             }
-        }
 
-        foreach (cache_get_instances() as $instance_id => $instance_data) {
             try {
-                $instance_object = instance_object($instance_id);
+                instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->income_thread()
+                    ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                continue;
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
             }
-
-            $instance_object->set_forum($forum_id);
-
-            $instance_object->set_thread($thread_id);
-
-            $instance_object->set_post($post_id);
-
-            $instance_object->set_user($post_user_id);
-
-            $instance_object->income_thread();
-
-            $instance_object->income_post_characters($post_data['message']);
         }
     }
 
@@ -1021,18 +1064,20 @@ function polls_do_newpoll_process(): bool
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->income_poll();
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->income_poll();
     }
 
     return true;
@@ -1056,20 +1101,21 @@ function class_moderation_delete_poll(int &$post_id): int
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->charge_poll();
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->set_user($post_user_id);
-
-        $instance_object->charge_poll();
     }
 
     return $post_id;
@@ -1087,18 +1133,20 @@ function polls_vote_process(): bool
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->charge_poll_vote();
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->charge_poll_vote();
     }
 
     return true;
@@ -1116,18 +1164,20 @@ function ratethread_process(): void
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->income_thread_rating();
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->income_thread_rating();
     }
 }
 
@@ -1147,38 +1197,42 @@ function forumdisplay_end(): void
 
     foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id)->set_forum((int)$fid);
         } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: (int)$fid,
+            );
+
             continue;
         }
 
         language_load();
 
-        $instance_name_upper = $instance_object->get_display_name_upper();
+        $instance_name_upper = $instance->get_display_name_upper();
 
-        $instance_name_lower = $instance_object->get_display_name_lower();
+        $instance_name_lower = $instance->get_display_name_lower();
 
-        $instance_object->set_forum((int)$fid);
+        $user_group_rate_addition = $instance->get_user_permissions_rate_addition();
 
-        $user_group_rate_addition = $instance_object->permission_get_rate_addition();
-
-        $user_group_rate_subtraction = $instance_object->permission_get_rate_substraction();
+        $user_group_rate_subtraction = $instance->get_user_permissions_rate_substraction();
 
         $user_rate_description = $lang->sprintf(
             $lang->newpoints_home_user_rate_description,
-            $instance_object->get_display_name_upper(),
-            $instance_object->get_display_name_lower(),
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
             $user_group_rate_addition,
             $user_group_rate_subtraction
         );
 
         $description_header = $lang->sprintf(
             $lang->newpoints_home_description_header,
-            $instance_object->get_display_name_upper(),
-            $instance_object->get_display_name_lower(),
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
         );
 
-        $income_settings = build_income_table($instance_object, 'forum');
+        $income_settings = build_income_table($instance, 'forum');
 
         $header .= eval(templates_get('forum_income'));
     }
@@ -1277,24 +1331,24 @@ function _helper_evaluate_forum_view_lock(int $forum_id): void
         return;
     }
 
-    global $mybb, $lang;
+    global $lang;
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
+
+            if ($minimum_points > $instance->get_user_column_value()) {
+                language_load();
+
+                \error(
+                    $lang->sprintf(
+                        $lang->newpoints_not_enough_points,
+                        $instance->points_format($minimum_points)
+                    )
+                );
+            }
         } catch (Exception $e) {
-            continue;
-        }
-
-        if ($minimum_points > $mybb->user[$instance_object->get_users_column_name()]) {
-            language_load();
-
-            \error(
-                $lang->sprintf(
-                    $lang->newpoints_not_enough_points,
-                    $instance_object->points_format($minimum_points)
-                )
-            );
+            log_error($instance_id, $e->getMessage());
         }
     }
 }
@@ -1309,24 +1363,24 @@ function _helper_evaluate_forum_post_lock(int $forum_id): void
         return;
     }
 
-    global $mybb, $lang;
+    global $lang;
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
+
+            if ($minimum_points > $instance->get_user_column_value()) {
+                language_load();
+
+                \error(
+                    $lang->sprintf(
+                        $lang->newpoints_not_enough_points,
+                        $instance->points_format($minimum_points)
+                    )
+                );
+            }
         } catch (Exception $e) {
-            continue;
-        }
-
-        if ($minimum_points > $mybb->user[$instance_object->get_users_column_name()]) {
-            language_load();
-
-            \error(
-                $lang->sprintf(
-                    $lang->newpoints_not_enough_points,
-                    $instance_object->points_format($minimum_points)
-                )
-            );
+            log_error($instance_id, $e->getMessage());
         }
     }
 }
@@ -1335,12 +1389,14 @@ function fetch_wol_activity_end(array &$user_activity): array
 {
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
         } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
             continue;
         }
 
-        if (my_strpos($user_activity['location'], $instance_object->get_script_file()) === false) {
+        if (my_strpos($user_activity['location'], $instance->get_script_name()) === false) {
             continue;
         }
 
@@ -1358,7 +1414,12 @@ function fetch_wol_activity_end(array &$user_activity): array
             $user_activity['activity'] = 'newpoints_logs';
         }
 
-        $user_activity = run_hooks('wol_fetch', $user_activity);
+        $hook_arguments = [
+            'user_activity' => &$user_activity,
+            'instance_object' => &$instance,
+        ];
+
+        $hook_arguments = run_hooks('wol_fetch', $hook_arguments);
 
         break;
     }
@@ -1374,12 +1435,16 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
         } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
             continue;
         }
 
-        if (my_strpos($hook_arguments['user_activity']['location'], $instance_object->get_script_file()) === false) {
+        $hook_arguments['instance_object'] = &$instance;
+
+        if (my_strpos($hook_arguments['user_activity']['location'], $instance->get_script_name()) === false) {
             continue;
         }
 
@@ -1388,31 +1453,33 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
                 $hook_arguments['location_name'] = $lang->sprintf(
                     $lang->newpoints_wol_location_home,
                     $mybb->settings['bburl'],
-                    $instance_object->get_script_file()
+                    $instance->get_script_name()
                 );
                 break;
             case 'newpoints_stats':
                 $hook_arguments['location_name'] = $lang->sprintf(
                     $lang->newpoints_wol_location_stats,
                     $mybb->settings['bburl'],
-                    url_handler_build(['action' => 'stats'])
+                    $instance->url->build(['action' => 'stats'])
                 );
                 break;
             case 'newpoints_donation':
                 $hook_arguments['location_name'] = $lang->sprintf(
                     $lang->newpoints_wol_location_donation,
                     $mybb->settings['bburl'],
-                    url_handler_build(['action' => 'donate'])
+                    $instance->url->build(['action' => 'donate'])
                 );
                 break;
             case 'newpoints_logs':
                 $hook_arguments['location_name'] = $lang->sprintf(
                     $lang->newpoints_wol_location_logs,
                     $mybb->settings['bburl'],
-                    url_handler_build(['action' => 'logs'])
+                    $instance->url->build(['action' => 'logs'])
                 );
                 break;
         }
+
+        $hook_arguments = run_hooks('wol_format', $hook_arguments);
 
         break;
     }
@@ -1420,49 +1487,56 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
     return $hook_arguments;
 }
 
-function memberlist_start(): bool
+function memberlist_start(): void
 {
     global $mybb;
+    global $newpoints_member_list_sort;
 
-    if ($mybb->get_input('sort') === 'newpoints') {
-        global $newpointsMemberListSort;
+    foreach (instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
 
-        $newpointsMemberListSort = true;
+            if ($mybb->get_input('sort') === $instance->users_column_get()) {
+                $newpoints_member_list_sort = $instance->users_column_get();
+
+                break;
+            }
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+        }
     }
-
-    return true;
 }
 
-function memberlist_intermediate(): bool
+function memberlist_intermediate(): void
 {
-    global $newpointsMemberListSort;
+    global $newpoints_member_list_sort;
 
-    if (!empty($newpointsMemberListSort)) {
-        global $mybb;
-        global $sort, $sort_field;
-
-        $sort_field = 'u.newpoints';
-
-        $sort = $mybb->input['sort'] = 'newpoints';
+    if (empty($newpoints_member_list_sort)) {
+        return;
     }
 
-    return true;
+    global $mybb;
+    global $sort, $sort_field;
+
+    $sort_field = 'u.' . $newpoints_member_list_sort;
+
+    $sort = $mybb->input['sort'] = $newpoints_member_list_sort;
 }
 
 function memberlist_user(array &$user_data): array
 {
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
+
+            $user_data[$instance->users_column_get()] =
+                (float)($user_data[$instance->users_column_get()] ?? 0);
+
+            $user_data[$instance->users_column_get() . '_user_balance_formatted'] =
+                $instance->points_format($user_data[$instance->users_column_get()]);
         } catch (Exception $e) {
-            continue;
+            log_error($instance_id, $e->getMessage());
         }
-
-        $user_data[$instance_object->get_users_column_name()] =
-            (float)($user_data[$instance_object->get_users_column_name()] ?? 0);
-
-        $user_data[$instance_object->get_users_column_name() . '_user_balance_formatted'] =
-            $instance_object->points_format($user_data[$instance_object->get_users_column_name()]);
     }
 
     return $user_data;

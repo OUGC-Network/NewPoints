@@ -123,19 +123,6 @@ $l['newpoints_reset_desc'] = 'When this is run, the NewPoints amount for each us
 $l['newpoints_reset_amount'] = 'Amount per user';
 $l['newpoints_invalid_user'] = 'Invalid user.';
 
-///////////////// Stats
-$l['newpoints_stats'] = 'Statistics';
-$l['newpoints_stats_description'] = 'View your forum statistics.';
-$l['newpoints_stats_lastdonations'] = 'Last Donations';
-$l['newpoints_error_gathering'] = 'Could not gather any data.';
-$l['newpoints_stats_richest_users'] = 'Richest Users';
-$l['newpoints_stats_from'] = 'From';
-$l['newpoints_stats_to'] = 'To';
-$l['newpoints_stats_date'] = 'Date';
-$l['newpoints_stats_user'] = 'User';
-$l['newpoints_stats_points'] = 'Points';
-$l['newpoints_stats_amount'] = 'Amount';
-
 ///////////////// Forum Rules
 $l['newpoints_forumrules'] = 'Forum Rules';
 $l['newpoints_forumrules_description'] = 'Manage forum rules and options.';
@@ -206,9 +193,9 @@ $l['newpoints_instances_thead_column'] = 'Users Column';
 $l['newpoints_instances_thead_main_file'] = 'Main File';
 $l['newpoints_instances_thead_enabled'] = 'Enabled';
 $l['newpoints_instances_thead_options_settings'] = 'Settings';
-$l['newpoints_instances_thead_options_create_column'] = 'Create Column';
+$l['newpoints_instances_thead_options_rebuild_columns'] = 'Rebuild Columns';
 
-$l['newpoints_instances_create_column_success'] = 'The users <code>{1}</code> column for the {2} instance has been created successfully.';
+$l['newpoints_instances_rebuild_columns_success'] = 'The users <code>{1}</code> column for the {2} instance has been created successfully.';
 
 $l['newpoints_instances_add'] = 'Add';
 $l['newpoints_instances_add_description'] = 'Add a new NewPoints instance.';
@@ -287,52 +274,100 @@ $l['newpoints_user_groups_can_see_stats'] = 'Can see the stats page?';
 $l['newpoints_user_groups_can_donate'] = 'Can donate points?';
 
 $l['newpoints_user_groups_rate_addition'] = 'Group Rate for Additions<br /><small class="input">The income rate for this group, used when adding points to users (i.e: income earnings). Default is <code>1</code>.</small><br />';
-$l['newpoints_user_groups_rate_addition_description'] = '';
 $l['newpoints_user_groups_rate_subtraction'] = 'Group Rate for Subtraction <code style="color: darkorange;">This works as a percentage. So "0" = user does not pay anything "100" = users pay full points, "200" = user pays twice the points, etc.</code><br /><small class="input">The income rate for this group, used when subtracting points from users (i.e: selling, purchasing, etc). Default is <code>100</code>.</small><br />';
-$l['newpoints_user_groups_rate_subtraction_description'] = '';
 
 $l['newpoints_user_groups_income_thread'] = 'New Thread<br /><small class="input">Amount of points received for each new thread.</small><br />';
-$l['newpoints_user_groups_income_thread_description'] = '';
 $l['newpoints_user_groups_income_thread_reply'] = 'New Thread Reply<br /><small class="input">Amount of points received for each reply to a thread.</small><br />';
-$l['newpoints_user_groups_income_thread_reply_description'] = '';
 $l['newpoints_user_groups_income_thread_rate'] = 'New Thread Rate<br /><small class="input">Amount of points received for each new thread rate received.</small><br />';
-$l['newpoints_user_groups_income_thread_rate_description'] = '';
 $l['newpoints_user_groups_income_post'] = 'New Post<br /><small class="input">Amount of points received for each new post.</small><br />';
-$l['newpoints_user_groups_income_post_description'] = '';
 $l['newpoints_user_groups_income_post_minimum_characters'] = 'Minimum Characters<br /><small class="input">Minimum characters required in order to receive the amount of points per character for new threads or posts.</small><br />';
-$l['newpoints_user_groups_income_post_minimum_characters_description'] = '';
 $l['newpoints_user_groups_income_post_character'] = 'Post Character<br /><small class="input">Amount of points received for each character in a thread or post.</small><br />';
-$l['newpoints_user_groups_income_post_character_description'] = '';
 $l['newpoints_user_groups_income_page_view'] = 'Page View<br /><small class="input">Amount of points received for each page view.</small><br />';
-$l['newpoints_user_groups_income_page_view_description'] = '';
 $l['newpoints_user_groups_income_visit'] = 'Visit<br /><small class="input">Amount of points received for each visit.</small><br />';
-$l['newpoints_user_groups_income_visit_description'] = '';
 $l['newpoints_user_groups_income_visit_minutes'] = 'Visit Interval<br /><small class="input">Time in minutes that the user must wait to receive the points again.</small><br />';
-$l['newpoints_user_groups_income_visit_minutes_description'] = '';
 $l['newpoints_user_groups_income_poll'] = 'New Poll<br /><small class="input">Amount of points received for each new poll.</small><br />';
-$l['newpoints_user_groups_income_poll_description'] = '';
 $l['newpoints_user_groups_income_poll_vote'] = 'New Poll Vote<br /><small class="input">Amount of points received for each poll vote.</small><br />';
-$l['newpoints_user_groups_income_poll_vote_description'] = '';
 $l['newpoints_user_groups_income_user_allowance'] = 'User Allowance<br /><small class="input">Amount of points received.</small><br />';
-$l['newpoints_user_groups_income_user_allowance_description'] = '';
 $l['newpoints_user_groups_income_user_allowance_minutes'] = 'User Allowance Interval<br /><small class="input">Time in minutes that the user must wait to receive the points again.</small><br />';
-$l['newpoints_user_groups_income_user_allowance_minutes_description'] = '';
 $l['newpoints_user_groups_income_user_allowance_primary_only'] = 'Grant allowance if this is the user primary group only?';
-$l['newpoints_user_groups_income_user_allowance_primary_only_description'] = '';
 $l['newpoints_user_groups_income_user_registration'] = 'New Registration<br /><small class="input">Amount of points received when users register to the forum.</small><br />';
-$l['newpoints_user_groups_income_user_registration_description'] = '';
 $l['newpoints_user_groups_income_user_referral'] = 'New Referral<br /><small class="input">Amount of points received for each user referred to the forum.</small><br />';
-$l['newpoints_user_groups_income_user_referral_description'] = '';
 $l['newpoints_user_groups_income_private_message'] = 'New Private Message<br /><small class="input">Amount of points received for each private message sent.</small><br />';
-$l['newpoints_user_groups_income_private_message_description'] = '';
 
-$l['newpoints_forums'] = 'NewPoints Configuration';
-$l['newpoints_field_newpoints_rate_addition'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
-$l['newpoints_field_newpoints_rate_addition_description'] = '';
-$l['newpoints_field_newpoints_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
-$l['newpoints_field_newpoints_view_lock_points_description'] = '';
-$l['newpoints_field_newpoints_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
-$l['newpoints_field_newpoints_post_lock_points_description'] = '';
+$l['newpoints_permission_general'] = 'General';
+$l['newpoints_permission_rates'] = 'Rates';
+$l['newpoints_permission_income'] = 'Income';
+
+$l['newpoints_permission_can_get_points'] = 'Can get income points?';
+$l['newpoints_permission_can_get_points_description'] = '';
+$l['newpoints_permission_can_see_page'] = 'Can see main page?';
+$l['newpoints_permission_can_see_page_description'] = '';
+$l['newpoints_permission_can_see_stats'] = 'Can see the stats page?';
+$l['newpoints_permission_can_see_stats_description'] = '';
+$l['newpoints_permission_can_donate'] = 'Can donate points?';
+$l['newpoints_permission_can_donate_description'] = '';
+
+$l['newpoints_permission_rate_addition'] = 'Group Rate for Additions';
+$l['newpoints_permission_rate_addition_description'] = 'The income rate for this group, used when adding points to users (i.e: income earnings). Default is <code>1</code>.';
+$l['newpoints_permission_rate_subtraction'] = 'Group Rate for Subtraction <code style="color: darkorange;">This works as a percentage. So "0" = user does not pay anything "100" = users pay full points, "200" = user pays twice the points, etc.</code>';
+$l['newpoints_permission_rate_subtraction_description'] = 'The income rate for this group, used when subtracting points from users (i.e: selling, purchasing, etc). Default is <code>100</code>.';
+
+$l['newpoints_permission_income_thread'] = 'New Thread';
+$l['newpoints_permission_income_thread_description'] = 'Amount of points received for each new thread.';
+$l['newpoints_permission_income_thread_reply'] = 'New Thread Reply';
+$l['newpoints_permission_income_thread_reply_description'] = 'Amount of points received for each reply to a thread.';
+$l['newpoints_permission_income_thread_rate'] = 'New Thread Rate';
+$l['newpoints_permission_income_thread_rate_description'] = 'Amount of points received for each new thread rate received.';
+$l['newpoints_permission_income_post'] = 'New Post';
+$l['newpoints_permission_income_post_description'] = 'Amount of points received for each new post.';
+$l['newpoints_permission_income_post_minimum_characters'] = 'Minimum Characters';
+$l['newpoints_permission_income_post_minimum_characters_description'] = 'Minimum characters required in order to receive the amount of points per character for new threads or posts.';
+$l['newpoints_permission_income_post_character'] = 'Post Character';
+$l['newpoints_permission_income_post_character_description'] = 'Amount of points received for each character in a thread or post.';
+$l['newpoints_permission_income_page_view'] = 'Page View';
+$l['newpoints_permission_income_page_view_description'] = 'Amount of points received for each page view.';
+$l['newpoints_permission_income_visit'] = 'Visit';
+$l['newpoints_permission_income_visit_description'] = 'Amount of points received for each visit.';
+$l['newpoints_permission_income_visit_minutes'] = 'Visit Interval';
+$l['newpoints_permission_income_visit_minutes_description'] = 'Time in minutes that the user must wait to receive the points again.';
+$l['newpoints_permission_income_poll'] = 'New Poll';
+$l['newpoints_permission_income_poll_description'] = 'Amount of points received for each new poll.';
+$l['newpoints_permission_income_poll_vote'] = 'New Poll Vote';
+$l['newpoints_permission_income_poll_vote_description'] = 'Amount of points received for each poll vote.';
+$l['newpoints_permission_income_user_allowance'] = 'User Allowance';
+$l['newpoints_permission_income_user_allowance_description'] = 'Amount of points received.';
+$l['newpoints_permission_income_user_allowance_minutes'] = 'User Allowance Interval';
+$l['newpoints_permission_income_user_allowance_minutes_description'] = 'Time in minutes that the user must wait to receive the points again.';
+$l['newpoints_permission_income_user_allowance_primary_only'] = 'Grant allowance if this is the user primary group only?';
+$l['newpoints_permission_income_user_registration'] = 'New Registration';
+$l['newpoints_permission_income_user_registration_description'] = 'Amount of points received when users register to the forum.';
+$l['newpoints_permission_income_user_referral'] = 'New Referral';
+$l['newpoints_permission_income_user_referral_description'] = 'Amount of points received for each user referred to the forum.';
+$l['newpoints_permission_income_private_message'] = 'New Private Message';
+$l['newpoints_permission_income_private_message_description'] = 'Amount of points received for each private message sent.';
+
+$l['newpoints_permissions_forum_can_get_points'] = 'Can get points posting in this forum?';
+$l['newpoints_permissions_forum_rate_addition'] = 'Forum Rate';
+$l['newpoints_permissions_forum_rate_addition_description'] = 'The income rate for this forum. Default is <code>1</code>.';
+$l['newpoints_permissions_forum_view_lock_points'] = 'Minimum Points To View';
+$l['newpoints_permissions_forum_view_lock_points_description'] = 'Set an amount of points users must have in order to view this forum.';
+$l['newpoints_permissions_forum_post_lock_points'] = 'Minimum Points To Post';
+$l['newpoints_permissions_forum_post_lock_points_description'] = 'Set an amount of points users must have in order to post in this forum.';
+
+$l['newpoints_forums'] = 'NewPoints';
+$l['newpoints_forum_setting_can_get_points'] = 'Can get points posting in this forum?';
+$l['newpoints_forum_setting_rate_addition'] = 'Forum Rate<br /><small class="input">The income rate for this forum. Default is <code>1</code>.</small><br />';
+$l['newpoints_forum_setting_view_lock_points'] = 'Minimum Points To View<br /><small class="input">Set an amount of points users must have in order to view this forum.</small><br />';
+$l['newpoints_forum_setting_post_lock_points'] = 'Minimum Points To Post<br /><small class="input">Set an amount of points users must have in order to post in this forum.</small><br />';
+
+$l['newpoints_forums'] = 'NewPoints';
+$l['newpoints_field_newpoints_can_get_points'] = 'Can get points posting in this forum?';
+$l['newpoints_field_newpoints_rate_addition'] = 'Forum Rate';
+$l['newpoints_field_newpoints_rate_addition_description'] = 'The income rate for this forum. Default is <code>1</code>.';
+$l['newpoints_field_newpoints_view_lock_points'] = 'Minimum Points To View';
+$l['newpoints_field_newpoints_view_lock_points_description'] = 'Set an amount of points users must have in order to view this forum.';
+$l['newpoints_field_newpoints_post_lock_points'] = 'Minimum Points To Post';
+$l['newpoints_field_newpoints_post_lock_points_description'] = 'Set an amount of points users must have in order to post in this forum.';
 
 $l['newpoints_users_amount'] = 'NewPoints Amount';
 
@@ -343,10 +378,11 @@ $l['newpoints_task_main_ran'] = 'Main NewPoints task ran';
 
 $l['newpoints_users_tab'] = 'NewPoints';
 $l['newpoints_users_title'] = 'NewPoints Information';
+$l['newpoints_user_deprecated'] = 'This section is deprecated and the <a href="https://community.mybb.com/mods.php?action=view&pid=1623">Quick Edit</a> plugin is recommended instead.<br />You may still update some NewPoints for this user here.';
+
 $l['newpoints_user_newpoints'] = 'NewPoints<br /><small class="input">Update the curren NewPoints for this user.</small><br />';
 
 $l['group_newpoints'] = 'NewPoints';
-$l['newpoints_field_newpoints_can_get_points'] = 'Can get points posting in this forum?';$l['newpoints_field_newpoints_can_get_points_description'] = 'Can get points posting in this forum?';
 
 $l = array_merge($l, [
     'newpoints_admin_instances_success_new_instance' => 'The NewPoints instance was successfully added.',
@@ -406,10 +442,6 @@ $l = array_merge($l, [
 
     'newpoints_admin_instances_permissions_clear_confirm' => 'Are you sure you wish to clear this custom permission?',
     'newpoints_admin_instances_permissions_clear_success' => 'The custom group permissions for this instance have been cleared successfully.',
-
-    'newpoints_user_groups_general' => 'General',
-    'newpoints_user_groups_rates' => 'Rates',
-    'newpoints_user_groups_income' => 'Income',
 
     'newpoints_admin_instances_permissions_form_forum' => 'Forum',
     'newpoints_admin_instances_permissions_form_forum_permissions' => 'Forum Permissions',

@@ -44,6 +44,7 @@ use function Newpoints\Core\check_permissions;
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\find_replace_template_sets;
 use function Newpoints\Core\get_group;
+use function Newpoints\Core\instance_object;
 use function Newpoints\Core\js_special_characters;
 use function Newpoints\Core\language_load;
 use function Newpoints\Core\log_add;
@@ -69,6 +70,7 @@ use function Newpoints\Core\users_get_by_username;
 use function Newpoints\Core\users_update;
 
 use const Newpoints\ROOT;
+use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\Core\PRIVATE_MESSAGE_CURRENT_USER_ID;
 
 const NEWPOINTS_VERSION = '3.1.6';
@@ -106,6 +108,7 @@ require_once ROOT . '/system/Permissions.php';
 require_once ROOT . '/system/IncomeRates.php';
 require_once ROOT . '/system/IncomePermissions.php';
 require_once ROOT . '/classes.php';
+require_once ROOT . '/system/Url.php';
 
 if (defined('IN_ADMINCP')) {
     require_once ROOT . '/admin.php';
@@ -158,36 +161,43 @@ if (defined('IN_ADMINCP')) {
 /****************** FUNCTIONS THAT CAN/SHOULD BE USED BY PLUGINS **********************/
 /**************************************************************************************/
 
+#[Deprecated(message: 'use count_characters() instead', since: '3')]
 function newpoints_count_characters(string $message): int
 {
     return count_characters($message);
 }
 
+#[Deprecated(message: 'use js_special_characters() instead', since: '3')]
 function newpoints_jsspecialchars(string $str): string
 {
     return js_special_characters($str);
 }
 
+#[Deprecated(message: 'use templates_remove() instead', since: '3')]
 function newpoints_remove_templates($templates): bool
 {
     return templates_remove(explode(',', $templates));
 }
 
+#[Deprecated(message: 'use templates_add() instead', since: '3')]
 function newpoints_add_template(string $name, string $contents, $sid = -1): bool
 {
     return templates_add($name, $contents, $sid);
 }
 
+#[Deprecated(message: 'use templates_rebuild() instead', since: '3')]
 function newpoints_rebuild_templates(): bool
 {
     return templates_rebuild();
 }
 
+#[Deprecated(message: 'use settings_remove() instead', since: '3')]
 function newpoints_remove_settings(string $settings): bool
 {
     return settings_remove(explode(',', str_replace("'", '', $settings)));
 }
 
+#[Deprecated(message: 'use settings_add() instead', since: '3')]
 function newpoints_add_setting(
     string $name,
     string $plugin,
@@ -200,102 +210,129 @@ function newpoints_add_setting(
     return settings_add($name, $plugin, $title, $description, $type, $value, $disporder);
 }
 
+#[Deprecated(message: 'use settings_add_group() instead', since: '3')]
 function newpoints_add_settings(string $plugin, array $settings): bool
 {
     return settings_add_group($plugin, $settings);
 }
 
+#[Deprecated(message: 'use points_addition() instead', since: '3')]
 function newpoints_addpoints(
-    int $uid,
+    int $user_id,
     float $points,
     float $forumrate = 1,
     float $grouprate = 1,
     bool $isstring = false,
     bool $immediate = false
 ): bool {
-    return points_add($uid, $points, $forumrate = 1, $grouprate = 1, $isstring = false, $immediate);
+    try {
+        instance_object(INSTANCE_DEFAULT_ID, $user_id);
+
+        return points_add($user_id, $points, $forumrate, $grouprate, $isstring, $immediate);
+    } catch (Exception $e) {
+        \Newpoints\Core\log_error(INSTANCE_DEFAULT_ID, $e->getMessage());
+
+        return false;
+    }
 }
 
+#[Deprecated(message: 'use points_update() instead', since: '3')]
 function newpoints_update_addpoints(): void
 {
     points_update();
 }
 
+#[Deprecated(message: 'use rules_get() instead', since: '3')]
 function newpoints_getrules(string $type, int $id): array
 {
     return rules_get($type, $id);
 }
 
+#[Deprecated(message: 'use rules_get_all() instead', since: '3')]
 function newpoints_getallrules($type): array
 {
     return rules_get_all($type);
 }
 
+#[Deprecated(message: 'use rules_rebuild_cache() instead', since: '3')]
 function newpoints_rebuild_rules_cache(array &$rules = []): bool
 {
     return rules_rebuild_cache($rules);
 }
 
+#[Deprecated(message: 'use points_format() instead', since: '3')]
 function newpoints_format_points(float $points): string
 {
     return points_format($points);
 }
 
+#[Deprecated(message: 'use private_message_send() instead', since: '3')]
 function newpoints_send_pm(array $private_message_data, int $from_user_id = PRIVATE_MESSAGE_CURRENT_USER_ID): bool
 {
     return private_message_send($private_message_data, $from_user_id);
 }
 
+#[Deprecated(message: 'use users_get_by_username() instead', since: '3')]
 function newpoints_getuser_byname(string $username, string $fields = '*'): array
 {
     return users_get_by_username($username, $fields);
 }
 
+#[Deprecated(message: 'use get_group() instead', since: '3')]
 function newpoints_get_usergroup(int $gid): array
 {
     return get_group($gid);
 }
 
+#[Deprecated(message: 'use find_replace_template_sets() instead', since: '3')]
 function newpoints_find_replace_templatesets(string $title, string $find, string $replace): bool
 {
     return find_replace_template_sets($title, $find, $replace);
 }
 
+#[Deprecated(message: 'use log_add() instead', since: '3')]
 function newpoints_log(string $log_action, string $log_data = '', string $username = '', int $user_id = 0): int
 {
     return log_add($log_action, $log_data, $username, $user_id);
 }
 
+#[Deprecated(message: 'use log_remove() instead', since: '3')]
 function newpoints_remove_log(array $action): bool
 {
     return log_remove($action);
 }
 
+#[Deprecated(message: 'use check_permissions() instead', since: '3')]
 function newpoints_check_permissions(string $groups_comma): bool
 {
     return check_permissions($groups_comma);
 }
 
+#[Deprecated(message: 'use plugins_load() instead', since: '3')]
 function newpoints_load_plugins(): bool
 {
     return plugins_load();
 }
 
-function newpoints_load_settings(): bool
+#[Deprecated(message: 'use settings_load() instead', since: '3')]
+function newpoints_load_settings(): void
 {
-    return settings_load();
+    settings_load();
 }
 
+#[Deprecated(message: 'use settings_rebuild_cache() instead', since: '3')]
 function newpoints_rebuild_settings_cache(array &$settings = []): array
 {
     return settings_rebuild_cache($settings);
 }
 
+#[Deprecated(message: 'use language_load() instead', since: '3')]
 function newpoints_lang_load(string $plugin): bool
 {
     return language_load($plugin);
 }
 
+#[Deprecated(message: 'use users_update() instead', since: '3')]
 function newpoints_update_users(): bool
 {
     return users_update();

@@ -33,6 +33,7 @@ use function Newpoints\Core\get_setting;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
+use function Newpoints\Core\log_error;
 use function Newpoints\Core\run_hooks;
 
 function task_backupnewpoints(array &$task): array
@@ -107,12 +108,10 @@ function backupnewpoints_backupdb(): bool
 
     foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $backup_fields[] = instance_object($instance_id)->users_column_get();
         } catch (Exception $e) {
-            continue;
+            log_error($instance_id, $e->getMessage());
         }
-
-        $backup_fields[] = $instance_object->get_users_column_name();
     }
 
     $backup_fields = run_hooks('task_backup_tables', $backup_fields);

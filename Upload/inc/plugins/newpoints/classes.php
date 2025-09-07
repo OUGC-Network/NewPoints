@@ -33,6 +33,8 @@ namespace Newpoints\Core;
 
 use Exception;
 
+use InvalidArgumentException;
+
 use const Newpoints\DECIMAL_DATA_TYPE_SIZE;
 use const Newpoints\DECIMAL_DATA_TYPE_STEP;
 
@@ -569,6 +571,68 @@ define('Newpoints\Core\TABLES_DATA', [
             'default' => INSTANCE_DEFAULT_ID
         ],
     ],
+    'newpoints_error_log' => [
+        'log_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'auto_increment' => true,
+            'primary_key' => true
+        ],
+        'instance_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => INSTANCE_DEFAULT_ID
+        ],
+        'error_message' => [
+            'type' => 'TEXT',
+            'null' => true
+        ],
+        'user_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'post_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'thread_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'forum_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'income_type' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'log_primary_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'log_secondary_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'log_tertiary_id' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+        'dateline' => [
+            'type' => 'INT',
+            'unsigned' => true,
+            'default' => 0
+        ],
+    ],
     'newpoints_forumrules' => [
         'rid' => [
             'type' => 'INT',
@@ -649,7 +713,7 @@ define('Newpoints\Core\TABLES_DATA', [
             'default' => 0
         ],
     ],
-    'newpoints_instances' => array_merge([
+    'newpoints_instances' => [
         'instance_id' => [
             'type' => 'INT',
             'unsigned' => true,
@@ -699,18 +763,19 @@ define('Newpoints\Core\TABLES_DATA', [
             'form_category' => 'main',
             'is_disabled' => function (int $instance_id): bool {
                 if ($instance_id === INSTANCE_DEFAULT_ID) {
-                    return $instance_id === INSTANCE_DEFAULT_ID;
+                    return true;
                 }
-
-                $instance_data = instance_get($instance_id);
 
                 try {
-                    $instance_object = instance_object($instance_id);
+                    return instance_object($instance_id)->users_column_exists();
                 } catch (Exception $e) {
-                    return false;
-                }
+                    \Newpoints\Core\log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                    );
 
-                return $instance_object->users_column_exists();
+                    return true;
+                }
             }
         ],
         'is_enabled' => [
@@ -730,7 +795,7 @@ define('Newpoints\Core\TABLES_DATA', [
         'unique_key' => [
             'users_column_name' => 'users_column_name',
         ],
-    ], GROUP_PERMISSIONS),
+    ],
     'newpoints_group_permissions' => array_merge([
         'permission_id' => [
             'type' => 'INT',

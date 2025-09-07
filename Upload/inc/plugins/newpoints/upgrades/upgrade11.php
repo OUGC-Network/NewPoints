@@ -63,8 +63,6 @@ function upgrade11_run()
         12
     );
 
-    change_admin_permission('newpoints', 'upgrades', 1);
-
     templates_remove(['newpoints_donate']);
 
     templates_add(

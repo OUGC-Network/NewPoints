@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace Newpoints\System;
 
+use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -44,40 +45,44 @@ use const Newpoints\Core\PRIVATE_MESSAGE_ENGINE_ID;
 
 class Logger
 {
-    private Instance $core;
+    private Instance $instance;
+    private int $log_id = 0;
 
-    public function __construct(Instance &$core)
+    public function __construct(Instance &$instance)
     {
-        $this->core = $core;
+        $this->instance = $instance;
     }
 
     /**
      * Create a new log entry
      *
      * @param string $log_action action taken
-     * @param int $user_id $uid of who's executed the action
      * @param float $log_points
      * @param int $primary_id
      * @param int $secondary_id
      * @param int $tertiary_id
      * @param int $log_type
-     * @return int false if something went wrong
+     * @param int $user_id $uid of who's executed the action
+     * @return Logger false if something went wrong
      */
     public function log_action(
         string $log_action,
-        int $user_id = 0,
         float $log_points = 0,
         int $primary_id = 0,
         int $secondary_id = 0,
         int $tertiary_id = 0,
-        int $log_type = 0
-    ): int {
+        int $log_type = 0,
+        int $user_id = 0,
+    ): self {
         if (!$log_action) {
-            throw new InvalidArgumentException('Log action cannot be empty.');
+            throw new Exception('Log action cannot be empty.');
+        }
+        if ($user_id < 1) {
+            $user_id = $this->instance->get_user_id();
         }
 
-        if (empty($user_id) || !($user_data = get_user($user_id))) {
-            throw new InvalidArgumentException('User ID cannot be empty.');
+        if (!($user_data = get_user($user_id))) {
+            throw new Exception('User ID cannot be empty.');
         }
 
         $log_points = abs($log_points);
@@ -98,32 +103,32 @@ class Logger
                 'log_secondary_id' => $secondary_id,
                 'log_tertiary_id' => $tertiary_id,
                 'log_type' => $log_type,
-                'instance_id' => $this->core->instance_id
+                'instance_id' => $this->instance->instance_id
             ]
         );
 
         if (!$log_id) {
-            throw new RuntimeException('Failed to create log entry.');
+            throw new Exception('Failed to create log entry.');
         }
 
         switch ($log_type) {
             case LOGGING_TYPE_CHARGE:
-                if ($this->core->notifications_private_message_enabled()) {
+                if ($this->instance->notifications_private_message_enabled()) {
                     private_message_send(
                         [
                             'language' => $user_data['language'],
                             'subject' => [
                                 'newpoints_log_pm_subtract_subject',
-                                $this->core->get_display_name_upper($log_points),
-                                $this->core->get_display_name_lower($log_points),
-                                strip_tags($this->core->points_format($log_points)),
+                                $this->instance->get_display_name_upper($log_points),
+                                $this->instance->get_display_name_lower($log_points),
+                                strip_tags($this->instance->points_format($log_points)),
                             ],
                             'message' => [
                                 'newpoints_log_pm_subtract_message',
-                                $this->core->get_display_name_upper($log_points),
-                                $this->core->get_display_name_lower($log_points),
+                                $this->instance->get_display_name_upper($log_points),
+                                $this->instance->get_display_name_lower($log_points),
                                 $user_data['username'],
-                                strip_tags($this->core->points_format($log_points)),
+                                strip_tags($this->instance->points_format($log_points)),
                             ],
                             'touid' => $user_id
                         ],
@@ -134,29 +139,29 @@ class Logger
 
                 alert_send(
                     $user_id,
-                    $log_id,
+                    $this->log_id,
                     'core',
                     'subtract_points',
-                    $this->core->instance_id,
+                    $this->instance->instance_id,
                 );
                 break;
-            default:
-                if ($this->core->notifications_private_message_enabled()) {
+            case LOGGING_TYPE_INCOME:
+                if ($this->instance->notifications_private_message_enabled()) {
                     private_message_send(
                         [
                             'language' => $user_data['language'],
                             'subject' => [
                                 'newpoints_log_pm_add_subject',
-                                $this->core->get_display_name_upper($log_points),
-                                $this->core->get_display_name_lower($log_points),
-                                strip_tags($this->core->points_format($log_points)),
+                                $this->instance->get_display_name_upper($log_points),
+                                $this->instance->get_display_name_lower($log_points),
+                                strip_tags($this->instance->points_format($log_points)),
                             ],
                             'message' => [
                                 'newpoints_log_pm_add_message',
-                                $this->core->get_display_name_upper($log_points),
-                                $this->core->get_display_name_lower($log_points),
+                                $this->instance->get_display_name_upper($log_points),
+                                $this->instance->get_display_name_lower($log_points),
                                 $user_data['username'],
-                                strip_tags($this->core->points_format($log_points)),
+                                strip_tags($this->instance->points_format($log_points)),
                             ],
                             'touid' => $user_id
                         ],
@@ -167,44 +172,43 @@ class Logger
 
                 alert_send(
                     $user_id,
-                    $log_id,
+                    $this->log_id,
                     'core',
                     'add_points',
-                    $this->core->instance_id,
+                    $this->instance->instance_id,
                 );
+
                 break;
         }
 
-        return $log_id;
+        return $this;
     }
 
     /**
      * Create a new income log entry
      *
      * @param string $log_action action taken
-     * @param int $user_id $uid of who's executed the action
      * @param float $log_points
      * @param int $primary_id
      * @param int $secondary_id
      * @param int $tertiary_id
-     * @return int false if something went wrong
+     * @return Logger false if something went wrong
      */
     public function log_income(
         string $log_action,
-        int $user_id = 0,
         float $log_points = 0,
         int $primary_id = 0,
         int $secondary_id = 0,
         int $tertiary_id = 0
-    ): int {
+    ): self {
         return $this->log_action(
             $log_action,
-            $user_id,
             $log_points,
             $primary_id,
             $secondary_id,
             $tertiary_id,
-            LOGGING_TYPE_INCOME
+            LOGGING_TYPE_INCOME,
+            user_id: $this->instance->get_user_id(),
         );
     }
 
@@ -212,29 +216,57 @@ class Logger
      * Create a new charge log entry
      *
      * @param string $log_action action taken
-     * @param int $user_id $uid of who's executed the action
      * @param float $log_points
      * @param int $primary_id
      * @param int $secondary_id
      * @param int $tertiary_id
-     * @return int false if something went wrong
+     * @return Logger false if something went wrong
      */
     public function log_charge(
         string $log_action,
-        int $user_id = 0,
         float $log_points = 0,
         int $primary_id = 0,
         int $secondary_id = 0,
         int $tertiary_id = 0
-    ): int {
+    ): self {
         return $this->log_action(
             $log_action,
-            $user_id,
             $log_points,
             $primary_id,
             $secondary_id,
             $tertiary_id,
-            LOGGING_TYPE_CHARGE
+            LOGGING_TYPE_CHARGE,
+            user_id: $this->instance->get_user_id(),
         );
+    }
+
+    public function get(int $log_id): array
+    {
+        global $db;
+
+        $query = $db->simple_select(
+            'newpoints_log',
+            '*',
+            "lid='{$log_id}' AND instance_id='{$this->instance->instance_id}'",
+            ['limit' => 1]
+        );
+
+        if (!$db->num_rows($query)) {
+            return [];
+        }
+
+        return (array)$db->fetch_array($query);
+    }
+
+    public function get_log_id(): int
+    {
+        return $this->log_id;
+    }
+
+    public function delete(int $log_id): void
+    {
+        global $db;
+
+        $db->delete_query('newpoints_log', "lid='{$log_id}' AND instance_id='{$this->instance->instance_id}'");
     }
 }

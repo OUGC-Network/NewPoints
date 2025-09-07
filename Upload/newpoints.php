@@ -29,26 +29,19 @@
 
 declare(strict_types=1);
 
-use Newpoints\Core\IncomeRates;
 use Newpoints\Core\Permissions;
 
 use function Newpoints\Core\build_income_table;
 use function Newpoints\Core\cache_get_instances;
-use function Newpoints\Core\get_income_types;
-use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_delete;
-use function Newpoints\Core\log_get;
+use function Newpoints\Core\log_error;
 use function Newpoints\Core\page_build_menu;
 use function Newpoints\Core\page_build_menu_options;
-use function Newpoints\Core\points_subtract;
 use function Newpoints\Core\post_parser;
 use function Newpoints\Core\private_message_send;
 use function Newpoints\Core\templates_get;
 use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\url_handler_build;
-use function Newpoints\Core\url_handler_set;
 use function Newpoints\Core\users_get_by_username;
 
 use const Newpoints\Core\INCOME_TYPE_POST;
@@ -58,7 +51,6 @@ use const Newpoints\Core\INCOME_TYPE_THREAD;
 use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
-use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 
@@ -80,21 +72,20 @@ if (!function_exists('\Newpoints\Core\language_load')) {
 
 foreach (cache_get_instances() as $instance_id => $instance_data) {
     try {
-        $instance_object = instance_object($instance_id);
+        $instance = instance_object($instance_id);
+
+        if ($instance->get_script_name() === THIS_SCRIPT_REAL) {
+            break;
+        }
     } catch (Exception $e) {
-        continue;
+        log_error($instance_id, $e->getMessage());
     }
-
-    if ($instance_object->get_script_file() === THIS_SCRIPT_REAL) {
-        break;
-    }
-
-    unset($instance_id);
 }
 
-$instance_id = $instance_id ?? \Newpoints\Core\INSTANCE_DEFAULT_ID;
+$instance_id = 1;
+$instance = instance_object($instance_id);
 
-if (empty($instance_object) || !$instance_object->is_enabled()) {
+if (empty($instance->instance_id) || !$instance->is_enabled()) {
     error();
 }
 
@@ -102,61 +93,61 @@ global $mybb, $plugins, $lang, $db, $templates;
 
 $mybb->input['action'] = $mybb->get_input('action');
 
-$newpoints_file = $instance_object->get_script_file();
-
-url_handler_set($newpoints_file);
+$newpoints_file = $instance->get_script_name();
 
 run_hooks('begin');
 
-// Allow guests here? Some plugins may allow guest access and they may hook to newpoints_start
-if (!$instance_object->permission_check_boolean(Permissions::CanSeePage)) {
+// Allow guests here? Some plugins may allow guest access, and they may hook to newpoints_start
+if (!$instance->user_permissions[Permissions::CanSeePage]) {
     error_no_permission();
 }
 
 language_load();
 
-$options = page_build_menu_options($instance_id);
+$options = page_build_menu_options($instance->instance_id);
 
-$newpoints_menu = page_build_menu($instance_id);
+$newpoints_menu = page_build_menu($instance->instance_id);
 
 $newpoints_errors = '';
 
-add_breadcrumb($instance_object->get_display_name_upper(), $newpoints_file);
+add_breadcrumb($instance->get_display_name_upper(), $newpoints_file);
 
 $newpoints_additional = '';
 
-$current_user_id = (int)$mybb->user['uid'];
+$current_user_id = $instance->get_user_id();
 
 $newpoints_pagination = $newpoints_buttons = '';
 
 run_hooks('start');
 
 // Block guests here
-if (!$current_user_id) {
+if (!$instance->get_user_id()) {
     error_no_permission();
 }
 
-$instance_name_upper = $instance_object->get_display_name_upper();
+$instance_name_upper = $instance->get_display_name_upper();
 
-$instance_name_lower = $instance_object->get_display_name_lower();
+$instance_name_lower = $instance->get_display_name_lower();
 
 // no action=home
 if (!$mybb->get_input('action')) {
     run_hooks('home_start');
 
-    $user_group_rate_addition = $instance_object->permission_get_rate_addition();
+    $user_group_rate_addition = $instance->get_user_permissions_rate_addition();
 
-    $user_group_rate_subtraction = $instance_object->permission_get_rate_substraction();
+    $user_group_rate_subtraction = $instance->get_user_permissions_rate_substraction();
 
     $user_rate_description = $lang->sprintf(
         $lang->newpoints_home_user_rate_description,
-        $instance_object->get_display_name_upper(),
-        $instance_object->get_display_name_lower(),
+        $instance->get_display_name_upper(),
+        $instance->get_display_name_lower(),
         $user_group_rate_addition,
         $user_group_rate_subtraction
     );
 
-    $income_settings = build_income_table($instance_object);
+    $latest_transactions = [];
+
+    $income_settings = build_income_table($instance);
 
     run_hooks('home_intermediate');
 
@@ -165,21 +156,25 @@ if (!$mybb->get_input('action')) {
 
     $description_header = $lang->sprintf(
         $lang->newpoints_home_description_header,
-        $instance_object->get_display_name_upper(),
-        $instance_object->get_display_name_lower(),
+        $instance->get_display_name_upper(),
+        $instance->get_display_name_lower(),
     );
 
     run_hooks('home_end');
 
+    $latest_transactions = implode(' ', $latest_transactions);
+
     $page = eval(templates_get('home'));
 
     output_page($page);
+
+    exit;
 }
 
 if ($mybb->get_input('action') == 'stats') {
-    add_breadcrumb($lang->newpoints_statistics, url_handler_build(['action' => 'stats']));
+    add_breadcrumb($lang->newpoints_statistics, $instance->url->build(['action' => 'stats']));
 
-    if (!$instance_object->permission_check_boolean(Permissions::CanSeeStats)) {
+    if (!$instance->user_permissions[Permissions::CanSeeStats]) {
         error($lang->newpoints_stats_disabled);
     }
 
@@ -187,7 +182,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $bgcolor = alt_trow();
 
-    $fields = ['uid', 'username', $instance_object->get_users_column_name(), 'usergroup', 'displaygroup'];
+    $fields = ['uid', 'username', $instance->users_column_get(), 'usergroup', 'displaygroup'];
 
     $statistics_items = [];
 
@@ -199,9 +194,9 @@ if ($mybb->get_input('action') == 'stats') {
         implode(',', $fields),
         '',
         [
-            'order_by' => $instance_object->get_users_column_name(),
+            'order_by' => $instance->users_column_get(),
             'order_dir' => 'DESC',
-            'limit' => (int)$instance_object->settings_get_value('main_stats_richestusers')
+            'limit' => (int)$instance->settings_get_value('main_stats_richestusers')
         ]
     );
 
@@ -213,8 +208,8 @@ if ($mybb->get_input('action') == 'stats') {
             (int)$user['uid']
         );
 
-        $newpoints_amount = $instance_object->points_format(
-            (float)$user[$instance_object->get_users_column_name()]
+        $newpoints_amount = $instance->points_format(
+            (float)$user[$instance->users_column_get()]
         );
 
         run_hooks('stats_richest_users');
@@ -241,9 +236,9 @@ if ($mybb->get_input('action') == 'stats') {
 		FROM {$db->table_prefix}newpoints_log l
 		LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid)
 		LEFT JOIN {$db->table_prefix}users tu ON (tu.uid=l.log_primary_id)
-		WHERE l.action='donation' AND l.instance_id='{$instance_id}'
+		WHERE l.action='donation' AND l.instance_id='{$instance->instance_id}'
 		ORDER BY l.date DESC
-		LIMIT " . (int)$instance_object->settings_get_value('donations_stats_latest')
+		LIMIT " . (int)$instance->settings_get_value('donations_stats_latest')
     );
 
     while ($donation = $db->fetch_array($query)) {
@@ -260,7 +255,7 @@ if ($mybb->get_input('action') == 'stats') {
             (int)$donation['uid']
         );
 
-        $donation['amount'] = $instance_object->points_format((float)($donation['points'] ?? ($data[2] ?? 0)));
+        $donation['amount'] = $instance->points_format((float)($donation['points'] ?? ($data[2] ?? 0)));
         $donation['date'] = my_date(
                 $mybb->settings['dateformat'],
                 (int)$donation['date'],
@@ -290,8 +285,10 @@ if ($mybb->get_input('action') == 'stats') {
     run_hooks('stats_end');
 
     output_page($page);
+
+    exit;
 } elseif ($mybb->get_input('action') == 'donate') {
-    if (!$instance_object->permission_check_boolean(Permissions::CanDonate)) {
+    if (!$instance->user_permissions[Permissions::CanDonate]) {
         error($lang->newpoints_donations_disabled);
     }
 
@@ -306,7 +303,7 @@ if ($mybb->get_input('action') == 'stats') {
         $user['username'] = '';
     }
 
-    if ($uid == $current_user_id || $user['username'] == $mybb->user['username']) {
+    if ($uid == $instance->get_user_id() || $user['username'] == $instance->get_user_data()['username']) {
         error($lang->newpoints_cant_donate_self);
     }
 
@@ -329,8 +326,10 @@ if ($mybb->get_input('action') == 'stats') {
     run_hooks('donate_end');
 
     output_page($page);
+
+    exit;
 } elseif ($mybb->get_input('action') == 'do_donate') {
-    if (!$instance_object->permission_check_boolean(Permissions::CanDonate)) {
+    if (!$instance->user_permissions[Permissions::CanDonate]) {
         error($lang->newpoints_donations_disabled);
     }
 
@@ -338,29 +337,29 @@ if ($mybb->get_input('action') == 'stats') {
 
     run_hooks('do_donate_start');
 
-    if ($mybb->user['usergroup'] != 4) {
+    if (!$instance->user_permissions['cancp']) {
         $q = $db->simple_select(
             'newpoints_log',
             'COUNT(lid) as donations',
             'action=\'donation\' AND date>' . (constant(
                     'TIME_NOW'
-                ) - (int)$instance_object->settings_get_value(
+                ) - (int)$instance->settings_get_value(
                     'donations_flood_minutes'
-                ) * 60 * 60) . ' AND uid=' . $current_user_id . ' AND l.instance_id=' . $instance_id
+                ) * 60 * 60) . ' AND uid=' . $instance->get_user_id() . ' AND l.instance_id=' . $instance->instance_id
         );
         $totaldonations = (int)$db->fetch_field($q, 'donations');
-        if ($totaldonations >= (int)$instance_object->settings_get_value('donations_flood_limit')) {
+        if ($totaldonations >= (int)$instance->settings_get_value('donations_flood_limit')) {
             error($lang->sprintf($lang->newpoints_max_donations_control, $totaldonations));
         }
     }
 
     $amount = round(
         $mybb->get_input('amount', MyBB::INPUT_FLOAT),
-        (int)$instance_object->settings_get_value('main_decimal')
+        (int)$instance->settings_get_value('main_decimal')
     );
 
     // do we have enough points?
-    if ($amount <= 0 || $amount > $mybb->user[$instance_object->get_users_column_name()]) {
+    if ($amount <= 0 || $amount > $instance->get_user_column_value()) {
         error($lang->newpoints_invalid_amount);
     }
 
@@ -374,48 +373,56 @@ if ($mybb->get_input('action') == 'stats') {
     $to_user_id = (int)$touser['uid'];
 
     // make sure we're not trying to send a donation to ourselves
-    if ($current_user_id === $to_user_id) {
+    if ($instance->get_user_id() === $to_user_id) {
         error($lang->newpoints_cant_donate_self);
     }
 
     try {
-        $instance_object->logger->log_charge(
-            'donation_sent',
-            $current_user_id,
-            $amount,
-            $to_user_id,
-        );
-
-        points_subtract($current_user_id, $amount);
+        $instance->points_subtraction($amount)
+            ->logger->log_charge(
+                'donation_sent',
+                $amount,
+                $to_user_id,
+            );
     } catch (Exception $e) {
-        // Handle exception
+        \Newpoints\Core\log_error(
+            $instance->instance_id,
+            $e->getMessage(),
+            user_id: $instance->get_user_id(),
+            post_id: $instance->get_post_id(),
+            thread_id: $instance->get_thread_id(),
+            forum_id: $instance->get_forum_id(),
+            income_type: $instance->get_income_type(),
+        );
     }
 
     try {
-        $instance_object->logger->log_income(
-            'donation',
-            $to_user_id,
-            $amount,
-            $current_user_id,
-        );
-
-        $instance_object->points_add($to_user_id, $amount);
+        $user_instance = (instance_object($instance->instance_id, $to_user_id))->points_addition($amount)
+            ->logger->log_income(
+                'donation',
+                $amount,
+                $instance->get_user_id(),
+            );
     } catch (Exception $e) {
-        // Handle exception
+        \Newpoints\Core\log_error(
+            $instance->instance_id,
+            $e->getMessage(),
+            user_id: $to_user_id,
+        );
     }
 
     // send pm to the user if the "Send PM on donate" setting is set to Yes
-    if ($instance_object->settings_get_value('donations_send_private_message')) {
+    if ($instance->settings_get_value('donations_send_private_message')) {
         if ($mybb->get_input('reason')) {
             $message = $lang->sprintf(
                 $lang->newpoints_donate_message_reason,
-                $instance_object->points_format($amount),
+                $instance->points_format($amount),
                 htmlspecialchars_uni($mybb->get_input('reason'))
             );
         } else {
             $message = $lang->sprintf(
                 $lang->newpoints_donate_message,
-                $instance_object->points_format($amount)
+                $instance->points_format($amount)
             );
         }
 
@@ -437,7 +444,7 @@ if ($mybb->get_input('action') == 'stats') {
         $link = get_post_link($post['pid'], $post['tid']) . '#pid' . $post['pid'];
     }
 
-    redirect($link, $lang->sprintf($lang->newpoints_donated, $instance_object->points_format($amount)));
+    redirect($link, $lang->sprintf($lang->newpoints_donated, $instance->points_format($amount)));
 } elseif ($mybb->get_input('action') == 'logs') {
     $url_params = ['action' => 'logs'];
 
@@ -445,7 +452,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
 
-    $is_moderator = is_member($instance_object->settings_get_value('logs_manage_groups'));
+    $is_moderator = is_member($instance->settings_get_value('logs_manage_groups'));
 
     if ($mybb->input['manage'] && $is_moderator) {
         $url_params['manage'] = 1;
@@ -455,7 +462,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     add_breadcrumb(
         $lang->newpoints_logs_page_breadcrumb,
-        $mybb->settings['bburl'] . '/' . url_handler_build($url_params)
+        $instance->url->build_absolute($url_params)
     );
 
     if ($is_manage_page) {
@@ -464,9 +471,9 @@ if ($mybb->get_input('action') == 'stats') {
         );
     }
 
-    $page_url = url_handler_build($url_params);
+    $page_url = $instance->url->build($url_params);
 
-    $per_page = (int)$instance_object->settings_get_value('logs_per_page');
+    $per_page = (int)$instance->settings_get_value('logs_per_page');
 
     if ($per_page < 1) {
         $per_page = 10;
@@ -474,16 +481,16 @@ if ($mybb->get_input('action') == 'stats') {
 
     $errors = [];
 
-    $where_clauses = ["l.instance_id='{$instance_id}'"];
+    $where_clauses = ["l.instance_id='{$instance->instance_id}'"];
 
     if ($mybb->request_method && $is_moderator && $is_manage_page) {
         if ($mybb->get_input('view') === 'delete') {
             $log_id = $mybb->get_input('log_id', MyBB::INPUT_INT);
 
-            $log_data = log_get($log_id);
+            $log_data = $instance->logger->get($log_id);
 
             if ($log_data) {
-                log_delete($log_id);
+                $instance->logger->delete($log_id);
 
                 redirect($page_url, $lang->newpoints_logs_page_success_log_deleted);
             } else {
@@ -513,7 +520,7 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     if (!isset($where_clauses['user']) && !$is_manage_page) {
-        $where_clauses['user'] = "l.uid='{$current_user_id}'";
+        $where_clauses['user'] = "l.uid='{$instance->get_user_id()}'";
     }
 
     if (isset($filters['actions'])) {
@@ -559,7 +566,7 @@ if ($mybb->get_input('action') == 'stats') {
             $total_logs,
             $per_page,
             $current_page,
-            url_handler_build($url_params)
+            $instance->url->build($url_params)
         );
 
         if ($newpoints_pagination) {
@@ -587,7 +594,7 @@ if ($mybb->get_input('action') == 'stats') {
 
         $thead_user = eval(templates_get('logs_table_thead_user'));
 
-        $delete_url = url_handler_build(array_merge($url_params, ['view' => 'delete']));
+        $delete_url = $instance->url->build(array_merge($url_params, ['view' => 'delete']));
 
         $thead_options = eval(templates_get('logs_table_thead_delete'));
     }
@@ -599,7 +606,7 @@ if ($mybb->get_input('action') == 'stats') {
 
         $log_action = htmlspecialchars_uni($log_data['action']);
 
-        $log_points = $instance_object->points_format((float)$log_data['points']);
+        $log_points = $instance->points_format((float)$log_data['points']);
 
         $log_date = my_date('normal', $log_data['date']);
 
@@ -900,7 +907,12 @@ if ($mybb->get_input('action') == 'stats') {
 
     $action_types = [];
 
-    $query = $db->simple_select('newpoints_log', 'action', "instance_id='{$instance_id}'", ['group_by' => 'action']);
+    $query = $db->simple_select(
+        'newpoints_log',
+        'action',
+        "instance_id='{$instance->instance_id}'",
+        ['group_by' => 'action']
+    );
 
     while ($action = $db->fetch_field($query, 'action')) {
         $action_types[htmlspecialchars_uni($action)] = htmlspecialchars_uni($action);
@@ -936,7 +948,7 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     if ($is_moderator && !$is_manage_page) {
-        $manage_url = url_handler_build(array_merge($url_params, ['manage' => 1]));
+        $manage_url = $instance->url->build(array_merge($url_params, ['manage' => 1]));
 
         $newpoints_buttons = eval(templates_get('button_manage'));
     }

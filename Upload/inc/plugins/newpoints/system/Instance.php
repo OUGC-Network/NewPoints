@@ -32,25 +32,20 @@ declare(strict_types=1);
 namespace Newpoints\System;
 
 use Exception;
-
 use Newpoints\Core\IncomePermissions;
 use Newpoints\Core\IncomeRates;
-
 use Newpoints\Core\Permissions;
 
 use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\count_characters;
 use function Newpoints\Core\get_setting;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\points_add;
-use function Newpoints\Core\points_add_simple;
-use function Newpoints\Core\points_format;
 use function Newpoints\Core\run_hooks;
+use function Newpoints\Core\templates_get;
 
+use const Newpoints\Core\URL;
 use const Newpoints\Core\ALL_UNLIMITED_VALUE;
 use const Newpoints\Core\GUEST_GROUP_ID;
 use const Newpoints\Core\INCOME_TYPE_USER_ALLOWANCE;
-use const Newpoints\Core\URL;
 use const Newpoints\Core\INCOME_TYPE_PAGE_VIEW;
 use const Newpoints\Core\INCOME_TYPE_POLL;
 use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
@@ -63,20 +58,17 @@ use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
 use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
 use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
 use const Newpoints\Core\INCOME_TYPE_VISIT;
-use const Newpoints\Core\INSTANCE_DEFAULT_ID;
 use const Newpoints\Core\LOGGING_TYPE_CHARGE;
 use const Newpoints\Core\LOGGING_TYPE_INCOME;
 use const Newpoints\Core\TABLES_DATA;
 
 class Instance
 {
-    private array $instance_data;
-
     public int $instance_id;
 
-    public Logger $logger;
+    private array $instance_data;
 
-    private int $user_id = 0;
+    public Logger $logger;
 
     private int $forum_id = 0;
 
@@ -92,45 +84,71 @@ class Instance
 
     private int $income_type = LOGGING_TYPE_INCOME;
 
+    private int $user_id = 0;
+
+    private array $user_data = [];
+
     public array $user_permissions = [];
 
-    private int $current_user_id;
+    public string $user_groups = '';
+
+    private array $tables_data = [];
+
+    public \Newpoints\System\Url $url;
 
     /**
      * @throws Exception
      */
-    public function __construct(int $instance_id)
+    public function __construct(int $instance_id, int $user_id = 0)
     {
         if (!($this->instance_data = cache_get_instances($instance_id))) {
             throw new Exception("Instance with ID $instance_id does not exist.");
         }
 
+        $this->tables_data = TABLES_DATA;
+
         $this->instance_id = (int)$this->instance_data['instance_id'];
 
-        require_once MYBB_ROOT . 'inc/plugins/newpoints/system/logger.php';
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/system/Logger.php';
 
         $this->logger = new Logger($this);
 
-        global $mybb;
+        require_once MYBB_ROOT . 'inc/plugins/newpoints/system/Url.php';
 
-        $this->current_user_id = (int)$mybb->user['uid'];
+        $this->url = new \Newpoints\System\Url($this->get_script_name());
 
-        $this->set_user($this->current_user_id);
+        if ($user_id <= 0) {
+            global $mybb;
+
+            $this->user_id = (int)$mybb->user['uid'];
+
+            $this->user_data = &$mybb->user;
+        } else {
+            $this->user_id = $user_id;
+
+            $this->user_data = get_user($this->user_id);
+        }
+
+        $this->user_groups = ($this->user_data['usergroup'] ?? '') . ',' . ($this->user_data['additionalgroups'] ?? '');
+
+        run_hooks('instance_construct_start', $this);
+
+        $this->user_permissions = $this->get_user_permissions();
     }
 
-    public function set(string $class): void
+    public function get_user_data(): array
     {
-        $this->$class = new $class($this);
+        return $this->user_data;
     }
 
-    protected function get_currency_name_singular(): string
+    public function get_user_column_value(): float
     {
-        return $this->instance_data['currency_name_singular'] ?? $this->instance_data['currency_name_plural'];
+        return (float)$this->get_user_data()[$this->users_column_get()];
     }
 
-    protected function get_currency_name_plural(): string
+    public function is_enabled(): bool
     {
-        return (string)$this->instance_data['currency_name_plural'];
+        return !empty($this->instance_data['is_enabled']) && $this->users_column_exists();
     }
 
     public function notifications_private_message_enabled(): bool
@@ -143,9 +161,63 @@ class Instance
         return !empty($this->instance_data['enable_notifications_alert']);
     }
 
-    public function get_user_id(): int
+    public function set_forum(int $forum_id): self
     {
-        return $this->user_id;
+        $this->forum_id = $forum_id;
+
+        return $this;
+    }
+
+    public function set_thread(int $thread_id): self
+    {
+        $this->thread_id = $thread_id;
+
+        return $this;
+    }
+
+    public function set_post(int $post_id): self
+    {
+        $this->post_id = $post_id;
+
+        return $this;
+    }
+
+    public function set_primary_id(int $primary_id): self
+    {
+        $this->primary_id = $primary_id;
+
+        return $this;
+    }
+
+    public function set_secondary_id(int $secondary_id): self
+    {
+        $this->secondary_id = $secondary_id;
+
+        return $this;
+    }
+
+    public function set_tertiary_id(int $tertiary_id): self
+    {
+        $this->tertiary_id = $tertiary_id;
+
+        return $this;
+    }
+
+    private function set_income_type(int $income_type = LOGGING_TYPE_INCOME): void
+    {
+        if ($income_type === LOGGING_TYPE_INCOME) {
+            $this->income_type = LOGGING_TYPE_INCOME;
+        } elseif ($income_type === LOGGING_TYPE_CHARGE) {
+            $this->income_type = LOGGING_TYPE_CHARGE;
+        }
+    }
+
+    public function append_tables_data(string $table_name, array $fields_data): void
+    {
+        $this->tables_data[$table_name] = array_merge(
+            $this->tables_data[$table_name] ?? [],
+            $fields_data,
+        );
     }
 
     public function get_data(): array
@@ -153,14 +225,319 @@ class Instance
         return $this->instance_data;
     }
 
-    public function get_users_column_name(): string
+    public function get_user_id(): int
     {
-        return $this->instance_data['users_column_name'] ?? 'newpoints';
+        return $this->user_id ?? 0;
     }
 
-    public function get_script_file(): string
+    private function get_user_permissions(): array
     {
-        return $this->instance_data['script_file'] ?? URL;
+        static $user_permissions = [];
+
+        if (isset($user_permissions[$this->instance_id][$this->user_id])) {
+            return $user_permissions[$this->instance_id][$this->user_id];
+        }
+
+        $user_permissions[$this->instance_id][$this->user_id] = user_permissions($this->user_id);
+
+        if ($this->user_id) {
+            $user_groups_ids = array_filter(
+                array_map(
+                    'intval',
+                    explode(',', "{$this->user_data['usergroup']},{$this->user_data['additionalgroups']}")
+                )
+            );
+
+            $data_fields = $this->tables_data['newpoints_group_permissions'];
+
+            foreach ($data_fields as $permission_name => $data_field_data) {
+                if (!isset($data_field_data['is_permission'])) {
+                    continue;
+                }
+
+                foreach ($user_groups_ids as $group_id) {
+                    $group_permissions = $this->get_group_permissions($group_id);
+
+                    if (!empty($data_field_data['zero_unlimited']) && empty($group_permissions[$permission_name]) ||
+                        !empty($data_field_data['zero_unlimited']) && isset($user_permissions[$this->instance_id][$this->user_id][$permission_name]) && empty($user_permissions[$this->instance_id][$this->user_id][$permission_name])) {
+                        $user_permissions[$this->instance_id][$this->user_id][$permission_name] = ALL_UNLIMITED_VALUE;
+
+                        continue 2;
+                    }
+
+                    if (isset($user_permissions[$this->instance_id][$this->user_id][$permission_name])) {
+                        if (empty($data_field_data['lowest'])) {
+                            $user_permissions[$this->instance_id][$this->user_id][$permission_name] = max(
+                                $user_permissions[$this->instance_id][$this->user_id][$permission_name],
+                                $group_permissions[$permission_name]
+                            );
+                        } else {
+                            $user_permissions[$this->instance_id][$this->user_id][$permission_name] = min(
+                                $user_permissions[$this->instance_id][$this->user_id][$permission_name],
+                                $group_permissions[$permission_name]
+                            );
+                        }
+                    } else {
+                        $user_permissions[$this->instance_id][$this->user_id][$permission_name] = $group_permissions[$permission_name];
+                    }
+                }
+            }
+        } else {
+            $user_permissions[$this->instance_id][$this->user_id] = array_merge(
+                $user_permissions[$this->instance_id][$this->user_id],
+                $this->get_group_permissions()
+            );
+        }
+
+        return $user_permissions[$this->instance_id][$this->user_id];
+    }
+
+    public function get_user_permissions_rate_addition(string $permission_key = IncomeRates::RateAddition): float
+    {
+        $user_rate = 1;
+
+        if ($this->forum_id) {
+            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
+
+            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
+
+            if (isset($custom_permissions[$permission_key])) {
+                $user_rate *= $custom_permissions[$permission_key];
+            } else {
+                $forum_permissions = fetch_forum_permissions($this->forum_id, $this->user_groups, []);
+
+                if (isset($forum_permissions[$permission_key])) {
+                    $user_rate *= $forum_permissions[$permission_key];
+                } else {
+                    global $cache;
+
+                    $forum_cache = $cache->read('forums');
+
+                    $forum_data = $forum_cache[$this->forum_id] ?? [];
+
+                    if (isset($forum_data[$permission_key])) {
+                        $user_rate *= $forum_data[$permission_key];
+                    }
+                }
+            }
+        }
+
+        return ($user_rate * $this->user_permissions[$permission_key]);
+    }
+
+    public function get_user_permissions_rate_substraction(
+        string $permission_key = IncomeRates::RateSubtraction,
+        bool $current_user = false
+    ): float {
+        $user_rate = 1;
+
+        if ($this->forum_id) {
+            if ($current_user) {
+                $forum_permissions = fetch_forum_permissions($this->forum_id, $this->user_groups, []);
+            } else {
+                $forum_permissions = fetch_forum_permissions($this->forum_id, $this->user_groups, []);
+            }
+
+            if (isset($forum_permissions[$permission_key])) {
+                $user_rate *= ($forum_permissions[$permission_key] / 100);
+            } else {
+                global $cache;
+
+                $forum_cache = $cache->read('forums');
+
+                $forum_data = $forum_cache[$this->forum_id] ?? [];
+
+                if (isset($forum_data[$permission_key])) {
+                    $user_rate *= ($forum_data[$permission_key] / 100);
+                }
+            }
+        }
+
+        if ($current_user) {
+            $user_rate *= ($this->user_permissions[$permission_key] / 100);
+        } else {
+            $user_rate *= ($this->user_permissions[$permission_key] / 100);
+        }
+
+        return $user_rate;
+    }
+
+
+    public function get_user_permissions_boolean(string $permission_key): bool
+    {
+        if ($this->forum_id) {
+            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
+
+            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
+
+            if (isset($custom_permissions[$permission_key])) {
+                return !empty($custom_permissions[$permission_key]);
+            }
+
+            $forum_permissions = fetch_forum_permissions($this->forum_id, $this->user_groups, []);
+
+            if (isset($forum_permissions[$permission_key])) {
+                return !empty($forum_permissions[$permission_key]);
+            }
+
+            global $cache;
+
+            $forum_cache = $cache->read('forums');
+
+            $forum_data = $forum_cache[$this->forum_id] ?? [];
+
+            if (isset($forum_data[$permission_key])) {
+                return !empty($forum_data[$permission_key]);
+            }
+        }
+
+        return !empty($this->user_permissions[$permission_key]);
+    }
+
+    public function get_user_permissions_int(string $permission_key): int
+    {
+        if ($this->forum_id) {
+            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
+
+            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
+
+            if (isset($custom_permissions[$permission_key])) {
+                return (int)$custom_permissions[$permission_key];
+            }
+
+            $forum_permissions = fetch_forum_permissions($this->forum_id, $this->user_groups, []);
+
+            if (isset($forum_permissions[$permission_key])) {
+                return (int)$forum_permissions[$permission_key];
+            }
+
+            global $cache;
+
+            $forum_cache = $cache->read('forums');
+
+            $forum_data = $forum_cache[$this->forum_id] ?? [];
+
+            if (isset($forum_data[$permission_key])) {
+                return (int)$forum_data[$permission_key];
+            }
+        }
+
+        return (int)$this->user_permissions[$permission_key];
+    }
+
+    public function get_user_permissions_float(string $permission_key): float
+    {
+        if ($this->forum_id) {
+            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
+
+            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
+
+            if (isset($custom_permissions[$permission_key])) {
+                return (float)$custom_permissions[$permission_key];
+            }
+
+            $forum_permissions = fetch_forum_permissions($this->forum_id, $this->user_groups, []);
+
+            if (isset($forum_permissions[$permission_key])) {
+                return (float)$forum_permissions[$permission_key];
+            }
+
+            global $cache;
+
+            $forum_cache = $cache->read('forums');
+
+            $forum_data = $forum_cache[$this->forum_id] ?? [];
+
+            if (isset($forum_data[$permission_key])) {
+                return (float)$forum_data[$permission_key];
+            }
+        }
+
+        return (float)$this->user_permissions[$permission_key];
+    }
+
+    public function get_group_permissions(int $group_id = GUEST_GROUP_ID): array
+    {
+        static $group_permissions = [];
+
+        if (isset($group_permissions[$this->instance_id][$group_id])) {
+            return $group_permissions[$this->instance_id][$group_id];
+        }
+
+        $group_permissions[$this->instance_id][$group_id] = [];
+
+        $data_fields = $this->tables_data['newpoints_group_permissions'];
+
+        $hook_arguments = [
+            'data_fields' => &$data_fields,
+        ];
+
+        // todo, similar to `admin_user_groups_edit_graph_start`
+        $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
+
+        foreach ($data_fields as $data_field_key => $data_field_data) {
+            if (!isset($data_field_data['is_permission'])) {
+                continue;
+            }
+
+            $group_permissions[$this->instance_id][$group_id][$data_field_key] = $data_field_data['default'];
+        }
+
+        global $cache;
+
+        $groups_cache = (array)$cache->read('usergroups');
+
+        foreach ($groups_cache[$group_id] as $permission_key => $permission_value) {
+            if (str_starts_with($permission_key, 'newpoints_') &&
+                isset($group_permissions[$this->instance_id][$group_id][$permission_key])) {
+                $group_permissions[$this->instance_id][$group_id][$permission_key] = match ($data_fields[$permission_key]['type']) {
+                    'INT', 'TINYINT', 'SMALLINT' => (int)$permission_value,
+                    'FLOAT', 'DECIMAL' => (float)$permission_value,
+                    default => $permission_value,
+                };
+            }
+        }
+
+        $permissions_cache = $this->cache_get_group_permissions();
+
+        if (!empty($permissions_cache[$this->instance_id][$group_id])) {
+            $group_permissions[$this->instance_id][$group_id] = array_merge(
+                $group_permissions[$this->instance_id][$group_id],
+                $permissions_cache[$this->instance_id][$group_id]
+            );
+        }
+
+        return $group_permissions[$this->instance_id][$group_id];
+    }
+
+    public function get_forum_id(): int
+    {
+        return $this->forum_id;
+    }
+
+    public function get_thread_id(): int
+    {
+        return $this->thread_id;
+    }
+
+    public function get_post_id(): int
+    {
+        return $this->post_id;
+    }
+
+    public function get_script_name(): string
+    {
+        return $this->instance_data['script_name'] ?? URL;
+    }
+
+    protected function get_currency_name_singular(): string
+    {
+        return $this->instance_data['currency_name_singular'] ?? $this->instance_data['currency_name_plural'];
+    }
+
+    protected function get_currency_name_plural(): string
+    {
+        return (string)$this->instance_data['currency_name_plural'];
     }
 
     public function get_display_name_upper(?float $points = null): string
@@ -218,144 +595,114 @@ class Instance
         return (float)$income_value;
     }
 
-    public function set_user(int $user_id): void
+    public function get_income_type(): int
     {
-        $this->user_id = $user_id;
-
-        $this->user_permissions = $this->set_user_permissions();
-    }
-
-    public function set_forum(int $forum_id): void
-    {
-        $this->forum_id = $forum_id;
-    }
-
-    public function set_thread(int $thread_id): void
-    {
-        $this->thread_id = $thread_id;
-    }
-
-    public function set_post(int $post_id): void
-    {
-        $this->post_id = $post_id;
-    }
-
-    public function set_primary_id(int $primary_id): void
-    {
-        $this->primary_id = $primary_id;
-    }
-
-    public function set_secondary_id(int $secondary_id): void
-    {
-        $this->secondary_id = $secondary_id;
-    }
-
-    public function set_tertiary_id(int $tertiary_id): void
-    {
-        $this->tertiary_id = $tertiary_id;
-    }
-
-    private function set_income_type(int $income_type): void
-    {
-        if ($income_type === LOGGING_TYPE_INCOME) {
-            $this->income_type = LOGGING_TYPE_INCOME;
-        } elseif ($income_type === LOGGING_TYPE_CHARGE) {
-            $this->income_type = LOGGING_TYPE_CHARGE;
-        }
+        return $this->income_type;
     }
 
     public function users_column_exists(): bool
     {
         global $db;
 
-        return $db->field_exists($this->instance_data['users_column_name'], 'users');
+        return !empty($this->instance_data['users_column_name']) &&
+            $db->field_exists($this->instance_data['users_column_name'], 'users');
     }
 
-    public function income_page_view(): bool
+    public function users_column_get(): string
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        return $this->instance_data['users_column_name'] ?? 'newpoints';
+    }
+
+    public function income_page_view(): self
+    {
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_PAGE_VIEW)
-            * $this->permission_get_rate_addition();
+            * $this->get_user_permissions_rate_addition();
 
-        if ($income_value) {
-            try {
-                $this->logger->log_income(
+        if (!$income_value) {
+            return $this;
+        }
+
+        try {
+            $this->points_addition($income_value)
+                ->logger->log_income(
                     'income_' . INCOME_TYPE_PAGE_VIEW,
-                    $this->user_id,
                     $income_value,
                     $this->post_id,
                     $this->thread_id,
                     $this->forum_id,
                 );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
-                );
-            } catch (Exception $e) {
-                // Handle exception
-                return false;
-            }
-
-            return true;
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                $this->instance_id,
+                $e->getMessage(),
+                user_id: $this->get_user_id(),
+                post_id: $this->get_post_id(),
+                thread_id: $this->get_thread_id(),
+                forum_id: $this->get_forum_id(),
+                income_type: $this->get_income_type(),
+            );
         }
 
-        return false;
+        return $this;
     }
 
-    public function income_visit(): bool
+    public function income_visit(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
-
-        global $mybb;
 
         $income_value = $this->get_income_value(INCOME_TYPE_VISIT)
-            * $this->permission_get_rate_addition();
+            * $this->get_user_permissions_rate_addition();
 
-        if ($income_value &&
-            (TIME_NOW - $mybb->user['lastactive']) > $this->user_permissions[IncomePermissions::UserIncomeVisitMinutes] * 60) {
-            try {
-                $this->logger->log_income(
+        if (!$income_value) {
+            return $this;
+        }
+
+        if (!((TIME_NOW - $this->user_data['lastactive']) > $this->user_permissions[IncomePermissions::UserIncomeVisitMinutes] * 60)) {
+            return $this;
+        }
+
+        try {
+            $this->points_addition($income_value)
+                ->logger->log_income(
                     'income_' . INCOME_TYPE_VISIT,
-                    $this->user_id,
                     $income_value,
                     $this->post_id,
                     $this->thread_id,
                     $this->forum_id,
                 );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
-                );
-            } catch (Exception $e) {
-                // Handle exception
-                return false;
-            }
-
-            return true;
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                $this->instance_id,
+                $e->getMessage(),
+                user_id: $this->get_user_id(),
+                post_id: $this->get_post_id(),
+                thread_id: $this->get_thread_id(),
+                forum_id: $this->get_forum_id(),
+                income_type: $this->get_income_type(),
+            );
         }
 
-        return false;
+        return $this;
     }
 
-    public function income_thread_reply(?int $multiplier = null): bool
+    public function income_thread_reply(?int $multiplier = null): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_THREAD_REPLY);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if ($multiplier !== null) {
@@ -363,224 +710,255 @@ class Instance
         }
 
         if ($income_value) {
-            try {
-                if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                    $this->logger->log_charge(
-                        'income_' . INCOME_TYPE_THREAD_REPLY,
-                        $this->user_id,
-                        $income_value,
-                        $this->post_id,
-                        $this->thread_id,
-                        $this->forum_id,
-                    );
-
-                    $this->points_subtract(
-                        $this->user_id,
-                        $income_value,
-                    );
-                } else {
-                    instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
-                        'income_' . INCOME_TYPE_THREAD_REPLY,
-                        $this->user_id,
-                        $income_value,
-                        $this->post_id,
-                        $this->thread_id,
-                        $this->forum_id,
-                    );
-
-                    $this->points_add(
-                        $this->user_id,
-                        $income_value
+            if ($this->income_type === LOGGING_TYPE_CHARGE) {
+                try {
+                    $this->points_subtraction($income_value)
+                        ->logger->log_charge(
+                            'income_' . INCOME_TYPE_THREAD_REPLY,
+                            $income_value,
+                            $this->post_id,
+                            $this->thread_id,
+                            $this->forum_id,
+                        );
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $this->instance_id,
+                        $e->getMessage(),
+                        user_id: $this->get_user_id(),
+                        post_id: $this->get_post_id(),
+                        thread_id: $this->get_thread_id(),
+                        forum_id: $this->get_forum_id(),
+                        income_type: $this->get_income_type(),
                     );
                 }
-            } catch (Exception $e) {
-                // Handle exception
-                return false;
+            } else {
+                try {
+                    $this->points_addition($income_value)
+                        ->logger->log_income(
+                            'income_' . INCOME_TYPE_THREAD_REPLY,
+                            $this->user_id,
+                            $income_value,
+                            $this->post_id,
+                            $this->thread_id,
+                            $this->forum_id,
+                        );
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $this->instance_id,
+                        $e->getMessage(),
+                        user_id: $this->get_user_id(),
+                        post_id: $this->get_post_id(),
+                        thread_id: $this->get_thread_id(),
+                        forum_id: $this->get_forum_id(),
+                        income_type: $this->get_income_type(),
+                    );
+                }
             }
-
-            return true;
         }
 
-        return false;
+        return $this;
     }
 
-    public function income_thread(?string $message = null): bool
+    public function income_thread(?string $message = null): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_THREAD);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
-                    'income_' . INCOME_TYPE_THREAD,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_THREAD,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_THREAD,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_THREAD,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_thread_rating(?string $message = null): bool
+    public function income_thread_rating(?string $message = null): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_THREAD_RATE);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_THREAD_RATE,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_THREAD_RATE,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_THREAD_RATE,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_THREAD_RATE,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
     // todo, logic for rating delete is missing
-
-    public function income_post(): bool
+    public function income_post(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_POST);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            if ($this->instance_id === 3) {
-                _dump(2, $this->get_income_value(INCOME_TYPE_POST));
-            }
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_POST,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_POST,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_POST,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_POST,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_post_characters(?string $message = null, ?int $characters_count = null): bool
+    public function income_post_characters(?string $message = null, ?int $characters_count = null): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         // calculate points per character bonus
@@ -596,356 +974,423 @@ class Instance
         }
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_POST_CHARACTER,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_POST_CHARACTER,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_POST_CHARACTER,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_POST_CHARACTER,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_poll(): bool
+    /**
+     * @throws Exception
+     */
+    public function income_poll(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
+        }
+
+        if (!$this->thread_id || !($thread_data = get_thread($this->thread_id)) || empty($thread_data['poll'])) {
+            //return false;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_POLL);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_POLL,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            $thread_data = get_thread($this->get_thread_id());
 
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_POLL,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
+            if (empty($thread_data['poll'])) {
+                return $this;
+            }
 
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_POLL,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_POLL,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_poll_vote(): bool
+    public function income_poll_vote(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_POLL_VOTE);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_POLL_VOTE,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_POLL_VOTE,
-                    $this->user_id,
-                    $income_value,
-                    $this->post_id,
-                    $this->thread_id,
-                    $this->forum_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_POLL_VOTE,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_POLL_VOTE,
+                        $income_value,
+                        $this->post_id,
+                        $this->thread_id,
+                        $this->forum_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_registration(): bool
+    public function income_registration(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_USER_REGISTRATION);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_USER_REGISTRATION,
-                    $this->user_id,
-                    $income_value,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_USER_REGISTRATION,
-                    $this->user_id,
-                    $income_value,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_USER_REGISTRATION,
+                        $income_value,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_USER_REGISTRATION,
+                        $income_value,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_referral(): bool
+    public function income_referral(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_USER_REFERRAL);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_USER_REFERRAL,
-                    $this->user_id,
-                    $income_value,
-                    $this->primary_id,
-                    $this->secondary_id,
-                    $this->tertiary_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_USER_REFERRAL,
-                    $this->user_id,
-                    $income_value,
-                    $this->primary_id,
-                    $this->secondary_id,
-                    $this->tertiary_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_USER_REFERRAL,
+                        $income_value,
+                        $this->primary_id,
+                        $this->secondary_id,
+                        $this->tertiary_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_USER_REFERRAL,
+                        $income_value,
+                        $this->primary_id,
+                        $this->secondary_id,
+                        $this->tertiary_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function income_private_message(): bool
+    public function income_private_message(): self
     {
-        if (!$this->permission_check_boolean(Permissions::CanGetPoints)) {
-            return false;
+        if (!$this->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+            return $this;
         }
 
         $income_value = $this->get_income_value(INCOME_TYPE_PRIVATE_MESSAGE);
 
         if ($this->income_type === LOGGING_TYPE_CHARGE) {
-            $income_value *= $this->permission_get_rate_substraction();
+            $income_value *= $this->get_user_permissions_rate_substraction();
         } else {
-            $income_value *= $this->permission_get_rate_addition();
+            $income_value *= $this->get_user_permissions_rate_addition();
         }
 
         if (!$income_value) {
-            return false;
+            return $this;
         }
 
-        try {
-            if ($this->income_type === LOGGING_TYPE_CHARGE) {
-                $this->logger->log_charge(
-                    'income_' . INCOME_TYPE_PRIVATE_MESSAGE,
-                    $this->user_id,
-                    $income_value,
-                    $this->primary_id,
-                    $this->secondary_id,
-                    $this->tertiary_id,
-                );
-
-                $this->points_subtract(
-                    $this->user_id,
-                    $income_value
-                );
-            } else {
-                $this->logger->log_income(
-                    'income_' . INCOME_TYPE_PRIVATE_MESSAGE,
-                    $this->user_id,
-                    $income_value,
-                    $this->primary_id,
-                    $this->secondary_id,
-                    $this->tertiary_id,
-                );
-
-                $this->points_add(
-                    $this->user_id,
-                    $income_value
+        if ($this->income_type === LOGGING_TYPE_CHARGE) {
+            try {
+                $this->points_subtraction($income_value)
+                    ->logger->log_charge(
+                        'income_' . INCOME_TYPE_PRIVATE_MESSAGE,
+                        $income_value,
+                        $this->primary_id,
+                        $this->secondary_id,
+                        $this->tertiary_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
                 );
             }
-        } catch (Exception $e) {
-            // Handle exception
-            return false;
+        } else {
+            try {
+                $this->points_addition($income_value)
+                    ->logger->log_income(
+                        'income_' . INCOME_TYPE_PRIVATE_MESSAGE,
+                        $income_value,
+                        $this->primary_id,
+                        $this->secondary_id,
+                        $this->tertiary_id,
+                    );
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $this->instance_id,
+                    $e->getMessage(),
+                    user_id: $this->get_user_id(),
+                    post_id: $this->get_post_id(),
+                    thread_id: $this->get_thread_id(),
+                    forum_id: $this->get_forum_id(),
+                    income_type: $this->get_income_type(),
+                );
+            }
         }
 
-        return true;
+        return $this;
     }
 
-    public function charge_thread_reply(?int $multiplier = null): bool
+    public function charge_thread_reply(?int $multiplier = null): self
     {
         $this->set_income_type(LOGGING_TYPE_CHARGE);
 
         return $this->income_thread_reply($multiplier);
     }
 
-    public function charge_thread(): bool
+    public function charge_thread(): self
     {
         $this->set_income_type(LOGGING_TYPE_CHARGE);
 
         return $this->income_thread();
     }
 
-    public function charge_post(): bool
+    public function charge_post(): self
     {
         $this->set_income_type(LOGGING_TYPE_CHARGE);
 
         return $this->income_post();
     }
 
-    public function charge_post_characters(?string $message = null, ?int $characters_count = null): bool
+    public function charge_post_characters(?string $message = null, ?int $characters_count = null): self
     {
         $this->set_income_type(LOGGING_TYPE_CHARGE);
 
         return $this->income_post_characters($message, $characters_count);
     }
 
-    public function charge_poll(): bool
+    public function charge_poll(): self
     {
         $this->set_income_type(LOGGING_TYPE_CHARGE);
 
@@ -968,19 +1413,58 @@ class Instance
     /**
      * Adds/Subtracts points to a user
      *
-     * @param int $user_id the id of the user
      * @param float $points the number of points to add or subtract (if a negative value)
-     * Note: some pages (by other plugins) do not run queries on shutdown so adding this to shutdown may not be good if you're not sure if it will run.
-     * @return bool
+     * @param bool $subtract
+     * @return Instance
+     * @throws Exception
      */
-    public function points_add(int $user_id, float $points): bool
+    public function points_addition(float $points, bool $subtract = false): self
     {
-        return points_add_simple($user_id, $points, 0, $this->instance_id);
+        global $db;
+
+        $points = abs($points);
+
+        if (!$points) {
+            throw new Exception('Invalid points value');
+        }
+
+        if (!$this->user_id) {
+            throw new Exception('Invalid user ID');
+        }
+
+        $points_rounded = round(
+            $points,
+            (int)$this->settings_get_value('main_decimal')
+        );
+
+        $instance_column_name = $this->users_column_get();
+
+        if ($subtract) {
+            try {
+                $db->write_query(
+                    'UPDATE `' . $db->table_prefix . 'users`
+SET `' . $instance_column_name . '`=`' . $instance_column_name . '`-(' . $points_rounded . ')
+WHERE `uid`=\'' . $this->user_id . '\''
+                );
+            } catch (Exception $e) {
+            }
+        } else {
+            try {
+                $db->write_query(
+                    'UPDATE `' . $db->table_prefix . 'users`
+SET `' . $instance_column_name . '`=`' . $instance_column_name . '`+(' . $points_rounded . ')
+WHERE `uid`=\'' . $this->user_id . '\''
+                );
+            } catch (Exception $e) {
+            }
+        }
+
+        return $this;
     }
 
-    public function points_subtract(int $user_id, float $points): bool
+    public function points_subtraction(float $points): self
     {
-        return points_add($user_id, -abs($points), 1, 1, false, true, $this->instance_id);
+        return $this->points_addition($points, true);
     }
 
     /**
@@ -992,7 +1476,13 @@ class Instance
      */
     public function points_format(float $points): string
     {
-        return points_format($points, $this->instance_id);
+        $currency_prefix = $this->settings_get_value('main_cursuffix');
+
+        $points_formatted = my_number_format(round($points, (int)$this->settings_get_value('main_decimal')));
+
+        $currency_suffix = $this->settings_get_value('main_curprefix');
+
+        return eval(templates_get('points_format', false));
     }
 
     public function permissions_group_insert(
@@ -1002,7 +1492,7 @@ class Instance
     ): int {
         global $db;
 
-        $tables_data = TABLES_DATA['newpoints_group_permissions'];
+        $insert_data = [];
 
         $hook_arguments = [
             'insert_data' => &$insert_data,
@@ -1010,12 +1500,11 @@ class Instance
             'is_update' => $is_update,
             'instance_id' => $this->instance_id,
             'permission_id' => &$permission_id,
-            'table_fields' => &$tables_data,
         ];
 
-        $insert_data = [];
+        $hook_arguments = run_hooks('permissions_group_insert_update_start', $hook_arguments);
 
-        foreach ($tables_data as $field_name => $field_definition) {
+        foreach ($this->tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
             if (isset($permission_data[$field_name])) {
                 $insert_data[$field_name] = match ($field_definition['type']) {
                     'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
@@ -1026,8 +1515,6 @@ class Instance
         }
 
         global $db;
-
-        $hook_arguments = run_hooks('permissions_insert_update_end', $hook_arguments);
 
         if ($is_update) {
             $db->update_query('newpoints_group_permissions', $insert_data, "permission_id='{$permission_id}'");
@@ -1084,11 +1571,11 @@ class Instance
 
         try {
             $db->delete_query('newpoints_group_permissions', "permission_id='{$permission_id}'");
+
+            return true;
         } catch (Exception $e) {
             return false;
         }
-
-        return true;
     }
 
     public function permissions_forum_insert(
@@ -1098,7 +1585,7 @@ class Instance
     ): int {
         global $db;
 
-        $tables_data = TABLES_DATA['newpoints_forum_permissions'];
+        $insert_data = [];
 
         $hook_arguments = [
             'insert_data' => &$insert_data,
@@ -1106,12 +1593,11 @@ class Instance
             'is_update' => $is_update,
             'instance_id' => $this->instance_id,
             'permission_id' => &$permission_id,
-            'table_fields' => &$tables_data,
         ];
 
-        $insert_data = [];
+        $hook_arguments = run_hooks('permissions_forum_insert_update_start', $hook_arguments);
 
-        foreach ($tables_data as $field_name => $field_definition) {
+        foreach ($this->tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
             if (isset($permission_data[$field_name])) {
                 $insert_data[$field_name] = match ($field_definition['type']) {
                     'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
@@ -1122,8 +1608,6 @@ class Instance
         }
 
         global $db;
-
-        $hook_arguments = run_hooks('permissions_insert_update_end', $hook_arguments);
 
         if ($is_update) {
             $db->update_query('newpoints_forum_permissions', $insert_data, "permission_id='{$permission_id}'");
@@ -1137,84 +1621,6 @@ class Instance
     public function permissions_forum_update(array $permission_data, int $permission_id): int
     {
         return $this->permissions_forum_insert($permission_data, true, $permission_id);
-    }
-
-    public function permissions_forum_delete(int $permission_id): bool
-    {
-        global $db;
-
-        $hook_arguments = [
-            'permission_id' => &$permission_id,
-        ];
-
-        $hook_arguments = run_hooks('permissions_forum_delete_start', $hook_arguments);
-
-        try {
-            $db->delete_query('newpoints_forum_permissions', "permission_id='{$permission_id}'");
-        } catch (Exception $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public function cache_update_group_permissions(): array
-    {
-        global $db, $cache;
-
-        $cache_data = [];
-
-        $tables_data = TABLES_DATA;
-
-        $hook_arguments = [
-            'cache_data' => &$cache_data,
-            'table_fields' => &$tables_data,
-        ];
-
-        $hook_arguments = run_hooks('cache_update_groups_start', $hook_arguments);
-
-        $permissions_objects = $this->permissions_group_get(
-            [],
-            array_keys($tables_data['newpoints_group_permissions'])
-        );
-
-        foreach ($permissions_objects as $permission_id => $permission_data) {
-            $instance_id = (int)$permission_data['instance_id'];
-
-            $group_id = (int)$permission_data['group_id'];
-
-            $cache_data[$instance_id][$group_id] = [];
-
-            foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
-                if (isset($permission_data[$field_name])) {
-                    $cache_data[$instance_id][$group_id][$field_name] = match ($field_definition['type']) {
-                        'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
-                        'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
-                        default => $db->escape_string($permission_data[$field_name]),
-                    };
-                }
-            }
-        }
-
-        $hook_arguments = run_hooks('cache_update_groups_end', $hook_arguments);
-
-        $cache->update('newpoints_group_permissions', $cache_data);
-
-        return $cache_data;
-    }
-
-    public function cache_get_group_permissions(): array
-    {
-        global $cache;
-
-        return (array)$cache->read('newpoints_group_permissions');
-    }
-
-    public function cache_get_forum_permissions(): array
-    {
-        global $cache;
-
-        return (array)$cache->read('newpoints_forum_permissions');
     }
 
     public function permissions_forum_get(
@@ -1246,36 +1652,90 @@ class Instance
         return $permission_objects;
     }
 
+    public function permissions_forum_delete(int $permission_id): bool
+    {
+        global $db;
+
+        $hook_arguments = [
+            'permission_id' => &$permission_id,
+        ];
+
+        $hook_arguments = run_hooks('permissions_forum_delete_start', $hook_arguments);
+
+        try {
+            $db->delete_query('newpoints_forum_permissions', "permission_id='{$permission_id}'");
+
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function cache_update_group_permissions(): array
+    {
+        global $db, $cache;
+
+        $cache_data = [];
+
+        $hook_arguments = [
+            'cache_data' => &$cache_data,
+        ];
+
+        $hook_arguments = run_hooks('cache_update_groups_start', $hook_arguments);
+
+        $permissions_objects = $this->permissions_group_get(
+            [],
+            array_keys($this->tables_data['newpoints_group_permissions'])
+        );
+
+        foreach ($permissions_objects as $permission_id => $permission_data) {
+            $group_id = (int)$permission_data['group_id'];
+
+            $cache_data[(int)$permission_data['instance_id']][$group_id] = [];
+
+            foreach ($this->tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+                if (isset($permission_data[$field_name])) {
+                    $cache_data[(int)$permission_data['instance_id']][$group_id][$field_name] = match ($field_definition['type']) {
+                        'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
+                        'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
+                        default => $db->escape_string($permission_data[$field_name]),
+                    };
+                }
+            }
+        }
+
+        $hook_arguments = run_hooks('cache_update_groups_end', $hook_arguments);
+
+        $cache->update('newpoints_group_permissions', $cache_data);
+
+        return $cache_data;
+    }
+
     public function cache_update_forum_permissions(): array
     {
         global $db, $cache;
 
         $cache_data = [];
 
-        $tables_data = TABLES_DATA;
-
         $hook_arguments = [
             'cache_data' => &$cache_data,
-            'table_fields' => &$tables_data,
         ];
 
         $hook_arguments = run_hooks('cache_update_forums_start', $hook_arguments);
 
         $permissions_objects = $this->permissions_forum_get(
             [],
-            array_keys($tables_data['newpoints_forum_permissions'])
+            array_keys($this->tables_data['newpoints_forum_permissions'])
         );
 
         foreach ($permissions_objects as $permission_id => $permission_data) {
-            $instance_id = (int)$permission_data['instance_id'];
-
             $forum_id = (int)$permission_data['forum_id'];
 
-            $cache_data[$instance_id][$forum_id] = [];
+            $cache_data[(int)$permission_data['instance_id']][$forum_id] = [];
 
-            foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+            foreach ($this->tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
                 if (isset($permission_data[$field_name])) {
-                    $cache_data[$instance_id][$forum_id][$field_name] = match ($field_definition['type']) {
+                    $cache_data[(int)$permission_data['instance_id']][$forum_id][$field_name] = match ($field_definition['type']) {
                         'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
                         'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
                         default => $db->escape_string($permission_data[$field_name]),
@@ -1291,256 +1751,18 @@ class Instance
         return $cache_data;
     }
 
-    public function is_enabled(): bool
+    public function cache_get_group_permissions(): array
     {
-        return !empty($this->instance_data['is_enabled']) && $this->users_column_exists();
+        global $cache;
+
+        return (array)$cache->read('newpoints_group_permissions');
     }
 
-    /**
-     * get group permissions for a specific instance
-     *
-     * @return array group permissions for the specific instance
-     */
-    public function permissions_get_group(int $group_id = GUEST_GROUP_ID): array
+    public function cache_get_forum_permissions(): array
     {
-        static $instance_group_permissions = [];
+        global $cache;
 
-        if (isset($instance_group_permissions[$this->instance_id][$group_id])) {
-            return $instance_group_permissions[$this->instance_id][$group_id];
-        }
-
-        $instance_group_permissions[$this->instance_id][$group_id] = [];
-
-        $data_fields = TABLES_DATA['newpoints_group_permissions'];
-
-        $hook_arguments = [
-            'data_fields' => &$data_fields,
-        ];
-
-        // todo, similar to `admin_user_groups_edit_graph_start`
-        $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
-
-        foreach ($data_fields as $data_field_key => $data_field_data) {
-            if (!isset($data_field_data['is_permission'])) {
-                continue;
-            }
-
-            $instance_group_permissions[$this->instance_id][$group_id][$data_field_key] = $data_field_data['default'];
-        }
-
-        global $db, $cache;
-
-        $groups_cache = (array)$cache->read('usergroups');
-
-        foreach ($groups_cache[$group_id] as $permission_key => $permission_value) {
-            if (str_starts_with($permission_key, 'newpoints_') &&
-                isset($instance_group_permissions[$this->instance_id][$group_id][$permission_key])) {
-                $instance_group_permissions[$this->instance_id][$group_id][$permission_key] = match ($data_fields[$permission_key]['type']) {
-                    'INT', 'TINYINT', 'SMALLINT' => (int)$permission_value,
-                    'FLOAT', 'DECIMAL' => (float)$permission_value,
-                    default => $permission_value,
-                };
-            }
-        }
-
-        $permissions_cache = $this->cache_get_group_permissions();
-
-        if (!empty($permissions_cache[$this->instance_id][$group_id])) {
-            $instance_group_permissions[$this->instance_id][$group_id] = array_merge(
-                $instance_group_permissions[$this->instance_id][$group_id],
-                $permissions_cache[$this->instance_id][$group_id]
-            );
-        }
-
-        return $instance_group_permissions[$this->instance_id][$group_id];
-    }
-
-    /**
-     * get user permissions for a specific instance
-     *
-     * @return array user permissions for the specific instance
-     */
-    public function set_user_permissions(): array
-    {
-        static $user_permissions = [];
-
-        if (!isset($user_permissions[$this->instance_id][$this->user_id])) {
-            $user_permissions[$this->instance_id][$this->user_id] = [];
-
-            $user_data = get_user($this->user_id);
-
-            if (!empty($user_data['uid'])) {
-                $user_groups_ids = array_filter(
-                    array_map(
-                        'intval',
-                        explode(',', "{$user_data['usergroup']},{$user_data['additionalgroups']}")
-                    )
-                );
-
-                $data_fields = TABLES_DATA['newpoints_group_permissions'];
-
-                foreach ($data_fields as $permission_name => $data_field_data) {
-                    if (!isset($data_field_data['is_permission'])) {
-                        continue;
-                    }
-
-                    foreach ($user_groups_ids as $group_id) {
-                        $group_permissions = $this->permissions_get_group($group_id);
-
-                        if (!empty($data_field_data['zero_unlimited']) && empty($group_permissions[$permission_name]) ||
-                            !empty($data_field_data['zero_unlimited']) && isset($user_permissions[$this->instance_id][$this->user_id][$permission_name]) && empty($user_permissions[$this->instance_id][$this->user_id][$permission_name])) {
-                            $user_permissions[$this->instance_id][$this->user_id][$permission_name] = ALL_UNLIMITED_VALUE;
-
-                            continue 2;
-                        }
-
-                        if (isset($user_permissions[$this->instance_id][$this->user_id][$permission_name])) {
-                            if (empty($data_field_data['lowest'])) {
-                                $user_permissions[$this->instance_id][$this->user_id][$permission_name] = max(
-                                    $user_permissions[$this->instance_id][$this->user_id][$permission_name],
-                                    $group_permissions[$permission_name]
-                                );
-                            } else {
-                                $user_permissions[$this->instance_id][$this->user_id][$permission_name] = min(
-                                    $user_permissions[$this->instance_id][$this->user_id][$permission_name],
-                                    $group_permissions[$permission_name]
-                                );
-                            }
-                        } else {
-                            $user_permissions[$this->instance_id][$this->user_id][$permission_name] = $group_permissions[$permission_name];
-                        }
-                    }
-                }
-            } else {
-                $user_permissions[$this->instance_id][$this->user_id] = $this->permissions_get_group();
-            }
-        }
-
-        return $user_permissions[$this->instance_id][$this->user_id];
-    }
-
-    public function permission_check_boolean(string $permission_key): bool
-    {
-        if ($this->forum_id) {
-            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
-
-            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
-
-            if (isset($custom_permissions[$permission_key])) {
-                return !empty($custom_permissions[$permission_key]);
-            }
-
-            $forum_permissions = fetch_forum_permissions($this->forum_id, '', []);
-
-            if (isset($forum_permissions[$permission_key])) {
-                return !empty($forum_permissions[$permission_key]);
-            }
-
-            global $cache;
-
-            $forum_cache = $cache->read('forums');
-
-            $forum_data = $forum_cache[$this->forum_id] ?? [];
-
-            if (isset($forum_data[$permission_key])) {
-                return !empty($forum_data[$permission_key]);
-            }
-        }
-
-        return !empty($this->user_permissions[$permission_key]);
-    }
-
-    public function permission_check_float(string $permission_key): float
-    {
-        if ($this->forum_id) {
-            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
-
-            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
-
-            if (isset($custom_permissions[$permission_key])) {
-                return (float)$custom_permissions[$permission_key];
-            }
-
-            $forum_permissions = fetch_forum_permissions($this->forum_id, '', []);
-
-            if (isset($forum_permissions[$permission_key])) {
-                return (float)$forum_permissions[$permission_key];
-            }
-
-            global $cache;
-
-            $forum_cache = $cache->read('forums');
-
-            $forum_data = $forum_cache[$this->forum_id] ?? [];
-
-            if (isset($forum_data[$permission_key])) {
-                return (float)$forum_data[$permission_key];
-            }
-        }
-
-        return (float)$this->user_permissions[$permission_key];
-    }
-
-    public function permission_get_rate_addition(): float
-    {
-        $user_rate = 1;
-
-        if ($this->forum_id) {
-            $custom_permissions = $this->cache_get_forum_permissions()[$this->instance_id] ?? [];
-
-            $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
-
-            if (isset($custom_permissions[IncomeRates::RateAddition])) {
-                $user_rate *= $custom_permissions[IncomeRates::RateAddition];
-            } else {
-                $forum_permissions = fetch_forum_permissions($this->forum_id, '', []);
-
-                if (isset($forum_permissions[IncomeRates::RateAddition])) {
-                    $user_rate *= $forum_permissions[IncomeRates::RateAddition];
-                } else {
-                    global $cache;
-
-                    $forum_cache = $cache->read('forums');
-
-                    $forum_data = $forum_cache[$this->forum_id] ?? [];
-
-                    if (isset($forum_data[IncomeRates::RateAddition])) {
-                        $user_rate *= $forum_data[IncomeRates::RateAddition];
-                    }
-                }
-            }
-        }
-
-        $user_rate *= $this->user_permissions[IncomeRates::RateAddition];
-
-        return $user_rate;
-    }
-
-    public function permission_get_rate_substraction(): float
-    {
-        $user_rate = 1;
-
-        if ($this->forum_id) {
-            $forum_permissions = fetch_forum_permissions($this->forum_id, '', []);
-
-            if (isset($forum_permissions[IncomeRates::RateSubtraction])) {
-                $user_rate *= ($forum_permissions[IncomeRates::RateSubtraction] / 100);
-            } else {
-                global $cache;
-
-                $forum_cache = $cache->read('forums');
-
-                $forum_data = $forum_cache[$this->forum_id] ?? [];
-
-                if (isset($forum_data[IncomeRates::RateSubtraction])) {
-                    $user_rate *= ($forum_data[IncomeRates::RateSubtraction] / 100);
-                }
-            }
-        }
-
-        $user_rate *= ($this->user_permissions[IncomeRates::RateSubtraction] / 100);
-
-        return $user_rate;
+        return (array)$cache->read('newpoints_forum_permissions');
     }
 }
 

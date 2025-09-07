@@ -2,7 +2,7 @@
 
 /***************************************************************************
  *
- *    NewPoints plugin (/inc/tasks/newpoints.php)
+ *    NewPoints plugin (/inc/plugins/newpoints/system/Url.php)
  *    Author: Pirata Nervo
  *    Copyright: © 2009 Pirata Nervo
  *    Copyright: © 2024 Omar Gonzalez
@@ -29,24 +29,50 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\users_update;
+namespace NewPoints\System;
 
-function task_newpoints(array &$task): array
+use PluginLibrary;
+
+use function Newpoints\Core\url_handler_build;
+use function Newpoints\Core\url_handler_get;
+
+class Url
 {
-    global $mybb, $lang, $db;
+    private string $url;
 
-    language_load();
-
-    run_hooks('task_main');
-
-    foreach (instance_get() as $instance_id => $instance_data) {
-        users_update($instance_id);
+    public function __construct(string $url = \Newpoints\Core\URL)
+    {
+        $this->url = $url;
     }
 
-    add_task_log($task, $lang->newpoints_task_main_ran);
+    public function set_url(string $url): self
+    {
+        $this->url = $url;
 
-    return $task;
+        return $this;
+    }
+
+    public function get_url(): string
+    {
+        return $this->url;
+    }
+
+    public function build(array $url_parameters = []): string
+    {
+        global $PL;
+
+        if (!($PL instanceof PluginLibrary)) {
+            require_once PLUGINLIBRARY;
+        }
+
+        return $PL->url_append($this->get_url(), $url_parameters);
+    }
+
+    public function build_absolute(array $url_params = []): string
+    {
+        global $mybb;
+
+        return $mybb->settings['bburl'] . '/' . $this->build($url_params);
+    }
+
 }

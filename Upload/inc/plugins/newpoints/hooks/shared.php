@@ -32,6 +32,7 @@ declare(strict_types=1);
 namespace Newpoints\Hooks\Shared;
 
 use Exception;
+use InvalidArgumentException;
 use MyBB;
 use PMDataHandler;
 use postDatahandler;
@@ -76,27 +77,41 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->income_post()
+                ->income_post_characters($post_data['message']);
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
 
         if ($thread_user_id !== $post_user_id) {
-            $instance_object->set_user($thread_user_id);
-            // $instance_object->income_thread_reply();
+            try {
+                instance_object($instance_id, $thread_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->income_thread_reply();
+            } catch (Exception $e) {
+                \Newpoints\Core\log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $thread_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
+            }
         }
-
-        $instance_object->set_user($post_user_id);
-
-        $instance_object->income_post();
-
-        $instance_object->income_post_characters($post_data['message']);
     }
 
     return $data_handler;
@@ -132,23 +147,25 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
+
+            if ($old_character_count - $new_character_count < 0) {
+                $instance->income_post_characters(characters_count: $new_character_count - $old_character_count);
+            } elseif ($old_character_count - $new_character_count > 0) {
+                $instance->charge_post_characters(characters_count: $new_character_count - $old_character_count);
+            }
         } catch (Exception $e) {
-            continue;
-        }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->set_user($post_user_id);
-
-        if ($old_character_count - $new_character_count < 0) {
-            $instance_object->income_post_characters(characters_count: $new_character_count - $old_character_count);
-        } elseif ($old_character_count - $new_character_count > 0) {
-            $instance_object->charge_post_characters(characters_count: $new_character_count - $old_character_count);
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
     }
 
@@ -177,22 +194,22 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id)
+                ->income_thread()
+                ->income_post_characters($post_data['message']);
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
-
-        $instance_object->set_forum($forum_id);
-
-        $instance_object->set_thread($thread_id);
-
-        $instance_object->set_post($post_id);
-
-        $instance_object->set_user($post_user_id);
-
-        $instance_object->income_thread();
-
-        $instance_object->income_post_characters($post_data['message']);
     }
 
     return $data_handler;
@@ -204,20 +221,21 @@ function datahandler_pm_insert_end(PMDataHandler &$data_handler): PMDataHandler
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            instance_object($instance_id, $user_id)
+                ->set_primary_id((int)($data_handler->pmid[0] ?? 0))
+                ->set_secondary_id((int)($data_handler->pmid[1] ?? 0))
+                ->set_tertiary_id((int)($data_handler->pmid[2] ?? 0))
+                ->income_private_message();
         } catch (Exception $e) {
-            continue;
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $user_id,
+                primary_id: (int)($data_handler->pmid[0] ?? 0),
+                secondary_id: (int)($data_handler->pmid[1] ?? 0),
+                tertiary_id: (int)($data_handler->pmid[2] ?? 0),
+            );
         }
-
-        $instance_object->set_user($user_id);
-
-        $instance_object->set_primary_id((int)($data_handler->pmid[0] ?? 0));
-
-        $instance_object->set_secondary_id((int)($data_handler->pmid[1] ?? 0));
-
-        $instance_object->set_tertiary_id((int)($data_handler->pmid[2] ?? 0));
-
-        $instance_object->income_private_message();
     }
 
     return $data_handler;
@@ -318,17 +336,29 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
     $referrer_user_id = (int)($data_handler->user_insert_data['referrer'] ?? 0);
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
-        $instance_object = instance_object($instance_id);
+        try {
+            instance_object($instance_id, $user_id)
+                ->income_registration();
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $user_id,
+            );
+        }
 
-        $instance_object->set_user($user_id);
-
-        $instance_object->income_registration();
-
-        $instance_object->set_user($referrer_user_id);
-
-        $instance_object->set_primary_id($user_id);
-
-        $instance_object->income_referral();
+        try {
+            instance_object($instance_id, $referrer_user_id)
+                ->set_primary_id($user_id)
+                ->income_referral();
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $referrer_user_id,
+                primary_id: $user_id,
+            );
+        }
     }
 
     return $data_handler;

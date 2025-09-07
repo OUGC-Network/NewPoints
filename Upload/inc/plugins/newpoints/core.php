@@ -120,12 +120,13 @@ function run_hooks(string $hook_name = '', array &$hook_arguments = []): array
     return (array)$hook_arguments;
 }
 
-function url_handler(string $new_url = '', int $instance_id = INSTANCE_DEFAULT_ID): string
+#[\Deprecated(message: 'use \NewPoints\System\Url instead', since: '4')]
+function url_handler(string $new_url = ''): string
 {
     static $setUrl = null;
 
     if ($setUrl === null) {
-        $setUrl = main_file_name($instance_id);
+        $setUrl = main_file_name();
     }
 
     if (($new_url = trim($new_url))) {
@@ -135,16 +136,19 @@ function url_handler(string $new_url = '', int $instance_id = INSTANCE_DEFAULT_I
     return $setUrl;
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Url->set_url() instead', since: '4')]
 function url_handler_set(string $new_url): string
 {
     return url_handler($new_url);
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Url->get_url() instead', since: '4')]
 function url_handler_get(): string
 {
     return url_handler();
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Url->build() instead', since: '4')]
 function url_handler_build(array $url_append = [], bool $fetch_import_url = false, bool $encode = true): string
 {
     global $PL;
@@ -725,7 +729,7 @@ function settings_rebuild_cache(array &$settings = []): array
         $settings[$instance_id][$setting['name']] = $setting['value'];
 
         if ($instance_id === INSTANCE_DEFAULT_ID) {
-            $mybb->settings[$setting['name']] = $setting['value'];
+            //$mybb->settings[$setting['name']] = $setting['value'];
         }
     }
 
@@ -844,8 +848,8 @@ function settings_rebuild(): bool
             foreach (instance_get() as $instance_id => $instance_data) {
                 settings(
                     $setting_group,
-                    $lang->{"setting_group_newpoints_{$setting_group}"},
-                    $lang->{"setting_group_newpoints_{$setting_group}_desc"},
+                    $lang->{"setting_group_newpoints_{$setting_group}"} ?? '',
+                    $lang->{"setting_group_newpoints_{$setting_group}_desc"} ?? '',
                     $settings_data,
                     $instance_id
                 );
@@ -870,6 +874,7 @@ function settings_rebuild(): bool
  * Note: some pages (by other plugins) do not run queries on shutdown so adding this to shutdown may not be good if you're not sure if it will run.
  * @return bool
  */
+#[\Deprecated(message: 'use points_addittion() instead', since: '4')]
 function points_add(
     int $user_id,
     float $points,
@@ -877,11 +882,17 @@ function points_add(
     float $group_rate = 1,
     bool $is_string = false,
     bool $immediate = false,
-    int $instance_id = INSTANCE_DEFAULT_ID,
 ): bool {
     try {
-        $instance_object = instance_object($instance_id);
+        $instance = instance_object(INSTANCE_DEFAULT_ID, $user_id);
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            INSTANCE_DEFAULT_ID,
+            $e->getMessage(),
+            user_id: $user_id
+        );
+
+        return false;
     }
 
     global $db, $newpoints_shutdown_cache;
@@ -896,15 +907,12 @@ function points_add(
         $immediate = true;
     }
 
-    // might work only for MySQL and MySQLi
-    //$db->update_query("users", array('newpoints' =>'newpoints+('.(float)$points.')'), 'uid=\''.(int)$uid.'\'', '', true);
-
     $points_rounded = round(
         $points * $forum_rate * $group_rate,
-        (int)$instance_object->settings_get_value('main_decimal')
+        (int)$instance->settings_get_value('main_decimal')
     );
 
-    $instance_column_name = $instance_object->get_users_column_name();
+    $instance_column_name = $instance->users_column_get();
 
     if ($is_string) {
         $db->write_query(
@@ -920,11 +928,11 @@ function points_add(
             WHERE `uid`=\'' . $user_id . '\''
         );
     } else {
-        if (!isset($newpoints_shutdown_cache[$instance_object->get_users_column_name()][$user_id])) {
-            $newpoints_shutdown_cache[$instance_object->get_users_column_name()][$user_id] = 0;
+        if (!isset($newpoints_shutdown_cache[$instance->users_column_get()][$user_id])) {
+            $newpoints_shutdown_cache[$instance->users_column_get()][$user_id] = 0;
         }
 
-        $newpoints_shutdown_cache[$instance_object->get_users_column_name()][$user_id] += $points_rounded;
+        $newpoints_shutdown_cache[$instance->users_column_get()][$user_id] += $points_rounded;
     }
 
     static $newpoints_shutdown = false;
@@ -938,36 +946,36 @@ function points_add(
     return true;
 }
 
+#[\Deprecated(message: 'use points_subtraction() instead', since: '4')]
 function points_subtract(
     int $user_id,
     float $points,
-    int $instance_id = INSTANCE_DEFAULT_ID,
 ): bool {
-    return points_add($user_id, -abs($points), 1, 1, false, true, $instance_id);
+    return points_add($user_id, -abs($points), 1, 1, false, true);
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Instance->points_add() instead', since: '4')]
 function points_add_simple(
     int $user_id,
     float $points,
     #[Deprecated]
     int $forum_id = 0,
-    int $instance_id = INSTANCE_DEFAULT_ID,
 ): bool {
-    if ($forum_id) {
-        $forum_data = get_forum($forum_id);
+    try {
+        instance_object(INSTANCE_DEFAULT_ID, $user_id)
+            ->set_forum($forum_id)
+            ->points_addition($points);
 
-        $points *= $forum_data[Permissions::Rate];
+        return true;
+    } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            INSTANCE_DEFAULT_ID,
+            $e->getMessage(),
+            user_id: $user_id
+        );
+
+        return false;
     }
-
-    return points_add(
-        $user_id,
-        abs($points),
-        1,
-        1,
-        false,
-        true,
-        $instance_id
-    );
 }
 
 function points_update(): void
@@ -1002,15 +1010,19 @@ function points_update(): void
  * @return string formated points
  *
  */
-function points_format(float $points, int $instance_id = INSTANCE_DEFAULT_ID): string
+#[\Deprecated(message: 'use \NewPoints\System\Instance->points_format() instead', since: '4')]
+function points_format(float $points): string
 {
-    $currency_prefix = get_setting('main_cursuffix', $instance_id);
+    try {
+        return instance_object(INSTANCE_DEFAULT_ID)->points_format($points);
+    } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            INSTANCE_DEFAULT_ID,
+            $e->getMessage(),
+        );
 
-    $points_formatted = my_number_format(round($points, (int)get_setting('main_decimal', $instance_id)));
-
-    $currency_suffix = get_setting('main_curprefix', $instance_id);
-
-    return eval(templates_get('points_format', false));
+        return '';
+    }
 }
 
 /**
@@ -1020,6 +1032,7 @@ function points_format(float $points, int $instance_id = INSTANCE_DEFAULT_ID): s
  * @param int $rule_id the id of the group or forum
  * @return array false if something went wrong
  */
+#[\Deprecated(since: '3')]
 function rules_get(string $type, int $rule_id): array
 {
     global $db, $cache;
@@ -1037,7 +1050,7 @@ function rules_get(string $type, int $rule_id): array
     $cached_rules = $cache->read('newpoints_rules');
 
     if (!$cached_rules) {
-        //throw new Exception('Invalid rule identifier');
+        //throw new InvalidArgumentException('Invalid rule identifier');
         // Something's wrong so let's get rule from DB
         // To fix this issue, the administrator should edit a rule and save it (all rules are re-cached when one is added/edited)
         $query = $db->simple_select("newpoints_{$type}rules", 'rate', "{$typeid}id='{$rule_id}'");
@@ -1053,11 +1066,13 @@ function rules_get(string $type, int $rule_id): array
     return $rule_data;
 }
 
+#[\Deprecated(since: '3')]
 function rules_forum_get(int $forum_id): array
 {
     return rules_get(RULE_TYPE_FORUM, $forum_id);
 }
 
+#[\Deprecated(since: '3')]
 function rules_group_get(int $group_id): array
 {
     return rules_get(RULE_TYPE_GROUP, $group_id);
@@ -1070,6 +1085,7 @@ function rules_group_get(int $group_id): array
  * @return array containing all rules
  *
  */
+#[\Deprecated(since: '3')]
 function rules_get_all(string $type): array
 {
     global $db, $cache;
@@ -1107,6 +1123,7 @@ function rules_get_all(string $type): array
     return $rules;
 }
 
+#[\Deprecated(since: '3')]
 function rules_forum_get_rate(int $forum_id): float
 {
     $forum_data = get_forum($forum_id);
@@ -1114,6 +1131,7 @@ function rules_forum_get_rate(int $forum_id): float
     return isset($forum_data[Permissions::Rate]) ? (float)$forum_data[Permissions::Rate] : 1;
 }
 
+#[\Deprecated(since: '3')]
 function rate_group_get(int $group_id): float
 {
     $group_rules = rules_group_get($group_id);
@@ -1121,10 +1139,10 @@ function rate_group_get(int $group_id): float
     return isset($group_rules['rate']) ? (float)$group_rules['rate'] : 1;
 }
 
+#[\Deprecated(since: '3')]
 function rules_get_group_rate(
     array $user = [],
     string $rate_key = IncomeRates::RateAddition,
-    int $instance_id = INSTANCE_DEFAULT_ID,
 ): float {
     global $mybb;
 
@@ -1138,7 +1156,7 @@ function rules_get_group_rate(
 
     $user_groups = (string)$user['usergroup'];
 
-    if (!get_setting('main_group_rate_primary_only', $instance_id)) {
+    if (!get_setting('main_group_rate_primary_only')) {
         $user_groups .= ",{$user['additionalgroups']}";
     }
 
@@ -1173,6 +1191,7 @@ function rules_get_group_rate(
     return $closest_to_one;
 }
 
+#[\Deprecated(since: '3')]
 /**
  * Rebuild the rules cache.
  *
@@ -1224,6 +1243,7 @@ function private_message_send(
     return send_pm($private_message_data, $from_user_id, $admin_override);
 }
 
+#[\Deprecated(since: '3')]
 function my_alerts_send(int $from_user_id, int $to_user_id, string $alert_code)
 {
     global $db;
@@ -1296,6 +1316,7 @@ function get_group(int $group_id): array
  * @return bool true if matched template name, false if not.
  */
 
+#[\Deprecated(since: '4')]
 function find_replace_template_sets(string $title, string $find, string $replace): bool
 {
     global $db;
@@ -1351,6 +1372,7 @@ function find_replace_template_sets(string $title, string $find, string $replace
  * @param int $log_type
  * @return int false if something went wrong
  */
+#[\Deprecated(message: 'use \NewPoints\System\Logger instead', since: '4')]
 function log_add(
     string $log_action,
     string $log_data = '',
@@ -1362,34 +1384,25 @@ function log_add(
     int $tertiary_id = 0,
     int $log_type = 0
 ): int {
-    switch ($log_type) {
-        case LOGGING_TYPE_INCOME:
-            return instance_object(INSTANCE_DEFAULT_ID)->logger->log_income(
-                $log_action,
-                $user_id,
-                $log_points,
-                $primary_id,
-                $secondary_id,
-                $tertiary_id,
-            );
-        case LOGGING_TYPE_CHARGE:
-            return instance_object(INSTANCE_DEFAULT_ID)->logger->log_charge(
-                $log_action,
-                $user_id,
-                $log_points,
-                $primary_id,
-                $secondary_id,
-                $tertiary_id,
-            );
-        default:
-            return instance_object(INSTANCE_DEFAULT_ID)->logger->log_action(
-                $log_action,
-                $user_id,
-                $log_points,
-                $primary_id,
-                $secondary_id,
-                $tertiary_id,
-            );
+    try {
+        return instance_object(INSTANCE_DEFAULT_ID, $user_id)->logger->log_action(
+            $log_action,
+            $log_points,
+            $primary_id,
+            $secondary_id,
+            $tertiary_id,
+            $log_type,
+            $user_id,
+        )
+            ->get_log_id();
+    } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            INSTANCE_DEFAULT_ID,
+            $e->getMessage(),
+            user_id: $user_id
+        );
+
+        return 0;
     }
 }
 
@@ -1420,6 +1433,7 @@ function log_remove(array $action): bool
  * @param array|string $groups_comma Allowed usergroups (if set to 'all', every user has access; if set to '' no one has)
  *
  */
+#[\Deprecated(message: 'use \NewPoints\System\Instance instead', since: '4')]
 function check_permissions(string $groups_comma): bool
 {
     global $mybb;
@@ -1450,18 +1464,17 @@ function load_set_guest_data(): void
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
-        } catch (Exception $e) {
-            continue;
-        }
+            $instance = instance_object($instance_id);
 
-        if (empty($mybb->user) ||
-            empty($mybb->user['uid']) ||
-            !isset($mybb->user[$instance_object->get_users_column_name()])) {
-            $mybb->user[$instance_object->get_users_column_name()] = 0;
-        } else {
-            $mybb->user[$instance_object->get_users_column_name()] =
-                (float)$mybb->user[$instance_object->get_users_column_name()];
+            if (empty($mybb->user[$instance->users_column_get()])) {
+                $mybb->user[$instance->users_column_get()] = 0;
+            } else {
+                $mybb->user[$instance->users_column_get()] = (float)$mybb->user[$instance->users_column_get()];
+            }
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
+            continue;
         }
     }
 }
@@ -1502,8 +1515,16 @@ function plugins_load(): bool
 }
 
 // Updates users' points by user group
-function users_update(): bool
+function users_update(int $instance_id = INSTANCE_DEFAULT_ID): bool
 {
+    try {
+        $instance = instance_object($instance_id);
+    } catch (Exception $e) {
+        log_error($instance_id, $e->getMessage());
+
+        return false;
+    }
+
     global $db, $cache;
 
     $user_groups = $cache->read('usergroups');
@@ -1536,7 +1557,7 @@ function users_update(): bool
 
         $db->update_query(
             'users',
-            ['newpoints' => "`newpoints`+'{$amount}'"],
+            [$instance->users_column_get() => "`{$instance->users_column_get()}`+'{$amount}'"],
             implode(' OR ', $where_clauses),
             '',
             true
@@ -1576,14 +1597,16 @@ function users_get_by_username(string $username, string $fields = '*'): array
 function users_get_group_permissions(int $user_id, int $instance_id = INSTANCE_DEFAULT_ID): array
 {
     try {
-        $instance_object = instance_object($instance_id);
+        return instance_object($instance_id, $user_id)->user_permissions;
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            $instance_id,
+            $e->getMessage(),
+            user_id: $user_id,
+        );
+
         return [];
     }
-
-    $instance_object->set_user($user_id);
-
-    return $instance_object->user_permissions;
 }
 
 function group_permission_get_lowest(string $permission_key, int $user_id = 0): float
@@ -1638,6 +1661,7 @@ function group_permission_get_lowest(string $permission_key, int $user_id = 0): 
  * @param string $title Group title that will be shown to the admin.
  * @param string $description Group description that will show up in the group overview.
  * @param array $list The list of settings to be added to that group.
+ * @param int $instance_id
  */
 function settings(
     string $group_name,
@@ -1678,8 +1702,8 @@ function settings(
 
         $setting = array_merge(
             [
-                'description' => $description,
                 'title' => $title,
+                'description' => $description,
                 'type' => 'yesno',
                 'value' => 0,
                 'disporder' => ++$display_order,
@@ -1717,6 +1741,7 @@ function settings(
     settings_rebuild_cache();
 }
 
+#[\Deprecated(since: '4')]
 function sanitize_array_integers(
     array $items_object
 ): array {
@@ -1791,8 +1816,10 @@ function page_build_menu_options(int $instance_id = INSTANCE_DEFAULT_ID): string
     static $menu = null;
 
     try {
-        $instance_object = instance_object($instance_id);
+        $instance = instance_object($instance_id);
     } catch (Exception $e) {
+        log_error($instance_id, $e->getMessage());
+
         return '';
     }
 
@@ -1806,7 +1833,7 @@ function page_build_menu_options(int $instance_id = INSTANCE_DEFAULT_ID): string
             ]*/
         ];
 
-        if ($instance_object->permission_check_boolean(Permissions::CanSeeStats)) {
+        if ($instance->user_permissions[Permissions::CanSeeStats]) {
             $menu_items[get_setting('stats_menu_order', $instance_id)] = [
                 'action' => 'stats',
                 'lang_string' => 'newpoints_statistics',
@@ -1814,7 +1841,7 @@ function page_build_menu_options(int $instance_id = INSTANCE_DEFAULT_ID): string
             ];
         }
 
-        if ($instance_object->permission_check_boolean(Permissions::CanDonate)) {
+        if ($instance->user_permissions[Permissions::CanDonate]) {
             $menu_items[get_setting('donations_menu_order', $instance_id)] = [
                 'action' => 'donate',
                 'lang_string' => 'newpoints_donate',
@@ -1865,13 +1892,13 @@ function page_build_menu_options(int $instance_id = INSTANCE_DEFAULT_ID): string
                 $action_url = $item_selected = $option_name = '';
 
                 if (isset($option['action'])) {
-                    $action_url = url_handler_build(['action' => $option['action']]);
+                    $action_url = $instance->url->build(['action' => $option['action']]);
 
                     if (my_strtolower($mybb->get_input('action')) === my_strtolower($option['action'])) {
                         $item_selected = eval(templates_get('option_selected'));
                     }
                 } else {
-                    $action_url = url_handler_build();
+                    $action_url = $instance->url->build();
                 }
 
                 $option_name = '';
@@ -1882,8 +1909,10 @@ function page_build_menu_options(int $instance_id = INSTANCE_DEFAULT_ID): string
                     $option_name = ucwords((string)$option['action']);
                 }
 
-                if (!is_array($option)) {
-                    var_dump($option);
+                if (is_scalar($option)) {
+                    if (!$option_name) {
+                        $option_name = $option;
+                    }
 
                     $option = (array)$option;
                 }
@@ -1916,15 +1945,19 @@ function page_build_menu(int $instance_id = INSTANCE_DEFAULT_ID): string
     return eval(templates_get('menu'));
 }
 
-function main_file_name(int $instance_id = INSTANCE_DEFAULT_ID): string
+#[\Deprecated(message: 'use \NewPoints\System\Instance instead', since: '4')]
+function main_file_name(): string
 {
     try {
-        $instance_object = instance_object($instance_id);
+        return instance_object(INSTANCE_DEFAULT_ID)->get_script_name();
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            INSTANCE_DEFAULT_ID,
+            $e->getMessage(),
+        );
+
         return URL;
     }
-
-    return $instance_object->get_script_file();
 }
 
 function get_income_types(): array
@@ -1943,23 +1976,26 @@ function get_income_types(): array
     return $income_types;
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Instance instead', since: '4')]
 function get_income_value(
     string $income_type,
     int $user_id = 0,
     int $forum_id = 0,
-    int $instance_id = INSTANCE_DEFAULT_ID
 ): float {
     try {
-        $instance_object = instance_object($instance_id);
+        return instance_object(INSTANCE_DEFAULT_ID, $user_id)
+            ->set_forum($forum_id)
+            ->get_income_value($income_type);
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            INSTANCE_DEFAULT_ID,
+            $e->getMessage(),
+            user_id: $user_id,
+            forum_id: $forum_id
+        );
+
         return 0;
     }
-
-    $instance_object->set_user($user_id);
-
-    $instance_object->set_forum($forum_id);
-
-    return $instance_object->get_income_value($income_type);
 }
 
 function post_parser(): postParser
@@ -2063,7 +2099,7 @@ function page_build_cancel_confirmation(
     int $form_input_value,
     string $table_text,
     string $form_view_name
-): never {
+): void {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
     global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
@@ -2093,7 +2129,7 @@ function page_build_purchase_confirmation(
     int $form_input_value,
     string $form_view_name = '',
     string $extra_rows = ''
-): never {
+): void {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
     global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
@@ -2125,7 +2161,7 @@ function page_build_error(
     string $error_message,
     bool $no_permission = false,
     int $instance_id = INSTANCE_DEFAULT_ID
-): never {
+): void {
     global $mybb, $lang;
     global $headerinclude, $header, $footer, $theme;
     global $newpoints_file, $newpoints_menu, $newpoints_errors, $newpoints_content, $action_name, $newpoints_pagination, $newpoints_buttons, $newpoints_additional;
@@ -2133,13 +2169,17 @@ function page_build_error(
     language_load();
 
     try {
-        $instance_object = instance_object($instance_id);
+        $instance = instance_object($instance_id);
     } catch (Exception $e) {
+        log_error($instance_id, $e->getMessage());
+
         error($e->getMessage());
+
+        exit;
     }
 
     if (!$newpoints_menu) {
-        $newpoints_file = $instance_object->get_script_file($instance_id);
+        $newpoints_file = $instance->get_script_name($instance_id);
 
         add_breadcrumb($lang->newpoints, $newpoints_file);
 
@@ -2167,27 +2207,24 @@ function page_build_error(
     exit;
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Instance instead', since: '4')]
 function user_get_forum_permissions(int $forum_id, int $user_id): array
 {
     return forum_permissions($forum_id, $user_id);
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Instance instead', since: '4')]
 function user_can_get_points(
     int $user_id,
     int $forum_id = 0,
-    int $instance_id = INSTANCE_DEFAULT_ID
 ): bool {
     try {
-        $instance_object = instance_object($instance_id);
+        return instance_object(INSTANCE_DEFAULT_ID, $user_id)
+            ->set_forum($forum_id)
+            ->get_user_permissions_boolean(Permissions::CanGetPoints);
     } catch (Exception $e) {
         return false;
     }
-
-    $instance_object->set_user($user_id);
-
-    $instance_object->set_forum($forum_id);
-
-    return $instance_object->permission_check_boolean(Permissions::CanGetPoints);
 }
 
 function user_update(int $user_id, array $update_data): int
@@ -2202,31 +2239,64 @@ function user_update(int $user_id, array $update_data): int
     );
 }
 
-function log_get(int $log_id, int $instance_id = INSTANCE_DEFAULT_ID): array
+#[\Deprecated(message: 'use \NewPoints\System\Logger instead', since: '4')]
+function log_get(int $log_id): array
 {
-    global $db;
-
-    $query = $db->simple_select(
-        'newpoints_log',
-        '*',
-        "lid='{$log_id}' AND instance_id='{$instance_id}'",
-        ['limit' => 1]
-    );
-
-    if (!$db->num_rows($query)) {
+    try {
+        return instance_object(INSTANCE_DEFAULT_ID)->logger->get($log_id);
+    } catch (InvalidArgumentException $e) {
         return [];
     }
-
-    return (array)$db->fetch_array($query);
 }
 
+#[\Deprecated(message: 'use \NewPoints\System\Logger instead', since: '4')]
 function log_delete(int $log_id): bool
 {
+    try {
+        instance_object(INSTANCE_DEFAULT_ID)->logger->delete($log_id);
+
+        return true;
+    } catch (InvalidArgumentException $e) {
+        return false;
+    }
+}
+
+function log_error(
+    int $instance_id,
+    string $error_message,
+    int $user_id = 0,
+    int $post_id = 0,
+    int $thread_id = 0,
+    int $forum_id = 0,
+    int $income_type = 0,
+    int $primary_id = 0,
+    int $secondary_id = 0,
+    int $tertiary_id = 0,
+): void {
+    if (!$user_id) {
+        global $mybb;
+
+        $user_id = (int)$mybb->user['uid'];
+    }
+
     global $db;
 
-    $db->delete_query('newpoints_log', "lid='{$log_id}'");
-
-    return true;
+    try {
+        $db->insert_query('newpoints_error_log', [
+            'instance_id' => $instance_id,
+            'error_message' => $db->escape_string($error_message),
+            'user_id' => $user_id,
+            'post_id' => $post_id,
+            'thread_id' => $thread_id,
+            'forum_id' => $forum_id,
+            'income_type' => $income_type,
+            'log_primary_id' => $primary_id,
+            'log_secondary_id' => $secondary_id,
+            'log_tertiary_id' => $tertiary_id,
+            'dateline' => TIME_NOW,
+        ]);
+    } catch (\Exception) {
+    }
 }
 
 function my_alerts_initiate(): bool
@@ -2330,16 +2400,18 @@ function alert_send(
     global $mybb;
 
     try {
-        $instance_object = instance_object($instance_id);
-    } catch (Exception $e) {
+        $instance = instance_object($instance_id, $user_id);
+    } catch (InvalidArgumentException $e) {
+        log_error($instance_id, $e->getMessage());
+
         return false;
     }
 
-    if ($user_id === (int)$mybb->user['uid']) {
+    if (!$instance->notifications_alert_enabled()) {
         return false;
     }
 
-    if (!$instance_object->notifications_alert_enabled()) {
+    if ($instance->get_user_id() === (int)$mybb->user['uid']) {
         return false;
     }
 
@@ -2362,7 +2434,7 @@ function alert_send(
     $query = $db->simple_select(
         'alerts',
         'id',
-        "object_id='{$object_id}' AND uid='{$user_id}' AND unread=1 AND alert_type_id='{$alertType->getId()}'"
+        "object_id='{$object_id}' AND uid='{$instance->get_user_id()}' AND unread=1 AND alert_type_id='{$alertType->getId()}'"
     );
 
     if ($db->fetch_field($query, 'id')) {
@@ -2379,10 +2451,10 @@ function alert_send(
      * @param int $objectId The ID of the object this alert is linked to. (eg: thread ID, post ID, etc.)
      */
 
-    $alert = new MybbStuff_MyAlerts_Entity_Alert($user_id, $alertType, $object_id);
+    $alert = new MybbStuff_MyAlerts_Entity_Alert($instance->get_user_id(), $alertType, $object_id);
 
     $alert->setExtraDetails([
-        'instance_id' => $instance_id,
+        'instance_id' => $instance->instance_id,
     ]);
 
     $result = MybbStuff_MyAlerts_AlertManager::getInstance()->addAlert($alert);
@@ -2404,7 +2476,7 @@ function instance_insert(
         'instance_data' => &$instance_data,
         'is_update' => $is_update,
         'instance_id' => &$instance_id,
-        'table_fields' => &$tables_data,
+        'table_data' => &$tables_data,
     ];
 
     $insert_data = [];
@@ -2440,20 +2512,20 @@ function instance_update(array $instance_data, int $instance_id): int
 /**
  * @throws Exception
  */
-function instance_object(int $instance_id): Instance
+function instance_object(int $instance_id, int $user_id = 0): Instance
 {
     static $instances_cache = [];
 
     if (!isset($instances_cache[$instance_id])) {
         require_once MYBB_ROOT . 'inc/plugins/newpoints/system/Instance.php';
 
-        $instances_cache[$instance_id] = new Instance($instance_id);
+        $instances_cache[$instance_id] = new Instance($instance_id, $user_id);
     }
 
     return $instances_cache[$instance_id];
 }
 
-function instance_get(?int $instance_id = null, string|array $query_fields = [], bool $foo = false): array
+function instance_get(?int $instance_id = null, string|array $query_fields = []): array
 {
     global $db;
 
@@ -2476,9 +2548,7 @@ function instance_get(?int $instance_id = null, string|array $query_fields = [],
 
     if ($instance_id !== null) {
         if (!$db->num_rows($query)) {
-            throw new InvalidArgumentException(
-                "Instance with ID {$instance_id} does not exist."
-            );
+            return [];
         }
 
         return (array)$db->fetch_array($query);
@@ -2532,7 +2602,7 @@ function cache_get_instances(?int $instance_id = null): array
     return $instance_objects;
 }
 
-function build_income_table(Instance $instance_object, string $template_prefix = 'home'): string
+function build_income_table(Instance $instance, string $template_prefix = 'home'): string
 {
     global $lang;
 
@@ -2540,11 +2610,9 @@ function build_income_table(Instance $instance_object, string $template_prefix =
 
     $income_amount = $lang->sprintf(
         $lang->newpoints_income_amount,
-        $instance_object->get_display_name_upper(),
-        $instance_object->get_display_name_lower(),
+        $instance->get_display_name_upper(),
+        $instance->get_display_name_lower(),
     );
-
-    $latest_transactions = [];
 
     $income_setting_params = [];
 
@@ -2555,7 +2623,7 @@ function build_income_table(Instance $instance_object, string $template_prefix =
             switch ($param_type) {
                 case 'numeric':
                     $income_setting_params["newpoints_income_{$income_type}"][$param_key] = my_number_format(
-                        $instance_object->user_permissions["newpoints_income_{$param_key}"]
+                        $instance->user_permissions["newpoints_income_{$param_key}"]
                     );
                     break;
             }
@@ -2565,8 +2633,8 @@ function build_income_table(Instance $instance_object, string $template_prefix =
     foreach ($income_setting_params as $income_key => $income_setting) {
         $constant_name = my_strtoupper(str_replace('newpoints_income_', 'INCOME_TYPE_', $income_key));
 
-        $income_value = $instance_object->get_income_value(constant('\Newpoints\Core\\' . $constant_name))
-            * $instance_object->permission_get_rate_addition();
+        $income_value = $instance->get_income_value(constant('\Newpoints\Core\\' . $constant_name))
+            * $instance->get_user_permissions_rate_addition();
 
         if (empty($income_value)) {
             continue;
@@ -2584,12 +2652,10 @@ function build_income_table(Instance $instance_object, string $template_prefix =
             ++$i;
         }
 
-        $value = $instance_object->points_format($income_value);
+        $value = $instance->points_format($income_value);
 
         $income_settings .= eval(templates_get($template_prefix . '_income_row'));
     }
-
-    $latest_transactions = implode(' ', $latest_transactions);
 
     return eval(templates_get($template_prefix . '_income_table'));
 }

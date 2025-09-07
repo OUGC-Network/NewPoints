@@ -136,17 +136,16 @@ function plugin_activation(): bool
 
     foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
-        } catch (InvalidArgumentException $e) {
-        }
-
-        db_verify_columns(
-            [
-                'users' => [
-                    $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
+            db_verify_columns(
+                [
+                    'users' => [
+                        instance_object($instance_id)->users_column_get() => FIELDS_DATA['users']['newpoints']
+                    ]
                 ]
-            ]
-        );
+            );
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+        }
     }
 
     db_verify_columns();
@@ -186,7 +185,7 @@ function plugin_activation(): bool
 
     /*~*~* RUN UPDATES START *~*~*/
 
-    if (!($default_instance = instance_get(INSTANCE_DEFAULT_ID))) {
+    if (!instance_get(INSTANCE_DEFAULT_ID)) {
         instance_insert([
             'instance_id' => INSTANCE_DEFAULT_ID,
             'currency_name_singular' => 'Credit',
@@ -340,6 +339,16 @@ function plugin_activation(): bool
 
     templates_remove(['donate_inline']);
 
+    change_admin_permission('newpoints', 'log', PERMISSION_REMOVE);
+
+    change_admin_permission('newpoints', 'forumrules', PERMISSION_REMOVE);
+
+    change_admin_permission('newpoints', 'grouprules', PERMISSION_REMOVE);
+
+    change_admin_permission('newpoints', 'stats', PERMISSION_REMOVE);
+
+    change_admin_permission('newpoints', 'upgrades', PERMISSION_REMOVE);
+
     /*~*~* RUN UPDATES END *~*~*/
 
     $cache->update_usergroups();
@@ -374,17 +383,16 @@ function plugin_installation(): bool
 
     foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
-        } catch (InvalidArgumentException $e) {
-        }
-
-        db_verify_columns(
-            [
-                'users' => [
-                    $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
+            db_verify_columns(
+                [
+                    'users' => [
+                        instance_object($instance_id)->users_column_get() => FIELDS_DATA['users']['newpoints']
+                    ]
                 ]
-            ]
-        );
+            );
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+        }
     }
 
     db_verify_columns();
@@ -500,13 +508,10 @@ function plugin_uninstallation(): bool
 function permissions_update(int $action = PERMISSION_ENABLE): bool
 {
     change_admin_permission('newpoints', false, $action);
+    
     change_admin_permission('newpoints', 'plugins', $action);
+
     change_admin_permission('newpoints', 'settings', $action);
-    change_admin_permission('newpoints', 'log', $action);
-    change_admin_permission('newpoints', 'forumrules', $action);
-    change_admin_permission('newpoints', 'grouprules', $action);
-    change_admin_permission('newpoints', 'stats', $action);
-    change_admin_permission('newpoints', 'upgrades', $action);
 
     return true;
 }
@@ -781,13 +786,20 @@ function recount_rebuild_newpoints_recount_from_logs(): void
     global $db, $mybb, $lang;
 
     try {
-        $instance_object = instance_object(
+        $instance = instance_object(
             $mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT)
         );
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            $mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT),
+            $e->getMessage()
+        );
+
         flash_message($e->getMessage(), 'error');
 
         admin_redirect('index.php?module=tools-recount_rebuild');
+
+        exit;
     }
 
     $query = $db->simple_select('users', 'COUNT(uid) as total_users');
@@ -820,7 +832,7 @@ function recount_rebuild_newpoints_recount_from_logs(): void
             $db->simple_select(
                 'newpoints_log',
                 'SUM(points) AS total_income',
-                "uid='{$user_id}' AND log_type='{$log_type_income}' AND instance_id='{$instance_object->instance_id}'",
+                "uid='{$user_id}' AND log_type='{$log_type_income}' AND instance_id='{$instance->instance_id}'",
             ),
             'total_income'
         ) ?? 0);
@@ -829,12 +841,12 @@ function recount_rebuild_newpoints_recount_from_logs(): void
             $db->simple_select(
                 'newpoints_log',
                 'SUM(points) AS total_charges',
-                "uid='{$user_id}' AND log_type='{$log_type_charge}' AND instance_id='{$instance_object->instance_id}'",
+                "uid='{$user_id}' AND log_type='{$log_type_charge}' AND instance_id='{$instance->instance_id}'",
             ),
             'total_charges'
         ) ?? 0);
 
-        user_update($user_id, ['newpoints' => $total_income - $total_charges]);
+        user_update($user_id, [$instance->users_column_get() => $total_income - $total_charges]);
     }
 
     check_proceed(
@@ -849,8 +861,8 @@ function recount_rebuild_newpoints_recount_from_logs(): void
         'do_recount_newpoints_from_logs',
         $lang->sprintf(
             $lang->newpoints_recount_from_logs_success,
-            $instance_object->get_display_name_upper(),
-            $instance_object->get_display_name_lower(),
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
         )
     );
 }
@@ -861,13 +873,20 @@ function recount_rebuild_newpoints_recount(): void
     global $db, $mybb, $lang;
 
     try {
-        $instance_object = instance_object(
+        $instance = instance_object(
             $mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT)
         );
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            $mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT),
+            $e->getMessage()
+        );
+
         flash_message($e->getMessage(), 'error');
 
         admin_redirect('index.php?module=tools-recount_rebuild');
+
+        exit;
     }
 
     $query = $db->simple_select('users', 'COUNT(uid) as total_users');
@@ -892,13 +911,19 @@ function recount_rebuild_newpoints_recount(): void
     );
 
     while ($user_data = $db->fetch_array($query)) {
-        $points = 0;
-
         $user_id = (int)$user_data['uid'];
 
-        $instance_object->set_user($user_id);
+        try {
+            $user_instance = instance_object($instance->instance_id, $user_id);
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error($instance->instance_id, $e->getMessage(), user_id: $user_id);
 
-        if (!$instance_object->permission_get_rate_addition()) {
+            continue;
+        }
+
+        $points = 0;
+
+        if (!$user_instance->get_user_permissions_rate_addition()) {
             //continue;
         }
 
@@ -913,9 +938,9 @@ function recount_rebuild_newpoints_recount(): void
         while ($thread = $db->fetch_array($threads_query)) {
             $forum_id = (int)$thread['fid'];
 
-            $instance_object->set_forum($forum_id);
+            $user_instance->set_forum($forum_id);
 
-            if (!$instance_object->get_income_value(INCOME_TYPE_THREAD)) {
+            if (!$user_instance->get_income_value(INCOME_TYPE_THREAD)) {
                 continue;
             }
 
@@ -929,17 +954,17 @@ function recount_rebuild_newpoints_recount(): void
 
             if (($character_count = my_strlen(
                     $mybb->get_input('message')
-                )) >= $instance_object->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
-                $bonus = $character_count * $instance_object->get_income_value(INCOME_TYPE_POST_CHARACTER);
+                )) >= $user_instance->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
+                $bonus = $character_count * $user_instance->get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
 
-            $points += ($instance_object->get_income_value(INCOME_TYPE_THREAD) + $bonus) *
+            $points += ($user_instance->get_income_value(INCOME_TYPE_THREAD) + $bonus) *
                 $forum_rules[$thread['fid']]['rate'];
 
             if (!empty($thread['poll'])) {
-                $points += $instance_object->get_income_value(INCOME_TYPE_POLL) *
+                $points += $user_instance->get_income_value(INCOME_TYPE_POLL) *
                     $forum_rules[$thread['fid']]['rate'];
             }
 
@@ -959,9 +984,9 @@ function recount_rebuild_newpoints_recount(): void
 
             $forum_id = (int)$post_data['fid'];
 
-            $instance_object->set_forum($forum_id);
+            $user_instance->set_forum($forum_id);
 
-            if (!$instance_object->get_income_value(INCOME_TYPE_POST)) {
+            if (!$user_instance->get_income_value(INCOME_TYPE_POST)) {
                 continue;
             }
 
@@ -975,14 +1000,14 @@ function recount_rebuild_newpoints_recount(): void
 
             if (($character_count = my_strlen(
                     $post_data['message']
-                )) >= $instance_object->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
+                )) >= $user_instance->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
                 $bonus = $character_count *
-                    $instance_object->get_income_value(INCOME_TYPE_POST_CHARACTER);
+                    $user_instance->get_income_value(INCOME_TYPE_POST_CHARACTER);
             } else {
                 $bonus = 0;
             }
 
-            $points += ($instance_object->get_income_value(INCOME_TYPE_POST) + $bonus) *
+            $points += ($user_instance->get_income_value(INCOME_TYPE_POST) + $bonus) *
                 $forum_rules[$post_data['fid']]['rate'];
 
             $thread_data = get_thread($post_data['tid']);
@@ -991,35 +1016,51 @@ function recount_rebuild_newpoints_recount(): void
 
             $forum_id = (int)$post_data['fid'];
 
-            $instance_object->set_user($thread_user_id);
+            if ($thread_user_id !== $user_id) {
+                try {
+                    $user_instance = (instance_object($user_instance->instance_id, $thread_user_id))
+                        ->set_forum($forum_id);
+                } catch (Exception $e) {
+                    \Newpoints\Core\log_error(
+                        $instance->instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        forum_id: $forum_id
+                    );
 
-            if ($thread_user_id !== $user_id && $instance_object->permission_check_boolean(Permissions::CanGetPoints)) {
-                $income_value = $instance_object->get_income_value(INCOME_TYPE_THREAD_REPLY);
+                    continue;
+                }
 
-                $income_value = $income_value * $instance_object->permission_get_rate_addition();
+                if ($user_instance->get_user_permissions_boolean(Permissions::CanGetPoints)) {
+                    $income_value = $user_instance->get_income_value(INCOME_TYPE_THREAD_REPLY) *
+                        $user_instance->get_user_permissions_rate_addition();
 
-                if ($income_value) {
-                    try {
-                        $instance_object->logger->log_income(
-                            'income_' . INCOME_TYPE_THREAD_REPLY,
-                            $thread_user_id,
-                            $income_value,
-                            $post_id,
-                            $thread_id,
-                            $forum_id,
-                        );
+                    if ($income_value) {
+                        try {
+                            $user_instance->points_addition($income_value)
+                                ->logger->log_income(
+                                    'income_' . INCOME_TYPE_THREAD_REPLY,
+                                    $income_value,
+                                    $post_id,
+                                    $thread_id,
+                                    $forum_id,
+                                );
+                        } catch (Exception $e) {
+                            \Newpoints\Core\log_error(
+                                $user_instance->instance_id,
+                                $e->getMessage(),
+                                user_id: $user_instance->get_user_id(),
+                                post_id: $user_instance->get_post_id(),
+                                thread_id: $user_instance->get_thread_id(),
+                                forum_id: $user_instance->get_forum_id(),
+                                income_type: $user_instance->get_income_type(),
+                            );
 
-                        $instance_object->points_add(
-                            $thread_user_id,
-                            $income_value
-                        );
-                    } catch (Exception $e) {
-                        // Handle exception
+                            continue;
+                        }
                     }
                 }
             }
-
-            $instance_object->set_user($user_id);
         }
 
         $query_polls = $db->simple_select(
@@ -1031,16 +1072,16 @@ function recount_rebuild_newpoints_recount(): void
         while ($vote_data = $db->fetch_array($query_polls)) {
             $forum_id = (int)$vote_data['fid'];
 
-            $instance_object->set_forum($forum_id);
+            $user_instance->set_forum($forum_id);
 
-            $income_value = $instance_object->get_income_value(INCOME_TYPE_POLL_VOTE);
+            $income_value = $user_instance->get_income_value(INCOME_TYPE_POLL_VOTE);
 
             if ($income_value) {
                 $points += $income_value;
             }
         }
 
-        $income_value = $instance_object->get_income_value(INCOME_TYPE_PRIVATE_MESSAGE);
+        $income_value = $user_instance->get_income_value(INCOME_TYPE_PRIVATE_MESSAGE);
 
         if ($income_value) {
             $pms_sent = $db->fetch_field(
@@ -1055,15 +1096,15 @@ function recount_rebuild_newpoints_recount(): void
             $points += $pms_sent * $income_value;
         }
 
-        $instance_object->set_forum(0);
+        $user_instance->set_forum(0);
 
         $db->update_query(
             'users',
             [
-                $instance_object->get_users_column_name() => $instance_object->get_income_value(
+                $user_instance->users_column_get() => $user_instance->get_income_value(
                         INCOME_TYPE_USER_REGISTRATION,
                     ) + $points *
-                    $instance_object->permission_get_rate_addition()
+                    $user_instance->get_user_permissions_rate_addition()
             ],
             "uid='{$user_id}'"
         );
@@ -1081,8 +1122,8 @@ function recount_rebuild_newpoints_recount(): void
         'do_recount_newpoints',
         $lang->sprintf(
             $lang->newpoints_recount_from_logs_success,
-            $instance_object->get_display_name_upper(),
-            $instance_object->get_display_name_lower(),
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
         )
     );
 }
@@ -1092,11 +1133,18 @@ function recount_rebuild_newpoints_reset(): void
     global $db, $mybb, $lang;
 
     try {
-        $instance_object = instance_object($mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT));
+        $instance = instance_object($mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT));
     } catch (Exception $e) {
+        \Newpoints\Core\log_error(
+            $mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT),
+            $e->getMessage(),
+        );
+
         flash_message($e->getMessage(), 'error');
 
         admin_redirect('index.php?module=tools-recount_rebuild');
+
+        exit;
     }
 
     $query = $db->simple_select('users', 'COUNT(uid) as total_users');
@@ -1126,7 +1174,7 @@ function recount_rebuild_newpoints_reset(): void
         $db->update_query(
             'users',
             [
-                $instance_object->get_users_column_name() => $mybb->get_input(
+                $instance->users_column_get() => $mybb->get_input(
                     'newpoints_reset_amount',
                     MyBB::INPUT_FLOAT
                 )
@@ -1150,8 +1198,8 @@ function recount_rebuild_newpoints_reset(): void
         'do_reset_newpoints',
         $lang->sprintf(
             $lang->newpoints_reset_success,
-            $instance_object->get_display_name_upper(),
-            $instance_object->get_display_name_lower(),
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
         )
     );
 }

@@ -29,6 +29,8 @@
 
 declare(strict_types=1);
 
+use Newpoints\System\Url;
+
 use function Newpoints\Admin\db_verify_columns;
 use function Newpoints\Admin\db_verify_tables;
 use function Newpoints\Admin\my_alerts_install;
@@ -42,9 +44,6 @@ use function Newpoints\Core\run_hooks;
 use function Newpoints\Core\settings_rebuild;
 use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\templates_rebuild;
-use function Newpoints\Core\url_handler_build;
-use function Newpoints\Core\url_handler_get;
-use function Newpoints\Core\url_handler_set;
 
 use const Newpoints\Core\FIELDS_DATA;
 
@@ -58,21 +57,21 @@ language_load();
 
 $lang->load('config_plugins', false, true);
 
-url_handler_set('index.php');
+$url = new Url('index.php');
 
-url_handler_set(url_handler_build([
+$url = $url->set_url($url->build([
     'module' => 'newpoints-plugins'
 ]));
 
 $sub_tabs = [
     'newpoints_plugins' => [
         'title' => $lang->newpoints_plugins,
-        'link' => url_handler_get(),
+        'link' => $url->get_url(),
         'description' => $lang->newpoints_plugins_description
     ],
     'newpoints_plugins_check_updates' => [
         'title' => $lang->newpoints_plugins_check_updates,
-        'link' => url_handler_build(['action' => 'check_updates']),
+        'link' => $url->build(['action' => 'check_updates']),
         'description' => $lang->newpoints_plugins_check_updates_description
     ]
 ];
@@ -81,7 +80,7 @@ $sub_tabs = [
 if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 'deactivate') {
     if (!verify_post_check($mybb->get_input('my_post_key'))) {
         flash_message($lang->invalid_post_verify_key2, 'error');
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     if ($mybb->get_input('action') == 'activate') {
@@ -91,11 +90,11 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     }
 
     if ($mybb->get_input('no')) {
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     if ($mybb->request_method !== 'post') {
-        $process_url = url_handler_build([
+        $process_url = $url->build([
             'action' => $mybb->get_input('action'),
             'uninstall' => $mybb->get_input('uninstall', MyBB::INPUT_INT),
             'plugin' => $mybb->get_input('plugin'),
@@ -122,7 +121,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     // Check if the file exists and throw an error if it doesn't
     if (!file_exists($plugin_file_path)) {
         flash_message($lang->error_invalid_plugin, 'error');
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     $plugins_cache = $cache->read('newpoints_plugins');
@@ -147,7 +146,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
         if (!newpoints_iscompatible($codename)) {
             flash_message($lang->sprintf($lang->newpoints_plugin_incompatible, NEWPOINTS_VERSION), 'error');
-            admin_redirect(url_handler_get());
+            admin_redirect($url->get_url());
         }
 
         // If not installed and there is a custom installation function
@@ -189,17 +188,16 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
     foreach (instance_get() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
-        } catch (InvalidArgumentException $e) {
-        }
-
-        db_verify_columns(
-            [
-                'users' => [
-                    $instance_object->get_users_column_name() => FIELDS_DATA['users']['newpoints']
+            db_verify_columns(
+                [
+                    'users' => [
+                        instance_object($instance_id)->users_column_get() => FIELDS_DATA['users']['newpoints']
+                    ]
                 ]
-            ]
-        );
+            );
+        } catch (Exception $e) {
+            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+        }
     }
 
     db_verify_columns();
@@ -275,7 +273,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
     flash_message($message, 'success');
 
-    admin_redirect(url_handler_get());
+    admin_redirect($url->get_url());
 } elseif ($mybb->input['action'] == 'check_updates') {
     $plugins_list = newpoints_get_plugins();
 
@@ -317,7 +315,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     if (empty($plugins_codenames)) {
         flash_message($lang->newpoints_plugins_error_version_check_no_supported_plugins, 'error');
 
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     $plugin_repositories = array_map('trim', explode(PHP_EOL, get_setting('main_plugins_repositories')));
@@ -356,7 +354,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     if (!$repositories_plugins) {
         flash_message($lang->newpoints_plugins_error_communication_problem, 'error');
 
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     if (isset($repositories_plugins[0]) && array_key_exists('error', $repositories_plugins)) {
@@ -373,7 +371,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
         flash_message($lang->newpoints_plugins_error_communication_problem . $error_msg, 'error');
 
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     $table = new Table();
@@ -389,7 +387,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     if (!is_array($repositories_plugins['plugin'])) {
         flash_message($lang->newpoints_plugins_success_plugins_up_to_date, 'success');
 
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     if (array_key_exists('tag', $repositories_plugins['plugin'])) {
@@ -444,7 +442,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
             );
 
             if ($is_vulnerable) {
-                $main_module_url = url_handler_get();
+                $main_module_url = $url->get_url();
 
                 $table->construct_cell(
                     "<a href=\"{$main_module_url}\"><b>{$lang->newpoints_plugins_deactivate}</b></a>",
@@ -466,7 +464,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     if ($table->num_rows() == 0) {
         flash_message($lang->newpoints_plugins_success_plugins_up_to_date, 'success');
 
-        admin_redirect(url_handler_get());
+        admin_redirect($url->get_url());
     }
 
     $page->add_breadcrumb_item($lang->newpoints_plugins_plugin_updates);
@@ -479,7 +477,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
     $page->output_footer();
 } else {
-    $page->add_breadcrumb_item($lang->newpoints_plugins, url_handler_get());
+    $page->add_breadcrumb_item($lang->newpoints_plugins, $url->get_url());
 
     $page->output_header($lang->newpoints_plugins);
 
@@ -561,7 +559,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
                     ['class' => 'align_center', 'colspan' => 2]
                 );
             } elseif (!$installed) {
-                $activate_url = url_handler_build([
+                $activate_url = $url->build([
                     'action' => 'activate',
                     'plugin' => $codename,
                     'my_post_key' => $mybb->post_code
@@ -573,7 +571,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
                 );
             } // Plugin is activated and installed
             elseif (isset($active_plugins[$codename])) {
-                $deactivate_url = url_handler_build([
+                $deactivate_url = $url->build([
                     'action' => 'deactivate',
                     'plugin' => $codename,
                     'my_post_key' => $mybb->post_code
@@ -585,7 +583,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
                 );
 
                 if ($uninstall_button) {
-                    $uninstall_url = url_handler_build([
+                    $uninstall_url = $url->build([
                         'action' => 'deactivate',
                         'uninstall' => 1,
                         'plugin' => $codename,
@@ -606,7 +604,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
                     ['class' => 'align_center', 'colspan' => 2]
                 );
             } else {
-                $activate_url = url_handler_build([
+                $activate_url = $url->build([
                     'action' => 'activate',
                     'plugin' => $codename,
                     'my_post_key' => $mybb->post_code
@@ -618,7 +616,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
                 );
 
                 if ($uninstall_button) {
-                    $uninstall_url = url_handler_build([
+                    $uninstall_url = $url->build([
                         'action' => 'deactivate',
                         'uninstall' => 1,
                         'plugin' => $codename,

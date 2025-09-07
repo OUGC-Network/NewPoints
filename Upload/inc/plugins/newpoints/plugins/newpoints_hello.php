@@ -33,6 +33,7 @@ use function Newpoints\Core\cache_get_instances;
 use function Newpoints\Core\instance_get;
 use function Newpoints\Core\instance_object;
 use function Newpoints\Core\language_load;
+use function Newpoints\Core\log_error;
 use function Newpoints\Core\settings_add;
 use function Newpoints\Core\settings_rebuild_cache;
 use function Newpoints\Core\settings_remove;
@@ -157,24 +158,24 @@ function newpoints_hello_world(string &$page): string
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            $instance_object = instance_object($instance_id);
+            $instance = instance_object($instance_id);
         } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
             continue;
         }
 
-        if (!$instance_object->settings_get_value('hello_show')) {
-            continue;
+        if ($instance->settings_get_value('hello_show')) {
+            $page = str_replace(
+                '<!-- end: header -->',
+                '<!-- end: header -->' . $lang->sprintf(
+                    $lang->newpoints_hello_message,
+                    $instance->get_display_name_upper(),
+                    $instance->get_display_name_lower(),
+                ),
+                $page
+            );
         }
-
-        $page = str_replace(
-            '<!-- end: header -->',
-            '<!-- end: header -->' . $lang->sprintf(
-                $lang->newpoints_hello_message,
-                $instance_object->get_display_name_upper(),
-                $instance_object->get_display_name_lower(),
-            ),
-            $page
-        );
     }
 
     return $page;
