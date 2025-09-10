@@ -29,54 +29,54 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Admin;
+namespace NewPoints\Admin;
 
 use Form;
 use InvalidArgumentException;
 use MyBB;
 use MybbStuff_MyAlerts_AlertTypeManager;
 use MybbStuff_MyAlerts_Entity_AlertType;
-use Newpoints\Core\Permissions;
+use NewPoints\Core\Permissions;
 use PluginLibrary;
 use stdClass;
 use Exception;
-use Newpoints\Core\IncomePermissions;
-use Newpoints\Core\IncomeRates;
+use NewPoints\Core\IncomePermissions;
+use NewPoints\Core\IncomeRates;
 
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\instance_insert;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\rules_get_all;
-use function Newpoints\Core\rules_rebuild_cache;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\settings_rebuild;
-use function Newpoints\Core\task_delete;
-use function Newpoints\Core\task_disable;
-use function Newpoints\Core\task_enable;
-use function Newpoints\Core\templates_rebuild;
+use function Newpoints\Core\cache_update_instances;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\instance_insert;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\get_setting;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\settings_rebuild;
+use function NewPoints\Core\task_delete;
+use function NewPoints\Core\task_disable;
+use function NewPoints\Core\task_enable;
+use function NewPoints\Core\templates_rebuild;
 use function NewPoints\Core\templates_remove;
-use function Newpoints\Core\user_update;
+use function NewPoints\Core\user_update;
 
-use const Newpoints\Core\FIELDS_DATA;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
-use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
-use const Newpoints\Core\FORM_TYPE_TEXT_FIELD;
-use const Newpoints\Core\FORM_TYPE_YES_NO_FIELD;
-use const Newpoints\Core\INCOME_TYPE_POLL;
-use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
-use const Newpoints\Core\INCOME_TYPE_POST;
-use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
-use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
-use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
-use const Newpoints\Core\INCOME_TYPE_THREAD;
-use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
-use const Newpoints\Core\INSTANCE_DEFAULT_ID;
-use const Newpoints\Core\LOGGING_TYPE_CHARGE;
-use const Newpoints\Core\LOGGING_TYPE_INCOME;
-use const Newpoints\Core\TABLES_DATA;
+use const NewPoints\Core\FIELDS_DATA;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const NewPoints\Core\FORM_TYPE_SELECT_FIELD;
+use const NewPoints\Core\FORM_TYPE_TEXT_FIELD;
+use const NewPoints\Core\FORM_TYPE_YES_NO_FIELD;
+use const NewPoints\Core\INCOME_TYPE_POLL;
+use const NewPoints\Core\INCOME_TYPE_POLL_VOTE;
+use const NewPoints\Core\INCOME_TYPE_POST;
+use const NewPoints\Core\INCOME_TYPE_POST_CHARACTER;
+use const NewPoints\Core\INCOME_TYPE_THREAD_REPLY;
+use const NewPoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
+use const NewPoints\Core\INCOME_TYPE_THREAD;
+use const NewPoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const NewPoints\Core\INSTANCE_DEFAULT_ID;
+use const NewPoints\Core\LOGGING_TYPE_CHARGE;
+use const NewPoints\Core\LOGGING_TYPE_INCOME;
+use const NewPoints\Core\TABLES_DATA;
 
 const PERMISSION_ENABLE = 1;
 
@@ -107,7 +107,7 @@ function plugin_information(): array
     ];
 }
 
-function plugin_activation(): bool
+function plugin_activation(): void
 {
     // todo: remove old templates from the global templates set
     global $db, $cache, $mybb;
@@ -144,7 +144,7 @@ function plugin_activation(): bool
                 ]
             );
         } catch (Exception $e) {
-            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+            log_error($instance_id, $e->getMessage());
         }
     }
 
@@ -167,7 +167,7 @@ function plugin_activation(): bool
 
     foreach (
         [
-            'newpoints' => ['title' => 'NewPoints', 'description' => 'Handles Newpoints automatic features.'],
+            'newpoints' => ['title' => 'NewPoints', 'description' => 'Handles NewPoints automatic features.'],
             'backupnewpoints' => [
                 'title' => 'Backup NewPoints',
                 'description' => "Creates a backup of NewPoints default tables and users's points."
@@ -179,7 +179,7 @@ function plugin_activation(): bool
 
     permissions_update();
 
-    rules_rebuild_cache();
+    //rules_rebuild_cache();
 
     my_alerts_install();
 
@@ -192,6 +192,7 @@ function plugin_activation(): bool
             'currency_name_plural' => 'Credits',
             'users_column_name' => 'newpoints',
             'script_name' => 'newpoints.php',
+            'is_enabled' => 1,
         ]);
     }
 
@@ -214,6 +215,7 @@ function plugin_activation(): bool
     }
 
     if ($plugins_list['newpoints'] < 3100) {
+        // general settings go to usergroup or forum permissions
         foreach (
             [
                 'newthread' => 'thread',
@@ -349,6 +351,19 @@ function plugin_activation(): bool
 
     change_admin_permission('newpoints', 'upgrades', PERMISSION_REMOVE);
 
+    foreach (instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
+
+            $instance->cache_update_group_permissions();
+
+            $instance->cache_update_forum_permissions();
+        } catch (Exception $e) {
+        }
+    }
+
+    cache_update_instances();
+
     /*~*~* RUN UPDATES END *~*~*/
 
     $cache->update_usergroups();
@@ -358,22 +373,18 @@ function plugin_activation(): bool
     $plugins_list['newpoints'] = $plugin_information['versioncode'];
 
     $cache->update('ougc_plugins', $plugins_list);
-
-    return true;
 }
 
-function plugin_deactivation(): bool
+function plugin_deactivation(): void
 {
     foreach (['newpoints', 'backupnewpoints'] as $task_name) {
         task_disable($task_name);
     }
 
     permissions_update(PERMISSION_DISABLE);
-
-    return true;
 }
 
-function plugin_installation(): bool
+function plugin_installation(): void
 {
     global $cache;
 
@@ -391,7 +402,7 @@ function plugin_installation(): bool
                 ]
             );
         } catch (Exception $e) {
-            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+            log_error($instance_id, $e->getMessage());
         }
     }
 
@@ -401,13 +412,11 @@ function plugin_installation(): bool
 
     templates_rebuild();
 
-    rules_rebuild_cache();
+    //rules_rebuild_cache();
 
     $cache->update_usergroups();
 
     $cache->update_forums();
-
-    return true;
 }
 
 function plugin_is_installed(): bool
@@ -415,7 +424,7 @@ function plugin_is_installed(): bool
     return db_verify_tables_exists() && db_verify_columns_exists(TABLES_DATA) && db_verify_columns_exists();
 }
 
-function plugin_uninstallation(): bool
+function plugin_uninstallation(): void
 {
     global $db, $PL, $cache;
 
@@ -501,14 +510,12 @@ function plugin_uninstallation(): bool
     } else {
         $cache->delete('ougc_plugins');
     }
-
-    return true;
 }
 
 function permissions_update(int $action = PERMISSION_ENABLE): bool
 {
     change_admin_permission('newpoints', false, $action);
-    
+
     change_admin_permission('newpoints', 'plugins', $action);
 
     change_admin_permission('newpoints', 'settings', $action);
@@ -790,7 +797,7 @@ function recount_rebuild_newpoints_recount_from_logs(): void
             $mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT)
         );
     } catch (Exception $e) {
-        \Newpoints\Core\log_error(
+        log_error(
             $mybb->get_input('newpoints_recount_from_logs_instance_id', MyBB::INPUT_INT),
             $e->getMessage()
         );
@@ -877,7 +884,7 @@ function recount_rebuild_newpoints_recount(): void
             $mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT)
         );
     } catch (Exception $e) {
-        \Newpoints\Core\log_error(
+        log_error(
             $mybb->get_input('newpoints_recount_from_settings_instance_id', MyBB::INPUT_INT),
             $e->getMessage()
         );
@@ -901,8 +908,6 @@ function recount_rebuild_newpoints_recount(): void
 
     $end = $start + $per_page;
 
-    $forum_rules = rules_get_all('forum');
-
     $query = $db->simple_select(
         'users',
         'uid, usergroup, additionalgroups',
@@ -916,14 +921,14 @@ function recount_rebuild_newpoints_recount(): void
         try {
             $user_instance = instance_object($instance->instance_id, $user_id);
         } catch (Exception $e) {
-            \Newpoints\Core\log_error($instance->instance_id, $e->getMessage(), user_id: $user_id);
+            log_error($instance->instance_id, $e->getMessage(), user_id: $user_id);
 
             continue;
         }
 
         $points = 0;
 
-        if (!$user_instance->get_user_permissions_rate_addition()) {
+        if (!$user_instance->get_user_permission_rate_addition()) {
             //continue;
         }
 
@@ -944,14 +949,6 @@ function recount_rebuild_newpoints_recount(): void
                 continue;
             }
 
-            if (empty($forum_rules[$thread['fid']])) {
-                $forum_rules[$thread['fid']]['rate'] = 1;
-            }
-
-            if (empty($forum_rules[$thread['fid']]['rate'])) {
-                continue;
-            }
-
             if (($character_count = my_strlen(
                     $mybb->get_input('message')
                 )) >= $user_instance->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
@@ -960,12 +957,10 @@ function recount_rebuild_newpoints_recount(): void
                 $bonus = 0;
             }
 
-            $points += ($user_instance->get_income_value(INCOME_TYPE_THREAD) + $bonus) *
-                $forum_rules[$thread['fid']]['rate'];
+            $points += ($user_instance->get_income_value(INCOME_TYPE_THREAD) + $bonus);
 
             if (!empty($thread['poll'])) {
-                $points += $user_instance->get_income_value(INCOME_TYPE_POLL) *
-                    $forum_rules[$thread['fid']]['rate'];
+                $points += $user_instance->get_income_value(INCOME_TYPE_POLL);
             }
 
             $first_posts[] = (int)$thread['firstpost'];
@@ -990,14 +985,6 @@ function recount_rebuild_newpoints_recount(): void
                 continue;
             }
 
-            if (!$forum_rules[$post_data['fid']]) {
-                $forum_rules[$post_data['fid']]['rate'] = 1;
-            }
-
-            if (empty($forum_rules[$post_data['fid']]['rate'])) {
-                continue;
-            }
-
             if (($character_count = my_strlen(
                     $post_data['message']
                 )) >= $user_instance->user_permissions[IncomePermissions::UserIncomePostMinimumCharacters]) {
@@ -1007,8 +994,7 @@ function recount_rebuild_newpoints_recount(): void
                 $bonus = 0;
             }
 
-            $points += ($user_instance->get_income_value(INCOME_TYPE_POST) + $bonus) *
-                $forum_rules[$post_data['fid']]['rate'];
+            $points += ($user_instance->get_income_value(INCOME_TYPE_POST) + $bonus);
 
             $thread_data = get_thread($post_data['tid']);
 
@@ -1021,7 +1007,7 @@ function recount_rebuild_newpoints_recount(): void
                     $user_instance = (instance_object($user_instance->instance_id, $thread_user_id))
                         ->set_forum($forum_id);
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance->instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
@@ -1031,9 +1017,8 @@ function recount_rebuild_newpoints_recount(): void
                     continue;
                 }
 
-                if ($user_instance->get_user_permissions_boolean(Permissions::CanGetPoints)) {
-                    $income_value = $user_instance->get_income_value(INCOME_TYPE_THREAD_REPLY) *
-                        $user_instance->get_user_permissions_rate_addition();
+                if ($user_instance->get_user_permission_boolean(Permissions::CanGetPoints)) {
+                    $income_value = $user_instance->get_income_value(INCOME_TYPE_THREAD_REPLY);
 
                     if ($income_value) {
                         try {
@@ -1046,14 +1031,13 @@ function recount_rebuild_newpoints_recount(): void
                                     $forum_id,
                                 );
                         } catch (Exception $e) {
-                            \Newpoints\Core\log_error(
+                            log_error(
                                 $user_instance->instance_id,
                                 $e->getMessage(),
                                 user_id: $user_instance->get_user_id(),
                                 post_id: $user_instance->get_post_id(),
                                 thread_id: $user_instance->get_thread_id(),
                                 forum_id: $user_instance->get_forum_id(),
-                                income_type: $user_instance->get_income_type(),
                             );
 
                             continue;
@@ -1101,10 +1085,8 @@ function recount_rebuild_newpoints_recount(): void
         $db->update_query(
             'users',
             [
-                $user_instance->users_column_get() => $user_instance->get_income_value(
-                        INCOME_TYPE_USER_REGISTRATION,
-                    ) + $points *
-                    $user_instance->get_user_permissions_rate_addition()
+                $user_instance->users_column_get() =>
+                    $user_instance->get_income_value(INCOME_TYPE_USER_REGISTRATION) + $points
             ],
             "uid='{$user_id}'"
         );
@@ -1135,7 +1117,7 @@ function recount_rebuild_newpoints_reset(): void
     try {
         $instance = instance_object($mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT));
     } catch (Exception $e) {
-        \Newpoints\Core\log_error(
+        log_error(
             $mybb->get_input('newpoints_reset_instance_id', MyBB::INPUT_INT),
             $e->getMessage(),
         );
@@ -1158,8 +1140,6 @@ function recount_rebuild_newpoints_reset(): void
     $start = ($page - 1) * $per_page;
 
     $end = $start + $per_page;
-
-    $forum_rules = rules_get_all('forum');
 
     $query = $db->simple_select(
         'users',
@@ -1423,4 +1403,522 @@ function build_permissions_row(
     }
 
     return $form_input;
+}
+
+/**
+ * @param int $group_id
+ *
+ * @return string
+ */
+function retrieve_single_group_permissions_row(int $group_id, int $instance_id): string
+{
+    global $mybb, $lang;
+    global $tables_data, $groups_cache;
+    global $url;
+
+    try {
+        $instance = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        log_error($instance_id, $e->getMessage());
+
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+
+        exit;
+    }
+
+    $group_data = $groups_cache[$group_id];
+
+    $existing_permissions = [];
+
+    foreach (
+        $instance->permissions_group_get(
+            ["instance_id='{$instance->instance_id}'"],
+            array_keys($tables_data['newpoints_group_permissions'])
+        ) as $existing
+    ) {
+        $existing_permissions[$existing['group_id']] = $existing;
+    }
+
+    $permissions_cache = $instance->cache_get_group_permissions();
+
+    $field_list = [];
+
+    foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $field_list[$field_name] = $lang->{'newpoints_permission_group_' . $language_key};
+    }
+
+    $form = new Form('', '', '', 0, '', true);
+
+    $form_container = new FormContainer();
+
+    $permissions = [];
+
+    if ($existing_permissions[$group_id]) {
+        $permissions = $existing_permissions[$group_id];
+
+        $default_checked = false;
+    } elseif ($permissions_cache[$instance->instance_id][$group_id]) {
+        $permissions = $permissions_cache[$instance->instance_id][$group_id];
+
+        $default_checked = true;
+    }
+
+    if (!$permissions) {
+        $permissions = $group_data;
+
+        $default_checked = true;
+    }
+
+    $perms_checked = [];
+
+    foreach ($field_list as $forum_permission => $forum_perm_title) {
+        if ($permissions[$forum_permission] == 1) {
+            $perms_checked[$forum_permission] = 1;
+        } else {
+            $perms_checked[$forum_permission] = 0;
+        }
+    }
+
+    $group_title = htmlspecialchars_uni($group_data['title']);
+
+    if (!empty($default_checked)) {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_inherited;
+    } else {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_custom;
+    }
+
+    $form_container->output_cell(
+        "<strong>{$group_title}</strong> <small style=\"vertical-align: middle;\">({$inherited_text})</small>"
+    );
+
+    $field_select = "<div class=\"quick_perm_fields\">\n";
+
+    $field_select .= "<div class=\"enabled\"><ul id=\"fields_enabled_group_{$group_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 1) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div>\n";
+
+    $field_select .= "<div class=\"disabled\"><ul id=\"fields_disabled_group_{$group_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 0) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div></div>\n";
+
+    $field_select .= $form->generate_hidden_field(
+        'fields_group_' . $group_id,
+        implode(',', array_keys($perms_checked, 1)),
+        ['id' => 'fields_group_' . $group_id]
+    );
+
+    $field_select = str_replace("\n", '', $field_select);
+
+    $form_container->output_cell($field_select, ['colspan' => 2]);
+
+    $permissions_url = $url->build(
+            [
+                'action' => 'group_permissions',
+                'instance_id' => $instance->instance_id,
+                'permission_id' => $permissions['permission_id'] ?? 0,
+                'group_id' => $group_id
+            ]
+        ) . '#tab_group_permissions';
+
+    $modal_url = $url->build(
+        [
+            'action' => 'group_permissions',
+            'instance_id' => $instance->instance_id,
+            'permission_id' => $permissions['permission_id'] ?? 0,
+            'group_id' => $group_id,
+            'ajax' => 1
+        ]
+    );
+
+    if (empty($default_checked)) {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_edit}</a>",
+            ['class' => 'align_center']
+        );
+
+        $clear_group_permissions_url = $url->build(
+            [
+                'action' => 'clear_group_permission',
+                'instance_id' => $instance->instance_id,
+                'permission_id' => $permissions['permission_id'],
+                'my_post_key' => $mybb->post_code
+            ]
+        );
+
+        $form_container->output_cell(
+            "<a href=\"{$clear_group_permissions_url}\" onclick=\"return AdminCP.deleteConfirmation(this, '{$lang->newpoints_admin_instances_permissions_clear_confirm}')\">{$lang->newpoints_admin_instances_permissions_form_clear}</a>",
+            ['class' => 'align_center']
+        );
+    } else {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_set}</a>",
+            ['class' => 'align_center', 'colspan' => 2]
+        );
+    }
+
+    $form_container->construct_row();
+
+    return $form_container->output_row_cells(0, true);
+}
+
+/**
+ * @param int $instance_id
+ */
+function save_quick_group_permissions(int $instance_id, array $permissions_data): void
+{
+    global $db, $inherit, $cache;
+    global $tables_data, $groups_cache;
+
+    try {
+        $instance = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        log_error($instance_id, $e->getMessage());
+
+        return;
+    }
+
+    $permissions_cache = $instance->cache_get_group_permissions();
+
+    $permission_fields = [];
+
+    foreach ($tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $permission_fields[$field_name] = $field_definition['default'];
+    }
+
+    foreach ($groups_cache as $group_data) {
+        $group_id = (int)$group_data['gid'];
+
+        $existing_permissions = [];
+
+        foreach ($permissions_cache[$instance->instance_id] ?? [] as $instance_permissions) {
+            $existing_permissions[$instance_permissions['group_id']] = $instance_permissions;
+        }
+
+        if (!$existing_permissions) {
+            foreach ($permission_fields as $field => $value) {
+                $existing_permissions[$field] = $group_data[$field];
+            }
+        }
+
+        $instance->permissions_group_delete(
+            (int)($instance->permissions_group_get(
+                ["instance_id='{$instance->instance_id}'", "group_id='{$group_id}'"],
+                query_options: ['limit' => 1]
+            )['permission_id'] ?? 0)
+        );
+
+        // Only insert the new ones if we're using group permissions
+        if (empty($inherit[$group_id])) {
+            $insert_data = [
+                'instance_id' => $instance->instance_id,
+                'group_id' => $group_id,
+            ];
+
+            foreach ($permissions_data as $permissions_name => $permissions_value) {
+                if (isset($permissions_value[$group_id])) {
+                    $insert_data[$permissions_name] = $permissions_value[$group_id];
+                }
+            }
+
+            foreach ($permission_fields as $permissions_name => $value) {
+                if (isset($insert_data[$permissions_name])) {
+                    continue;
+                }
+
+                $insert_data[$permissions_name] = isset($existing_permissions[$permissions_name]) ? (int)$existing_permissions[$permissions_name] : 0;
+            }
+
+            $instance->permissions_group_insert($insert_data);
+        }
+    }
+
+    $cache->update_usergroups();
+
+    $cache->update_forumpermissions();
+}
+
+/**
+ * @param int $group_id
+ *
+ * @return string
+ */
+function retrieve_single_forum_permissions_row(int $forum_id, int $instance_id): string
+{
+    global $mybb, $lang;
+    global $tables_data, $forums_cache;
+    global $url;
+
+    try {
+        $instance = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        log_error($instance_id, $e->getMessage());
+
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+
+        exit;
+    }
+
+    $forum_data = $forums_cache[$forum_id];
+
+    $existing_permissions = [];
+
+    foreach (
+        $instance->permissions_forum_get(
+            ["instance_id='{$instance->instance_id}'"],
+            array_keys($tables_data['newpoints_forum_permissions'])
+        ) as $existing
+    ) {
+        $existing_permissions[$existing['forum_id']] = $existing;
+    }
+
+    $permissions_cache = $instance->cache_get_group_permissions();
+
+    $field_list = [];
+
+    foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $language_key = str_replace('newpoints_', '', $field_name);
+
+        $field_list[$field_name] = $lang->{'newpoints_permissions_forum_' . $language_key};
+    }
+
+    $form = new Form('', '', '', 0, '', true);
+
+    $form_container = new FormContainer();
+
+    $permissions = [];
+
+    if ($existing_permissions[$forum_id]) {
+        $permissions = $existing_permissions[$forum_id];
+
+        $default_checked = false;
+    } elseif ($permissions_cache[$instance->instance_id][$forum_id]) {
+        $permissions = $permissions_cache[$instance->instance_id][$forum_id];
+
+        $default_checked = true;
+    }
+
+    if (!$permissions) {
+        $permissions = $forum_data;
+
+        $default_checked = true;
+    }
+
+    $perms_checked = [];
+
+    foreach ($field_list as $forum_permission => $forum_perm_title) {
+        if ($permissions[$forum_permission] == 1) {
+            $perms_checked[$forum_permission] = 1;
+        } else {
+            $perms_checked[$forum_permission] = 0;
+        }
+    }
+
+    $forum_title = strip_tags($forum_data['name']);
+
+    if (!empty($default_checked)) {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_inherited;
+    } else {
+        $inherited_text = $lang->newpoints_admin_instances_permissions_form_custom;
+    }
+
+    $form_container->output_cell(
+        "<strong>{$forum_title}</strong> <small style=\"vertical-align: middle;\">({$inherited_text})</small>"
+    );
+
+    $field_select = "<div class=\"quick_perm_fields\">\n";
+
+    $field_select .= "<div class=\"enabled\"><ul id=\"fields_enabled_forum_{$forum_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 1) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div>\n";
+
+    $field_select .= "<div class=\"disabled\"><ul id=\"fields_disabled_forum_{$forum_id}\">\n";
+
+    foreach ($perms_checked as $perm => $value) {
+        if ($value == 0) {
+            $field_select .= "<li id=\"field-{$perm}\">{$field_list[$perm]}</li>";
+        }
+    }
+
+    $field_select .= "</ul></div></div>\n";
+
+    $field_select .= $form->generate_hidden_field(
+        'fields_forum_' . $forum_id,
+        implode(',', array_keys($perms_checked, 1)),
+        ['id' => 'fields_forum_' . $forum_id]
+    );
+
+    $field_select = str_replace("\n", '', $field_select);
+
+    $form_container->output_cell($field_select, ['colspan' => 2]);
+
+    $permissions_url = $url->build(
+            [
+                'action' => 'forum_permissions',
+                'instance_id' => $instance->instance_id,
+                'permission_id' => $permissions['permission_id'] ?? 0,
+                'forum_id' => $forum_id
+            ]
+        ) . '#tab_forum_permissions';
+
+    $modal_url = $url->build(
+        [
+            'action' => 'forum_permissions',
+            'instance_id' => $instance->instance_id,
+            'permission_id' => $permissions['permission_id'] ?? 0,
+            'forum_id' => $forum_id,
+            'ajax' => 1
+        ]
+    );
+
+    if (empty($default_checked)) {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_edit}</a>",
+            ['class' => 'align_center']
+        );
+
+        $clear_forum_permissions_url = $url->build(
+            [
+                'action' => 'clear_forum_permission',
+                'instance_id' => $instance->instance_id,
+                'permission_id' => $permissions['permission_id'],
+                'my_post_key' => $mybb->post_code
+            ]
+        );
+
+        $form_container->output_cell(
+            "<a href=\"{$clear_forum_permissions_url}\" onclick=\"return AdminCP.deleteConfirmation(this, '{$lang->newpoints_admin_instances_permissions_clear_confirm}')\">{$lang->newpoints_admin_instances_permissions_form_clear}</a>",
+            ['class' => 'align_center']
+        );
+    } else {
+        $form_container->output_cell(
+            "<a href=\"{$permissions_url}\" onclick=\"MyBB.popupWindow('{$modal_url}', null, true); return false;\">{$lang->newpoints_admin_instances_permissions_form_set}</a>",
+            ['class' => 'align_center', 'colspan' => 2]
+        );
+    }
+
+    $form_container->construct_row();
+
+    return $form_container->output_row_cells(0, true);
+}
+
+/**
+ * @param int $instance_id
+ */
+function save_quick_forum_permissions(int $instance_id, array $permissions_data): void
+{
+    global $db, $inherit, $cache;
+    global $tables_data, $forums_cache;
+
+    try {
+        $instance = instance_object($instance_id);
+    } catch (InvalidArgumentException $e) {
+        log_error($instance_id, $e->getMessage());
+
+        return;
+    }
+
+    $permissions_cache = $instance->cache_get_forum_permissions();
+
+    $permission_fields = [];
+
+    foreach ($tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
+        if (!isset($field_definition['is_permission']) || empty($field_definition['dragging_permission'])) {
+            continue;
+        }
+
+        $permission_fields[$field_name] = $field_definition['default'];
+    }
+
+    foreach ($forums_cache as $forum_data) {
+        $forum_id = (int)$forum_data['fid'];
+
+        $existing_permissions = [];
+
+        foreach ($permissions_cache[$instance->instance_id] ?? [] as $instance_permissions) {
+            $existing_permissions[$instance_permissions['forum_id']] = $instance_permissions;
+        }
+
+        if (!$existing_permissions) {
+            foreach ($permission_fields as $field => $value) {
+                $forum_permissions = fetch_forum_permissions(
+                    $forum_id,
+                    '',
+                    []
+                );
+
+                $existing_permissions[$field] = $forum_permissions[$field] ?? TABLES_DATA['newpoints_forum_permissions'][$field]['default'];
+            }
+        }
+
+        $instance->permissions_forum_delete(
+            (int)($instance->permissions_forum_get(
+                ["instance_id='{$instance->instance_id}'", "forum_id='{$forum_id}'"],
+                query_options: ['limit' => 1]
+            )['permission_id'] ?? 0)
+        );
+
+        // Only insert the new ones if we're using forum permissions
+        if (empty($inherit[$forum_id])) {
+            $insert_data = [
+                'instance_id' => $instance->instance_id,
+                'forum_id' => $forum_id,
+            ];
+
+            foreach ($permissions_data as $permissions_name => $permissions_value) {
+                if (isset($permissions_value[$forum_id])) {
+                    $insert_data[$permissions_name] = $permissions_value[$forum_id];
+                }
+            }
+
+            foreach ($permission_fields as $permissions_name => $value) {
+                if (isset($insert_data[$permissions_name])) {
+                    continue;
+                }
+
+                $insert_data[$permissions_name] = isset($existing_permissions[$permissions_name]) ? (int)$existing_permissions[$permissions_name] : 0;
+            }
+
+            $instance->permissions_forum_insert($insert_data);
+        }
+    }
+
+    $cache->update_usergroups();
+
+    $cache->update_forumpermissions();
 }

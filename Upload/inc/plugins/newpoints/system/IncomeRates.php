@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Core;
+namespace NewPoints\Core;
 
 class IncomeRates
 {

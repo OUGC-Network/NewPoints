@@ -29,27 +29,26 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Hooks\Shared;
+namespace NewPoints\Hooks\Shared;
 
 use Exception;
-use InvalidArgumentException;
 use MyBB;
 use PMDataHandler;
 use postDatahandler;
 use userDataHandler;
 
-use function Newpoints\Core\cache_get_instances;
-use function Newpoints\Core\count_characters;
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\run_hooks;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\count_characters;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
 
-use const Newpoints\Core\FIELDS_DATA;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
-use const Newpoints\Core\POST_VISIBLE_STATUS_VISIBLE;
+use const NewPoints\Core\FIELDS_DATA;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
+use const NewPoints\Core\POST_VISIBLE_STATUS_VISIBLE;
 
 function datahandler_post_insert_post_end(postDatahandler &$data_handler): postDatahandler
 {
@@ -84,7 +83,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                 ->income_post()
                 ->income_post_characters($post_data['message']);
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
@@ -102,7 +101,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                     ->set_post($post_id)
                     ->income_thread_reply();
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $thread_user_id,
@@ -158,7 +157,7 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                 $instance->charge_post_characters(characters_count: $new_character_count - $old_character_count);
             }
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
@@ -201,7 +200,7 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
                 ->income_thread()
                 ->income_post_characters($post_data['message']);
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
@@ -227,7 +226,7 @@ function datahandler_pm_insert_end(PMDataHandler &$data_handler): PMDataHandler
                 ->set_tertiary_id((int)($data_handler->pmid[2] ?? 0))
                 ->income_private_message();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $user_id,
@@ -252,18 +251,19 @@ function datahandler_user_validate(userDataHandler &$data_handler): userDataHand
 
     global $mybb;
 
-    $data_fields = FIELDS_DATA['users'];
+    $fields_data = FIELDS_DATA['users'];
 
     $hook_arguments = [
         'data_handler' => &$data_handler,
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('datahandler_user_validate', $hook_arguments);
 
     $user_data = &$data_handler->data;
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
@@ -294,11 +294,12 @@ function datahandler_user_validate(userDataHandler &$data_handler): userDataHand
 
 function datahandler_user_update(userDataHandler &$data_handler): userDataHandler
 {
-    $data_fields = FIELDS_DATA['users'];
+    $fields_data = FIELDS_DATA['users'];
 
     $hook_arguments = [
         'data_handler' => &$data_handler,
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('datahandler_user_update', $hook_arguments);
@@ -307,7 +308,7 @@ function datahandler_user_update(userDataHandler &$data_handler): userDataHandle
 
     global $mybb, $db;
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type']) ||
@@ -340,7 +341,7 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
             instance_object($instance_id, $user_id)
                 ->income_registration();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $user_id,
@@ -352,7 +353,7 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
                 ->set_primary_id($user_id)
                 ->income_referral();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $referrer_user_id,

@@ -33,14 +33,14 @@ namespace NewPoints\System;
 
 use PluginLibrary;
 
-use function Newpoints\Core\url_handler_build;
-use function Newpoints\Core\url_handler_get;
+use function NewPoints\Core\url_handler_build;
+use function NewPoints\Core\url_handler_get;
 
 class Url
 {
     private string $url;
 
-    public function __construct(string $url = \Newpoints\Core\URL)
+    public function __construct(string $url = \NewPoints\Core\URL)
     {
         $this->url = $url;
     }

@@ -29,39 +29,36 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Hooks\Forum;
+namespace NewPoints\Hooks\Forum;
 
-use InvalidArgumentException;
 use MyBB;
 use MybbStuff_MyAlerts_AlertFormatterManager;
 use Exception;
 
-use Newpoints\Core\Permissions;
+use NewPoints\Core\Permissions;
 
-use function Newpoints\Core\build_income_table;
-use function Newpoints\Core\cache_get_instances;
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\log_error;
-use function Newpoints\Core\my_alerts_initiate;
-use function Newpoints\Core\templates_get;
-use function Newpoints\Core\run_hooks;
+use function NewPoints\Core\build_income_table;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\load_set_guest_data;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\my_alerts_initiate;
+use function NewPoints\Core\templates_get;
+use function NewPoints\Core\run_hooks;
 
-function global_start09(): bool
+function global_start09(): void
 {
     load_set_guest_data();
 
     my_alerts_initiate();
-
-    return true;
 }
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
 // todo, fix plugins not being able to use global_start by loading plugins before
-function global_start(): bool
+function global_start(): void
 {
     global $templatelist;
 
@@ -116,10 +113,8 @@ function global_start(): bool
             $templatelist .= ',' . implode(',', $templates);
         }
     }
-
     //users_update();
 
-    return true;
 }
 
 function global_intermediate(): void
@@ -212,7 +207,7 @@ function pre_parse_page(string &$page_contents): string
                 $forum_id = (int)$thread_data['fid'];
                 break;
             case 'newthread.php':
-                if ($mybb->get_input('action') == 'editdraft' ||
+                if ($mybb->get_input('action') === 'editdraft' ||
                     ($mybb->get_input('savedraft') && $mybb->get_input('tid', MyBB::INPUT_INT)) ||
                     ($mybb->get_input('tid', MyBB::INPUT_INT) && $mybb->get_input('pid', MyBB::INPUT_INT))
                 ) {
@@ -236,7 +231,7 @@ function pre_parse_page(string &$page_contents): string
 
                 break;
             case 'polls.php':
-                if ($mybb->get_input('action') == 'newpoll') {
+                if ($mybb->get_input('action') === 'newpoll') {
                     $thread_id = $mybb->get_input('tid', MyBB::INPUT_INT);
 
                     $thread_data = get_thread($thread_id);
@@ -244,7 +239,7 @@ function pre_parse_page(string &$page_contents): string
                     $forum_id = (int)$thread_data['fid'];
                 }
 
-                if ($mybb->get_input('action') == 'editpoll' || $mybb->get_input('action') == 'showresults') {
+                if ($mybb->get_input('action') === 'editpoll' || $mybb->get_input('action') === 'showresults') {
                     $poll_id = $mybb->get_input('pid', MyBB::INPUT_INT);
 
                     $query = $db->simple_select('polls', 'tid', "pid='{$poll_id}'");
@@ -268,7 +263,7 @@ function pre_parse_page(string &$page_contents): string
                 ->income_page_view()
                 ->income_visit();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 post_id: $forum_id,
@@ -281,14 +276,12 @@ function pre_parse_page(string &$page_contents): string
     return $page_contents;
 }
 
-function misc_rules_end(): bool
+function misc_rules_end(): void
 {
     global $mybb;
     global $newpoints_forum_id;
 
     $newpoints_forum_id = $mybb->get_input('fid', MyBB::INPUT_INT);
-
-    return true;
 }
 
 function error(string &$error_message): string
@@ -325,16 +318,14 @@ function xmlhttp09(): void
 // Loads plugins from xmlhttp and runs a new hook called 'newpoints_xmlhttp' that can be used by NewPoints plugins (instead of xmlhttp)
 // xmlhttp can't be used by NP plugins
 // todo, fix plugins not being able to use xmlhttp by loading plugins before
-function xmlhttp(): bool
+function xmlhttp(): void
 {
     run_hooks('xmlhttp');
-
-    return true;
 }
 
 // Loads plugins when in archive and runs a new hook called 'newpoints_archive_start' that can be used by NewPoints plugins (instead of archive_start)
 // todo, fix plugins not being able to use archive_start by loading plugins before
-function archive_start(): bool
+function archive_start(): void
 {
     load_set_guest_data();
 
@@ -354,8 +345,6 @@ function archive_start(): bool
     }
 
     run_hooks('archive_start');
-
-    return true;
 }
 
 function postbit(array &$post): array
@@ -483,9 +472,8 @@ function member_profile_end(): void
 
 // todo, I'm unsure how this is necessary if we already hook at the data handler
 // removed in 3.1.5 because the data handler should take care of this already
-function xmlhttp_edit_post_end(): bool
+function xmlhttp_edit_post_end(): void
 {
-    return false;
 }
 
 /**
@@ -522,7 +510,7 @@ function class_moderation_delete_post_start(&$post_id): int
                 ->charge_post()
                 ->charge_post_characters($post_data['message']);
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
@@ -540,7 +528,7 @@ function class_moderation_delete_post_start(&$post_id): int
                     ->set_post($post_id)
                     ->charge_thread_reply();
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $thread_user_id,
@@ -581,7 +569,7 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
                     ->charge_post()
                     ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -599,7 +587,7 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
                         ->set_post($post_id)
                         ->charge_thread_reply();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
@@ -644,7 +632,7 @@ function class_moderation_restore_posts(array &$post_ids): array
                     ->income_post()
                     ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -662,7 +650,7 @@ function class_moderation_restore_posts(array &$post_ids): array
                         ->set_post($post_id)
                         ->income_thread_reply();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
@@ -702,7 +690,7 @@ function class_moderation_approve_threads(array &$thread_ids): array
                     ->income_thread()
                     ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -745,7 +733,7 @@ function class_moderation_approve_posts(array &$post_ids): array
                     ->income_post()
                     ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -763,7 +751,7 @@ function class_moderation_approve_posts(array &$post_ids): array
                         ->set_post($post_id)
                         ->income_thread_reply();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
@@ -803,7 +791,7 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
                     ->charge_thread()
                     ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -844,7 +832,7 @@ function class_moderation_unapprove_posts(array &$post_ids): array
                     ->charge_post()
                     ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -862,7 +850,7 @@ function class_moderation_unapprove_posts(array &$post_ids): array
                         ->set_post($post_id)
                         ->charge_thread_reply();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
@@ -920,7 +908,7 @@ function class_moderation_delete_thread(int &$thread_id): int
                 ->charge_thread_reply($thread_data['replies'])
                 ->charge_poll();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
@@ -959,7 +947,7 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
                     ->set_post($post_id)
                     ->charge_thread_reply();
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $thread_user_id,
@@ -977,7 +965,7 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
                     ->charge_thread()
                     ->charge_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -1018,7 +1006,7 @@ function class_moderation_restore_threads(array &$thread_ids): array
                         ->set_post($post_id)
                         ->income_thread_reply();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
@@ -1037,7 +1025,7 @@ function class_moderation_restore_threads(array &$thread_ids): array
                     ->income_thread()
                     ->income_post_characters($post_data['message']);
             } catch (Exception $e) {
-                \Newpoints\Core\log_error(
+                log_error(
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
@@ -1052,7 +1040,7 @@ function class_moderation_restore_threads(array &$thread_ids): array
     return $thread_ids;
 }
 
-function polls_do_newpoll_process(): bool
+function polls_do_newpoll_process(): void
 {
     global $mybb, $fid, $thread;
 
@@ -1070,7 +1058,7 @@ function polls_do_newpoll_process(): bool
                 ->set_post($post_id)
                 ->income_poll();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 post_id: $forum_id,
@@ -1079,8 +1067,6 @@ function polls_do_newpoll_process(): bool
             );
         }
     }
-
-    return true;
 }
 
 function class_moderation_delete_poll(int &$post_id): int
@@ -1099,6 +1085,12 @@ function class_moderation_delete_poll(int &$post_id): int
 
     $post_user_id = (int)$post_data['uid'];
 
+    if (!$thread_id ||
+        !($thread_data = get_thread($thread_id)) ||
+        empty($thread_data['poll'])) {
+        return $post_id;
+    }
+
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
             instance_object($instance_id, $post_user_id)
@@ -1107,7 +1099,7 @@ function class_moderation_delete_poll(int &$post_id): int
                 ->set_post($post_id)
                 ->charge_poll();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
@@ -1121,7 +1113,7 @@ function class_moderation_delete_poll(int &$post_id): int
     return $post_id;
 }
 
-function polls_vote_process(): bool
+function polls_vote_process(): void
 {
     global $mybb, $fid, $thread;
 
@@ -1139,7 +1131,7 @@ function polls_vote_process(): bool
                 ->set_post($post_id)
                 ->charge_poll_vote();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 post_id: $forum_id,
@@ -1148,8 +1140,6 @@ function polls_vote_process(): bool
             );
         }
     }
-
-    return true;
 }
 
 function ratethread_process(): void
@@ -1170,7 +1160,7 @@ function ratethread_process(): void
                 ->set_post($post_id)
                 ->income_thread_rating();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 post_id: $forum_id,
@@ -1199,7 +1189,7 @@ function forumdisplay_end(): void
         try {
             $instance = instance_object($instance_id)->set_forum((int)$fid);
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 $instance_id,
                 $e->getMessage(),
                 post_id: (int)$fid,
@@ -1214,9 +1204,9 @@ function forumdisplay_end(): void
 
         $instance_name_lower = $instance->get_display_name_lower();
 
-        $user_group_rate_addition = $instance->get_user_permissions_rate_addition();
+        $user_group_rate_addition = $instance->get_user_permission_rate_addition();
 
-        $user_group_rate_subtraction = $instance->get_user_permissions_rate_substraction();
+        $user_group_rate_subtraction = $instance->get_user_permission_rate_substraction();
 
         $user_rate_description = $lang->sprintf(
             $lang->newpoints_home_user_rate_description,
@@ -1238,16 +1228,14 @@ function forumdisplay_end(): void
     }
 }
 
-function showthread_start(): bool
+function showthread_start(): void
 {
     global $forum;
 
     _helper_evaluate_forum_view_lock((int)$forum['fid']);
-
-    return true;
 }
 
-function editpost_start(): bool
+function editpost_start(): void
 {
     global $mybb;
 
@@ -1256,69 +1244,59 @@ function editpost_start(): bool
     $post_data = get_post($post_id);
 
     _helper_evaluate_forum_view_lock((int)$post_data['fid']);
-
-    return true;
 }
 
-function sendthread_do_sendtofriend_start(): bool
+function sendthread_do_sendtofriend_start(): void
 {
     global $thread;
 
     _helper_evaluate_forum_view_lock((int)$thread['fid']);
-
-    return true;
 }
 
-function sendthread_start(): bool
+function sendthread_start(): void
 {
-    return sendthread_do_sendtofriend_start();
+    sendthread_do_sendtofriend_start();
 }
 
-function archive_forum_start(): bool
+function archive_forum_start(): void
 {
     global $forum;
 
     _helper_evaluate_forum_view_lock((int)$forum['fid']);
-
-    return true;
 }
 
-function archive_thread_start(): bool
+function archive_thread_start(): void
 {
-    return archive_forum_start();
+    archive_forum_start();
 }
 
-function printthread_end(): bool
+function printthread_end(): void
 {
     global $thread;
 
     _helper_evaluate_forum_view_lock((int)$thread['fid']);
-
-    return true;
 }
 
-function newreply_start(): bool
+function newreply_start(): void
 {
     global $fid;
 
     _helper_evaluate_forum_post_lock((int)$fid);
-
-    return true;
 }
 
-function newreply_do_newreply_start(): bool
+function newreply_do_newreply_start(): void
 {
-    return newreply_start();
+    newreply_start();
 }
 
-function newthread_start(): bool
+function newthread_start(): void
 {
-    return newreply_start();
+    newreply_start();
 }
 
-function newthread_do_newthread_start(): bool
+function newthread_do_newthread_start(): void
 {
-    return newreply_start();
+    newreply_start();
 }
 
 function _helper_evaluate_forum_view_lock(int $forum_id): void
@@ -1419,7 +1397,7 @@ function fetch_wol_activity_end(array &$user_activity): array
             'instance_object' => &$instance,
         ];
 
-        $hook_arguments = run_hooks('wol_fetch', $hook_arguments);
+        $hook_arguments = $instance->run_hooks('wol_fetch', $hook_arguments);
 
         break;
     }
@@ -1479,7 +1457,7 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
                 break;
         }
 
-        $hook_arguments = run_hooks('wol_format', $hook_arguments);
+        $hook_arguments = $instance->run_hooks('wol_format', $hook_arguments);
 
         break;
     }
@@ -1502,7 +1480,7 @@ function memberlist_start(): void
                 break;
             }
         } catch (Exception $e) {
-            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+            log_error($instance_id, $e->getMessage());
         }
     }
 }
@@ -1542,11 +1520,11 @@ function memberlist_user(array &$user_data): array
     return $user_data;
 }
 
-function myalerts_register_client_alert_formatters(): bool
+function myalerts_register_client_alert_formatters(): void
 {
     if (!class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') ||
         !class_exists('MybbStuff_MyAlerts_AlertFormatterManager')) {
-        return false;
+        return;
     }
 
     global $newpoints_my_alerts_formatters;
@@ -1555,7 +1533,7 @@ function myalerts_register_client_alert_formatters(): bool
         'newpoints_my_alerts_formatters' => &$newpoints_my_alerts_formatters,
     ];
 
-    $hook_arguments = run_hooks('my_alerts_register_client_alert_formatters', $hook_arguments);
+    $hook_arguments = $instance->run_hooks('my_alerts_register_client_alert_formatters', $hook_arguments);
 
     global $mybb, $lang;
 
@@ -1578,8 +1556,6 @@ function myalerts_register_client_alert_formatters(): bool
             }
         }
     }
-
-    return true;
 }
 
 function myalerts_load_lang(): string

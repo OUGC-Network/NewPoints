@@ -29,15 +29,16 @@
 
 declare(strict_types=1);
 
-use Newpoints\System\Url;
+use NewPoints\System\Url;
 
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\settings_rebuild;
-use function Newpoints\Core\settings_rebuild_cache;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\settings_rebuild;
+use function NewPoints\Core\settings_rebuild_cache;
 
-use const Newpoints\Core\INSTANCE_DEFAULT_ID;
+use const NewPoints\Core\INSTANCE_DEFAULT_ID;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -60,8 +61,8 @@ if ($mybb->get_input('instance_id', MyBB::INPUT_INT) < 1) {
 try {
     $instance = instance_object($mybb->get_input('instance_id', MyBB::INPUT_INT));
 } catch (Exception $e) {
-    \Newpoints\Core\log_error($mybb->get_input('instance_id', MyBB::INPUT_INT), $e->getMessage());
-    
+    log_error($mybb->get_input('instance_id', MyBB::INPUT_INT), $e->getMessage());
+
     flash_message($e->getMessage(), 'error');
 
     admin_redirect('index.php?module=newpoints-instances');
@@ -111,7 +112,7 @@ if ($mybb->get_input('action') == 'change') {
     } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
         $plugin_title = htmlspecialchars_uni($plugin_information['name']);
     } else {
-        $plugin_title = htmlspecialchars_uni($lang->{$group_lang_var});
+        $plugin_title = htmlspecialchars_uni($lang->{"setting_group_newpoints_{$plugin_code}"});
     }
 
     $sub_tabs['newpoints_settings_change'] = [
@@ -128,7 +129,7 @@ if ($mybb->get_input('action') == 'change') {
 
 // Change settings for a specified group.
 if ($mybb->get_input('action') == 'change') {
-    run_hooks('admin_settings_change');
+    $instance->run_hooks('admin_settings_change');
 
     if ($mybb->request_method == 'post') {
         $upsetting = $mybb->get_input('upsetting', MyBB::INPUT_ARRAY);
@@ -197,7 +198,7 @@ if ($mybb->get_input('action') == 'change') {
 
         settings_rebuild_cache();
 
-        run_hooks('admin_settings_change_commit');
+        $instance->run_hooks('admin_settings_change_commit');
 
         // Log admin action
         log_admin_action();
@@ -247,7 +248,7 @@ if ($mybb->get_input('action') == 'change') {
     } else {
         $setting_groups_objects = [];
 
-        $setting_groups_objects = run_hooks('admin_settings_commit_start', $setting_groups_objects);
+        $setting_groups_objects = $instance->run_hooks('admin_settings_commit_start', $setting_groups_objects);
 
         if (!isset($setting_groups_objects[$plugin_code])) {
             flash_message($lang->error_no_settings_found, 'error');
@@ -633,7 +634,7 @@ if ($mybb->get_input('action') == 'change') {
 } else {
     settings_rebuild();
 
-    run_hooks('admin_settings_start');
+    $instance->run_hooks('admin_settings_start');
 
     $page->add_breadcrumb_item($lang->newpoints_instances, 'index.php?module=newpoints-instances');
 
@@ -694,7 +695,7 @@ if ($mybb->get_input('action') == 'change') {
         'active_plugins' => &$active_plugins
     ];
 
-    $hook_arguments = run_hooks('admin_settings_intermediate', $hook_arguments);
+    $hook_arguments = $instance->run_hooks('admin_settings_intermediate', $hook_arguments);
 
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {

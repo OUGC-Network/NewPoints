@@ -29,49 +29,50 @@
 
 declare(strict_types=1);
 
-use Newpoints\Core\IncomePermissions;
-use Newpoints\Core\IncomeRates;
-use Newpoints\Core\Permissions;
+use NewPoints\Core\IncomePermissions;
+use NewPoints\Core\IncomeRates;
+use NewPoints\Core\Permissions;
 
-use function Newpoints\Admin\plugin_activation;
-use function Newpoints\Admin\plugin_deactivation;
-use function Newpoints\Admin\plugin_information;
-use function Newpoints\Admin\plugin_installation;
-use function Newpoints\Admin\plugin_is_installed;
-use function Newpoints\Admin\plugin_uninstallation;
-use function Newpoints\Core\add_hooks;
-use function Newpoints\Core\check_permissions;
-use function Newpoints\Core\count_characters;
-use function Newpoints\Core\find_replace_template_sets;
-use function Newpoints\Core\get_group;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\js_special_characters;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_add;
-use function Newpoints\Core\log_remove;
-use function Newpoints\Core\plugins_load;
-use function Newpoints\Core\points_add;
-use function Newpoints\Core\points_format;
-use function Newpoints\Core\points_update;
-use function Newpoints\Core\private_message_send;
-use function Newpoints\Core\rules_get;
-use function Newpoints\Core\rules_get_all;
-use function Newpoints\Core\rules_rebuild_cache;
-use function Newpoints\Core\settings_add;
-use function Newpoints\Core\settings_add_group;
-use function Newpoints\Core\settings_load;
-use function Newpoints\Core\settings_load_init;
-use function Newpoints\Core\settings_rebuild_cache;
-use function Newpoints\Core\settings_remove;
-use function Newpoints\Core\templates_add;
-use function Newpoints\Core\templates_rebuild;
-use function Newpoints\Core\templates_remove;
-use function Newpoints\Core\users_get_by_username;
-use function Newpoints\Core\users_update;
+use function NewPoints\Admin\plugin_activation;
+use function NewPoints\Admin\plugin_deactivation;
+use function NewPoints\Admin\plugin_information;
+use function NewPoints\Admin\plugin_installation;
+use function NewPoints\Admin\plugin_is_installed;
+use function NewPoints\Admin\plugin_uninstallation;
+use function NewPoints\Core\add_hooks;
+use function NewPoints\Core\check_permissions;
+use function NewPoints\Core\count_characters;
+use function NewPoints\Core\find_replace_template_sets;
+use function NewPoints\Core\get_group;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\js_special_characters;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_add;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\log_remove;
+use function NewPoints\Core\plugins_load;
+use function NewPoints\Core\points_add;
+use function NewPoints\Core\points_format;
+use function NewPoints\Core\points_update;
+use function NewPoints\Core\private_message_send;
+use function NewPoints\Core\rules_get;
+use function NewPoints\Core\rules_get_all;
+use function NewPoints\Core\rules_rebuild_cache;
+use function NewPoints\Core\settings_add;
+use function NewPoints\Core\settings_add_group;
+use function NewPoints\Core\settings_load;
+use function NewPoints\Core\settings_load_init;
+use function NewPoints\Core\settings_rebuild_cache;
+use function NewPoints\Core\settings_remove;
+use function NewPoints\Core\templates_add;
+use function NewPoints\Core\templates_rebuild;
+use function NewPoints\Core\templates_remove;
+use function NewPoints\Core\users_get_by_username;
+use function NewPoints\Core\users_update;
 
-use const Newpoints\ROOT;
-use const Newpoints\Core\INSTANCE_DEFAULT_ID;
-use const Newpoints\Core\PRIVATE_MESSAGE_CURRENT_USER_ID;
+use const NewPoints\ROOT;
+use const NewPoints\Core\INSTANCE_DEFAULT_ID;
+use const NewPoints\Core\PRIVATE_MESSAGE_CURRENT_USER_ID;
 
 const NEWPOINTS_VERSION = '3.1.6';
 
@@ -84,22 +85,22 @@ const NP_HOOKS = 0;
 defined('IN_MYBB') || die('Direct initialization of this file is not allowed.');
 
 // You can uncomment the lines below to avoid storing some settings in the DB
-define('Newpoints\Core\SETTINGS', [
+define('NewPoints\Core\SETTINGS', [
     //'disable_plugins' => true
     //'income_post' => 10,
     'my_alerts_version' => '2.1.0',
-    'disable_backup' => false
+    'disable_backups' => false
 ]);
 
-define('Newpoints\Core\DEBUG', false);
+define('NewPoints\Core\DEBUG', true);
 
-define('Newpoints\DECIMAL_DATA_TYPE_SIZE', '16,4');
+define('NewPoints\DECIMAL_DATA_TYPE_SIZE', '16,4');
 
-define('Newpoints\DECIMAL_DATA_TYPE_STEP', 0.0001);
+define('NewPoints\DECIMAL_DATA_TYPE_STEP', 0.0001);
 
-define('Newpoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
+define('NewPoints\ROOT', MYBB_ROOT . 'inc/plugins/newpoints');
 
-define('Newpoints\ROOT_PLUGINS', ROOT . '/plugins');
+define('NewPoints\ROOT_PLUGINS', ROOT . '/plugins');
 
 defined('PLUGINLIBRARY') || define('PLUGINLIBRARY', MYBB_ROOT . 'inc/plugins/pluginlibrary.php');
 
@@ -108,22 +109,23 @@ require_once ROOT . '/system/Permissions.php';
 require_once ROOT . '/system/IncomeRates.php';
 require_once ROOT . '/system/IncomePermissions.php';
 require_once ROOT . '/classes.php';
+require_once ROOT . '/system/Instance.php';
 require_once ROOT . '/system/Url.php';
 
 if (defined('IN_ADMINCP')) {
     require_once ROOT . '/admin.php';
     require_once ROOT . '/hooks/admin.php';
 
-    add_hooks('Newpoints\Hooks\Admin');
+    add_hooks('NewPoints\Hooks\Admin');
 } else {
     require_once ROOT . '/hooks/forum.php';
 
-    add_hooks('Newpoints\Hooks\Forum');
+    add_hooks('NewPoints\Hooks\Forum');
 }
 
 require_once ROOT . '/hooks/shared.php';
 
-add_hooks('Newpoints\Hooks\Shared');
+add_hooks('NewPoints\Hooks\Shared');
 
 if (defined('IN_ADMINCP')) {
     function newpoints_info(): array
@@ -131,9 +133,9 @@ if (defined('IN_ADMINCP')) {
         return plugin_information();
     }
 
-    function newpoints_install(): bool
+    function newpoints_install(): void
     {
-        return plugin_installation();
+        plugin_installation();
     }
 
     function newpoints_is_installed(): bool
@@ -141,19 +143,19 @@ if (defined('IN_ADMINCP')) {
         return plugin_is_installed();
     }
 
-    function newpoints_uninstall(): bool
+    function newpoints_uninstall(): void
     {
-        return plugin_uninstallation();
+        plugin_uninstallation();
     }
 
-    function newpoints_activate(): bool
+    function newpoints_activate(): void
     {
-        return plugin_activation();
+        plugin_activation();
     }
 
-    function newpoints_deactivate(): bool
+    function newpoints_deactivate(): void
     {
-        return plugin_deactivation();
+        plugin_deactivation();
     }
 }
 
@@ -230,7 +232,7 @@ function newpoints_addpoints(
 
         return points_add($user_id, $points, $forumrate, $grouprate, $isstring, $immediate);
     } catch (Exception $e) {
-        \Newpoints\Core\log_error(INSTANCE_DEFAULT_ID, $e->getMessage());
+        log_error(INSTANCE_DEFAULT_ID, $e->getMessage());
 
         return false;
     }
@@ -365,6 +367,12 @@ plugins_load();
     }
 
     $fpermfields[] = Permissions::CanGetPoints;
+
+    $fpermfields[] = Permissions::Rate;
+
+    $fpermfields[] = Permissions::ViewLockCost;
+
+    $fpermfields[] = Permissions::PostLockCost;
 })();
 
 global $newpoints_globals, $newpoints_profile;

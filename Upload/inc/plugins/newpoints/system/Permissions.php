@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Core;
+namespace NewPoints\Core;
 
 class Permissions
 {
@@ -38,6 +38,7 @@ class Permissions
     public const CanSeeStats = 'newpoints_can_see_stats';
     public const CanDonate = 'newpoints_can_donate';
     public const Rate = 'newpoints_rate_addition';
+    public const RateSubtraction = 'newpoints_rate_subtraction';
     public const ViewLockCost = 'newpoints_view_lock_points';
     public const PostLockCost = 'newpoints_post_lock_points';
 }

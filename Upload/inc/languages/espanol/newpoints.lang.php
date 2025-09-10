@@ -27,7 +27,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-use Newpoints\Core\IncomePermissions;
+use NewPoints\Core\IncomePermissions;
 
 $l['newpoints'] = 'NewPoints';
 

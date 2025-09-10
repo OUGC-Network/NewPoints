@@ -29,13 +29,13 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\cache_get_instances;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_error;
-use function Newpoints\Core\run_hooks;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
 
-use const Newpoints\Core\DEBUG;
+use const NewPoints\Core\DEBUG;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -45,7 +45,7 @@ function newpoints_meta(): bool
 {
     global $page, $lang;
 
-    if (function_exists('\Newpoints\Core\language_load')) {
+    if (function_exists('\NewPoints\Core\language_load')) {
         language_load();
     } else {
         isset($lang->newpoints) || $lang->load('newpoints');
@@ -83,7 +83,7 @@ function newpoints_meta(): bool
         }
     }
 
-    if (function_exists('\Newpoints\Core\run_hooks')) {
+    if (function_exists('\NewPoints\Core\run_hooks')) {
         $sub_menu_items = run_hooks('admin_menu', $sub_menu_items);
     }
 
@@ -130,7 +130,7 @@ function newpoints_admin_permissions(): array
 {
     global $lang;
 
-    if (function_exists('\Newpoints\Core\language_load')) {
+    if (function_exists('\NewPoints\Core\language_load')) {
         language_load();
     } else {
         isset($lang->newpoints) || $lang->load('newpoints');
@@ -155,7 +155,7 @@ function newpoints_admin_permissions(): array
         }
     }
 
-    if (function_exists('\Newpoints\Core\language_load')) {
+    if (function_exists('\NewPoints\Core\language_load')) {
         $admin_permissions = run_hooks('admin_permissions', $admin_permissions);
     }
 

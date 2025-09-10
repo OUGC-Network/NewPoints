@@ -29,34 +29,36 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Hooks\Admin;
+namespace NewPoints\Hooks\Admin;
 
 use Exception;
 use FormContainer;
 use InvalidArgumentException;
 use MyBB;
 
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\log_error;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Admin\recount_rebuild_newpoints_recount;
-use function Newpoints\Admin\recount_rebuild_newpoints_recount_from_logs;
-use function Newpoints\Admin\recount_rebuild_newpoints_reset;
+use NewPoints\System\Url;
 
-use const Newpoints\ROOT;
-use const Newpoints\Core\FIELDS_DATA;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
-use const Newpoints\Core\FORM_TYPE_PHP_CODE;
-use const Newpoints\Core\FORM_TYPE_PHP_CODE_LEGACY;
-use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
-use const Newpoints\Core\FORM_TYPE_SELECT_FIELD_LEGACY;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\get_setting;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\load_set_guest_data;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Admin\recount_rebuild_newpoints_recount;
+use function NewPoints\Admin\recount_rebuild_newpoints_recount_from_logs;
+use function NewPoints\Admin\recount_rebuild_newpoints_reset;
+
+use const NewPoints\ROOT;
+use const NewPoints\Core\FIELDS_DATA;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
+use const NewPoints\Core\FORM_TYPE_PHP_CODE;
+use const NewPoints\Core\FORM_TYPE_PHP_CODE_LEGACY;
+use const NewPoints\Core\FORM_TYPE_SELECT_FIELD;
+use const NewPoints\Core\FORM_TYPE_SELECT_FIELD_LEGACY;
 
 function admin_config_plugins_deactivate(): bool
 {
@@ -72,7 +74,13 @@ function admin_config_plugins_deactivate(): bool
 
     if ($mybb->request_method !== 'post') {
         $page->output_confirm_action(
-            'index.php?module=config-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin=newpoints'
+            (new Url('index.php'))
+                ->build([
+                    'module' => 'config-plugins',
+                    'action' => 'deactivate',
+                    'uninstall' => 1,
+                    'plugin' => 'newpoints',
+                ]),
         );
     }
 
@@ -180,7 +188,7 @@ function admin_user_groups_edit_graph(): bool
 
     language_load();
 
-    $data_fields = FIELDS_DATA['usergroups'];
+    $fields_data = FIELDS_DATA['usergroups'];
 
     echo '<div id="tab_newpoints">';
 
@@ -189,7 +197,8 @@ function admin_user_groups_edit_graph(): bool
     $form_fields = $form_fields_rate = $form_fields_income = [];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
         'form_fields' => &$form_fields,
         'form_fields_rate' => &$form_fields_rate,
         'form_fields_income' => &$form_fields_income
@@ -197,7 +206,7 @@ function admin_user_groups_edit_graph(): bool
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
@@ -205,6 +214,7 @@ function admin_user_groups_edit_graph(): bool
         }
 
         if (my_strpos($data_field_key, 'newpoints_income') === 0) {
+            // usergroup or forums permissions match global settings only, so settings_get_value() is not necessary
             if (get_setting(str_replace('newpoints_', '', $data_field_key)) !== false) {
                 continue;
             }
@@ -389,15 +399,16 @@ function admin_user_groups_edit_commit(): bool
     global $mybb, $db;
     global $updated_group;
 
-    $data_fields = FIELDS_DATA['usergroups'];
+    $fields_data = FIELDS_DATA['usergroups'];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('admin_user_groups_edit_commit_start', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
             $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
@@ -436,19 +447,20 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
     language_load();
 
-    $data_fields = FIELDS_DATA['forums'];
+    $fields_data = FIELDS_DATA['forums'];
 
     $form_fields = $form_fields_rate = [];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
         'form_fields' => &$form_fields,
         'form_fields_rate' => &$form_fields_rate
     ];
 
     $hook_arguments = run_hooks('admin_formcontainer_end_start', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
@@ -574,17 +586,18 @@ function admin_forum_management_edit_commit(): bool
 {
     global $db, $mybb, $fid;
 
-    $data_fields = FIELDS_DATA['forums'];
+    $fields_data = FIELDS_DATA['forums'];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('admin_forum_management_edit_commit_start', $hook_arguments);
 
     $updated_forum = [];
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
             $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
@@ -626,11 +639,23 @@ function admin_forum_management_permission_groups(array &$groups): array
 
 function admin_formcontainer_output_row(array &$hook_arguments): array
 {
-    global $group;
+    global $lang, $page;
+    global $usergroup, $forum, $group;
 
-    if (empty($group) || $group !== 'newpoints') {
+    if ($page->active_module !== 'forum' ||
+        $page->active_action !== 'management' ||
+        !isset($lang->custom_permissions_for) ||
+        !str_contains($hook_arguments['this']->_title, $lang->custom_permissions_for) ||
+        !isset($usergroup['title']) ||
+        !str_contains($hook_arguments['this']->_title, htmlspecialchars_uni($usergroup['title'])) ||
+        !isset($forum['name']) ||
+        !str_contains($hook_arguments['this']->_title, htmlspecialchars_uni($forum['name'])) ||
+        empty($group) ||
+        $group !== 'newpoints'
+    ) {
         return $hook_arguments;
     }
+
 
     global $form, $lang;
     global $permission_data, $fields;
@@ -638,6 +663,16 @@ function admin_formcontainer_output_row(array &$hook_arguments): array
     $fields_data = FIELDS_DATA['forumpermissions'];
 
     $fields = [];
+
+    (function () use (&$fields_data, &$permission_data, &$fields) {
+        $hook_arguments = [
+            'fields_data' => &$fields_data,
+            'permission_data' => &$permission_data,
+            'fields' => &$fields
+        ];
+
+        $hook_arguments = run_hooks('admin_forum_permissions_start', $hook_arguments);
+    })();
 
     foreach ($fields_data as $field_name => $field_definition) {
         if (empty($field_definition['form_type'])) {
@@ -676,25 +711,37 @@ function admin_formcontainer_output_row(array &$hook_arguments): array
     return $hook_arguments;
 }
 
-function admin_forum_management_permissions_commit(): bool
+function admin_forum_management_permissions_commit(): void
 {
     global $mybb;
 
     if (!isset($mybb->input['permissions'])) {
-        return false;
+        return;
     }
 
+    $fields_data = FIELDS_DATA['forumpermissions'];
+
+    $hook_arguments = [
+        'fields_data' => &$fields_data,
+        'permissions' => &$mybb->input['permissions'],
+    ];
+
+    $hook_arguments = run_hooks('admin_forum_permissions_commit', $hook_arguments);
+
+    global $db;
     global $update_array;
 
-    foreach (FIELDS_DATA['forumpermissions'] as $field_name => $field_definition) {
+    foreach ($fields_data as $field_name => $field_definition) {
         if (isset($mybb->input['permissions'][$field_name])) {
-            $update_array[$field_name] = 1;
+            $update_array[$field_name] = match ($field_definition['type']) {
+                'INT', 'TINYINT', 'SMALLINT' => (int)$mybb->input['permissions'][$field_name],
+                'FLOAT', 'DECIMAL' => (float)$mybb->input['permissions'][$field_name],
+                default => $db->escape_string($mybb->input['permissions'][$field_name]),
+            };
         } else {
             $update_array[$field_name] = 0;
         }
     }
-
-    return true;
 }
 
 function admin_user_users_edit_graph_tabs(array &$tabs): array
@@ -715,19 +762,20 @@ function admin_user_users_edit_graph(): bool
 
     language_load();
 
-    $data_fields = FIELDS_DATA['users'];
+    $fields_data = FIELDS_DATA['users'];
 
     echo '<div id="tab_newpoints">';
 
     $form_container = new FormContainer($lang->newpoints_users_title . ': ' . htmlspecialchars_uni($user['username']));
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('admin_user_users_edit_graph', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
         $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
@@ -856,7 +904,7 @@ function admin_tools_recount_rebuild_output_list(): bool
                 try {
                     $instances[$instance_id] = instance_object($instance_id)->get_display_name_upper();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                     );
@@ -891,7 +939,7 @@ function admin_tools_recount_rebuild_output_list(): bool
                 try {
                     $instances[$instance_id] = instance_object($instance_id)->get_display_name_upper();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                     );
@@ -925,7 +973,7 @@ function admin_tools_recount_rebuild_output_list(): bool
                 try {
                     $instances[$instance_id] = instance_object($instance_id)->get_display_name_upper();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                     );

@@ -27,7 +27,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-use Newpoints\Core\IncomePermissions;
+use NewPoints\Core\IncomePermissions;
 
 $l['newpoints'] = 'NewPoints';
 
@@ -176,6 +176,7 @@ $l['newpoints_logs_page_success_log_deleted'] = 'The selected log was successful
 $l['newpoints_menu_category_main'] = 'Main';
 $l['newpoints_menu_category_market'] = 'Market';
 $l['newpoints_menu_category_user'] = 'User';
+$l['newpoints_menu_category_admin'] = 'Admin';
 
 $l['newpoints_wol_location_home'] = 'Viewing the <a href="{1}/{2}">Home</a> page';
 $l['newpoints_wol_location_stats'] = 'Viewing the <a href="{1}/{2}">Statics</a> page';

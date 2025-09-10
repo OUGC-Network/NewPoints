@@ -36,8 +36,9 @@ use InvalidArgumentException;
 use MybbStuff_MyAlerts_Entity_Alert;
 use MybbStuff_MyAlerts_Formatter_AbstractFormatter;
 
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
 
 class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
@@ -58,7 +59,7 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
         try {
             $instance = instance_object((int)($alert->getExtraDetails()['instance_id'] ?? 0));
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 (int)($alert->getExtraDetails()['instance_id'] ?? 0),
                 $e->getMessage(),
             );
@@ -97,7 +98,7 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
 
             return $settings['bburl'] . '/' . $instance->get_script_name();
         } catch (Exception $e) {
-            \Newpoints\Core\log_error(
+            log_error(
                 (int)($alert->getExtraDetails()['instance_id'] ?? 0),
                 $e->getMessage(),
             );

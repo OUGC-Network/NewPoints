@@ -29,19 +29,19 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\System;
+namespace NewPoints\System;
 
 use Exception;
 use InvalidArgumentException;
 use RuntimeException;
 
-use function Newpoints\Core\alert_send;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\private_message_send;
+use function NewPoints\Core\alert_send;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\private_message_send;
 
-use const Newpoints\Core\LOGGING_TYPE_CHARGE;
-use const Newpoints\Core\LOGGING_TYPE_INCOME;
-use const Newpoints\Core\PRIVATE_MESSAGE_ENGINE_ID;
+use const NewPoints\Core\LOGGING_TYPE_CHARGE;
+use const NewPoints\Core\LOGGING_TYPE_INCOME;
+use const NewPoints\Core\PRIVATE_MESSAGE_ENGINE_ID;
 
 class Logger
 {

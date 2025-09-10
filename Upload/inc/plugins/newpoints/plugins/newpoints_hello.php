@@ -29,14 +29,14 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\cache_get_instances;
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_error;
-use function Newpoints\Core\settings_add;
-use function Newpoints\Core\settings_rebuild_cache;
-use function Newpoints\Core\settings_remove;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\settings_add;
+use function NewPoints\Core\settings_rebuild_cache;
+use function NewPoints\Core\settings_remove;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');

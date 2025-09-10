@@ -29,14 +29,14 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Core;
+namespace NewPoints\Core;
 
 use Exception;
 
 use InvalidArgumentException;
 
-use const Newpoints\DECIMAL_DATA_TYPE_SIZE;
-use const Newpoints\DECIMAL_DATA_TYPE_STEP;
+use const NewPoints\DECIMAL_DATA_TYPE_SIZE;
+use const NewPoints\DECIMAL_DATA_TYPE_STEP;
 
 const URL = 'newpoints.php';
 
@@ -134,57 +134,6 @@ const ALL_UNLIMITED_VALUE = -1;
 
 const GUEST_GROUP_ID = 1;
 
-const FORUM_PERMISSIONS = [
-    Permissions::CanGetPoints => [
-        'type' => 'TINYINT',
-        'unsigned' => true,
-        'default' => 0,
-        'form_type' => FORM_TYPE_CHECK_BOX,
-        'is_permission' => true,
-        'dragging_permission' => true,
-        'form_category' => 'general',
-    ],
-    Permissions::Rate => [
-        'type' => 'DECIMAL',
-        'unsigned' => true,
-        'size' => DECIMAL_DATA_TYPE_SIZE,
-        'default' => 1,
-        'form_type' => FORM_TYPE_NUMERIC_FIELD,
-        'is_permission' => true,
-        'form_category' => 'rates',
-        'form_options' => [
-            //'min' => 0,
-            'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
-    ],
-    Permissions::ViewLockCost => [
-        'type' => 'DECIMAL',
-        'unsigned' => true,
-        'size' => DECIMAL_DATA_TYPE_SIZE,
-        'default' => 0,
-        'form_type' => FORM_TYPE_NUMERIC_FIELD,
-        'is_permission' => true,
-        'form_category' => 'rates',
-        'form_options' => [
-            //'min' => 0,
-            'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
-    ],
-    Permissions::PostLockCost => [
-        'type' => 'DECIMAL',
-        'unsigned' => true,
-        'size' => DECIMAL_DATA_TYPE_SIZE,
-        'default' => 0,
-        'form_type' => FORM_TYPE_NUMERIC_FIELD,
-        'is_permission' => true,
-        'form_category' => 'rates',
-        'form_options' => [
-            //'min' => 0,
-            'step' => DECIMAL_DATA_TYPE_STEP,
-        ]
-    ],
-];
-
 const GROUP_PERMISSIONS = [
     Permissions::CanGetPoints => [
         'type' => 'TINYINT',
@@ -244,6 +193,7 @@ const GROUP_PERMISSIONS = [
             //'max' => 100,
         ],
         'is_permission' => true,
+        'lowest' => true,
         'form_category' => 'rates',
     ],
     IncomePermissions::UserIncomeThread => [
@@ -462,7 +412,60 @@ const GROUP_PERMISSIONS = [
     ]
 ];
 
-define('Newpoints\Core\TABLES_DATA', [
+const FORUM_PERMISSIONS = [
+    Permissions::CanGetPoints => [
+        'type' => 'TINYINT',
+        'unsigned' => true,
+        'default' => 0,
+        'form_type' => FORM_TYPE_CHECK_BOX,
+        'is_permission' => true,
+        'dragging_permission' => true,
+        'form_category' => 'general',
+    ],
+    Permissions::Rate => [
+        'type' => 'DECIMAL',
+        'unsigned' => true,
+        'size' => DECIMAL_DATA_TYPE_SIZE,
+        'default' => 1,
+        'form_type' => FORM_TYPE_NUMERIC_FIELD,
+        'is_permission' => true,
+        'form_category' => 'rates',
+        'form_options' => [
+            //'min' => 0,
+            'step' => DECIMAL_DATA_TYPE_STEP,
+        ]
+    ],
+    Permissions::ViewLockCost => [
+        'type' => 'DECIMAL',
+        'unsigned' => true,
+        'size' => DECIMAL_DATA_TYPE_SIZE,
+        'default' => 0,
+        'form_type' => FORM_TYPE_NUMERIC_FIELD,
+        'is_permission' => true,
+        'lowest' => true,
+        'form_category' => 'rates',
+        'form_options' => [
+            //'min' => 0,
+            'step' => DECIMAL_DATA_TYPE_STEP,
+        ]
+    ],
+    Permissions::PostLockCost => [
+        'type' => 'DECIMAL',
+        'unsigned' => true,
+        'size' => DECIMAL_DATA_TYPE_SIZE,
+        'default' => 0,
+        'form_type' => FORM_TYPE_NUMERIC_FIELD,
+        'is_permission' => true,
+        'lowest' => true,
+        'form_category' => 'rates',
+        'form_options' => [
+            //'min' => 0,
+            'step' => DECIMAL_DATA_TYPE_STEP,
+        ]
+    ],
+];
+
+define('NewPoints\Core\TABLES_DATA', [
     'newpoints_settings' => [
         'sid' => [
             'type' => 'INT',
@@ -661,13 +664,13 @@ define('Newpoints\Core\TABLES_DATA', [
         /*'pointsview' => [
             'type' => 'DECIMAL',
             'unsigned' => true,
-            'size' => \Newpoints\DECIMAL_DATA_TYPE_SIZE,
+            'size' => \NewPoints\DECIMAL_DATA_TYPE_SIZE,
             'default' => 0
         ],
         'pointspost' => [
             'type' => 'DECIMAL',
             'unsigned' => true,
-            'size' => \Newpoints\DECIMAL_DATA_TYPE_SIZE,
+            'size' => \NewPoints\DECIMAL_DATA_TYPE_SIZE,
             'default' => 0
         ],*/
     ],
@@ -699,7 +702,7 @@ define('Newpoints\Core\TABLES_DATA', [
         /*'pointsearn' => [
             'type' => 'DECIMAL',
             'unsigned' => true,
-            'size' => \Newpoints\DECIMAL_DATA_TYPE_SIZE,
+            'size' => \NewPoints\DECIMAL_DATA_TYPE_SIZE,
             'default' => 0
         ],
         'period' => [
@@ -732,6 +735,27 @@ define('Newpoints\Core\TABLES_DATA', [
             'size' => 50,
             'default' => '',
             'form_type' => FORM_TYPE_TEXT_FIELD,
+            'form_category' => 'main',
+        ],
+        'currency_prefix' => [
+            'type' => 'VARCHAR',
+            'size' => 50,
+            'default' => '',
+            'form_type' => FORM_TYPE_TEXT_FIELD,
+            'form_category' => 'main',
+        ],
+        'currency_suffix' => [
+            'type' => 'VARCHAR',
+            'size' => 50,
+            'default' => '',
+            'form_type' => FORM_TYPE_TEXT_FIELD,
+            'form_category' => 'main',
+        ],
+        'decimal_digits' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 2,
+            'form_type' => FORM_TYPE_NUMERIC_FIELD,
             'form_category' => 'main',
         ],
         'enable_notifications_private_message' => [
@@ -769,7 +793,7 @@ define('Newpoints\Core\TABLES_DATA', [
                 try {
                     return instance_object($instance_id)->users_column_exists();
                 } catch (Exception $e) {
-                    \Newpoints\Core\log_error(
+                    log_error(
                         $instance_id,
                         $e->getMessage(),
                     );
@@ -779,6 +803,13 @@ define('Newpoints\Core\TABLES_DATA', [
             }
         ],
         'is_enabled' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 0,
+            'form_type' => FORM_TYPE_YES_NO_FIELD,
+            'form_category' => 'main',
+        ],
+        'disable_plugins' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,
@@ -848,6 +879,6 @@ const FIELDS_DATA = [
         ],
     ],
     'usergroups' => GROUP_PERMISSIONS,
-    'forumpermissions' => FORUM_PERMISSIONS,
     'forums' => FORUM_PERMISSIONS,
+    'forumpermissions' => FORUM_PERMISSIONS,
 ];

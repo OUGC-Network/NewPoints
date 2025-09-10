@@ -29,23 +29,23 @@
 
 declare(strict_types=1);
 
-use Newpoints\System\Url;
+use NewPoints\System\Url;
 
-use function Newpoints\Admin\db_verify_columns;
-use function Newpoints\Admin\db_verify_tables;
-use function Newpoints\Admin\my_alerts_install;
-use function Newpoints\Admin\plugin_library_load;
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\rules_rebuild_cache;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\settings_rebuild;
-use function Newpoints\Core\settings_rebuild_cache;
-use function Newpoints\Core\templates_rebuild;
+use function NewPoints\Admin\db_verify_columns;
+use function NewPoints\Admin\db_verify_tables;
+use function NewPoints\Admin\my_alerts_install;
+use function NewPoints\Admin\plugin_library_load;
+use function NewPoints\Core\get_setting;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\settings_rebuild;
+use function NewPoints\Core\settings_rebuild_cache;
+use function NewPoints\Core\templates_rebuild;
 
-use const Newpoints\Core\FIELDS_DATA;
+use const NewPoints\Core\FIELDS_DATA;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -196,13 +196,13 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
                 ]
             );
         } catch (Exception $e) {
-            \Newpoints\Core\log_error($instance_id, $e->getMessage());
+            log_error($instance_id, $e->getMessage());
         }
     }
 
     db_verify_columns();
 
-    rules_rebuild_cache();
+    //rules_rebuild_cache();
 
     my_alerts_install();
 
@@ -318,7 +318,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
         admin_redirect($url->get_url());
     }
 
-    $plugin_repositories = array_map('trim', explode(PHP_EOL, get_setting('main_plugins_repositories')));
+    $plugin_repositories = array_map('trim', explode(PHP_EOL, get_setting('plugins_repositories')));
 
     $repositories_plugins = [];
 

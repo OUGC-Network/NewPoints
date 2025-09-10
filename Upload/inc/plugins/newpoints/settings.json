@@ -1,0 +1,14 @@
+{
+  "plugins_repositories": {
+    "optionscode": "textarea",
+    "value": "community.mybb.com"
+  },
+  "disable_backups": {
+    "optionscode": "yesno",
+    "value": 0
+  },
+  "disable_plugins": {
+    "optionscode": "yesno",
+    "value": 0
+  }
+}

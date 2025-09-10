@@ -29,9 +29,9 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\settings_add;
-use function Newpoints\Core\templates_add;
-use function Newpoints\Core\templates_remove;
+use function NewPoints\Core\settings_add;
+use function NewPoints\Core\templates_add;
+use function NewPoints\Core\templates_remove;
 
 if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');

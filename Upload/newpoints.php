@@ -29,30 +29,29 @@
 
 declare(strict_types=1);
 
-use Newpoints\Core\Permissions;
+use NewPoints\Core\Permissions;
 
-use function Newpoints\Core\build_income_table;
-use function Newpoints\Core\cache_get_instances;
-use function Newpoints\Core\instance_object;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_error;
-use function Newpoints\Core\page_build_menu;
-use function Newpoints\Core\page_build_menu_options;
-use function Newpoints\Core\post_parser;
-use function Newpoints\Core\private_message_send;
-use function Newpoints\Core\templates_get;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\users_get_by_username;
+use function NewPoints\Core\build_income_table;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\page_build_menu;
+use function NewPoints\Core\page_build_menu_options;
+use function NewPoints\Core\post_parser;
+use function NewPoints\Core\private_message_send;
+use function NewPoints\Core\templates_get;
+use function NewPoints\Core\users_get_by_username;
 
-use const Newpoints\Core\INCOME_TYPE_POST;
-use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
-use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
-use const Newpoints\Core\INCOME_TYPE_THREAD;
-use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
-use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
-use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
-use const Newpoints\Core\LOGGING_TYPE_INCOME;
-use const Newpoints\Core\LOGGING_TYPE_CHARGE;
+use const NewPoints\Core\INCOME_TYPE_POST;
+use const NewPoints\Core\INCOME_TYPE_POST_CHARACTER;
+use const NewPoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
+use const NewPoints\Core\INCOME_TYPE_THREAD;
+use const NewPoints\Core\INCOME_TYPE_THREAD_REPLY;
+use const NewPoints\Core\INCOME_TYPE_USER_REFERRAL;
+use const NewPoints\Core\INCOME_TYPE_USER_REGISTRATION;
+use const NewPoints\Core\LOGGING_TYPE_INCOME;
+use const NewPoints\Core\LOGGING_TYPE_CHARGE;
 
 const IN_MYBB = 1;
 
@@ -66,7 +65,7 @@ $templatelist = 'newpoints_option, newpoints_menu, newpoints_home_income_row, ne
 
 require_once './global.php';
 
-if (!function_exists('\Newpoints\Core\language_load')) {
+if (!function_exists('\NewPoints\Core\language_load')) {
     error_no_permission();
 }
 
@@ -95,7 +94,7 @@ $mybb->input['action'] = $mybb->get_input('action');
 
 $newpoints_file = $instance->get_script_name();
 
-run_hooks('begin');
+$instance->run_hooks('begin');
 
 // Allow guests here? Some plugins may allow guest access, and they may hook to newpoints_start
 if (!$instance->user_permissions[Permissions::CanSeePage]) {
@@ -118,7 +117,7 @@ $current_user_id = $instance->get_user_id();
 
 $newpoints_pagination = $newpoints_buttons = '';
 
-run_hooks('start');
+$instance->run_hooks('start');
 
 // Block guests here
 if (!$instance->get_user_id()) {
@@ -131,11 +130,11 @@ $instance_name_lower = $instance->get_display_name_lower();
 
 // no action=home
 if (!$mybb->get_input('action')) {
-    run_hooks('home_start');
+    $instance->run_hooks('home_start');
 
-    $user_group_rate_addition = $instance->get_user_permissions_rate_addition();
+    $user_group_rate_addition = $instance->get_user_permission_rate_addition();
 
-    $user_group_rate_subtraction = $instance->get_user_permissions_rate_substraction();
+    $user_group_rate_subtraction = $instance->get_user_permission_rate_substraction();
 
     $user_rate_description = $lang->sprintf(
         $lang->newpoints_home_user_rate_description,
@@ -149,7 +148,7 @@ if (!$mybb->get_input('action')) {
 
     $income_settings = build_income_table($instance);
 
-    run_hooks('home_intermediate');
+    $instance->run_hooks('home_intermediate');
 
     #Deprecated
     $newpoints_home_desc = $lang->newpoints_home_desc;
@@ -160,7 +159,7 @@ if (!$mybb->get_input('action')) {
         $instance->get_display_name_lower(),
     );
 
-    run_hooks('home_end');
+    $instance->run_hooks('home_end');
 
     $latest_transactions = implode(' ', $latest_transactions);
 
@@ -186,7 +185,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $statistics_items = [];
 
-    run_hooks('stats_start');
+    $instance->run_hooks('stats_start');
 
     // get richest users
     $query = $db->simple_select(
@@ -196,7 +195,7 @@ if ($mybb->get_input('action') == 'stats') {
         [
             'order_by' => $instance->users_column_get(),
             'order_dir' => 'DESC',
-            'limit' => (int)$instance->settings_get_value('main_stats_richestusers')
+            'limit' => (int)$instance->settings_get_value('stats_richest_users_limit')
         ]
     );
 
@@ -212,7 +211,7 @@ if ($mybb->get_input('action') == 'stats') {
             (float)$user[$instance->users_column_get()]
         );
 
-        run_hooks('stats_richest_users');
+        $instance->run_hooks('stats_richest_users');
 
         $richest_users .= eval(templates_get('statistics_richest_user'));
     }
@@ -223,7 +222,7 @@ if ($mybb->get_input('action') == 'stats') {
         $richest_users = eval(templates_get('no_results'));
     }
 
-    run_hooks('stats_middle');
+    $instance->run_hooks('stats_middle');
 
     $last_donations = '';
 
@@ -263,7 +262,7 @@ if ($mybb->get_input('action') == 'stats') {
                 false
             ) . ', ' . my_date($mybb->settings['timeformat'], (int)$donation['date']);
 
-        run_hooks('stats_last_donations');
+        $instance->run_hooks('stats_last_donations');
 
         $last_donations .= eval(templates_get('statistics_donation'));
     }
@@ -282,7 +281,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $page = eval(templates_get('page'));
 
-    run_hooks('stats_end');
+    $instance->run_hooks('stats_end');
 
     output_page($page);
 
@@ -292,7 +291,7 @@ if ($mybb->get_input('action') == 'stats') {
         error($lang->newpoints_donations_disabled);
     }
 
-    run_hooks('donate_start');
+    $instance->run_hooks('donate_start');
 
     // make sure wen're trying to send a donation to ourselves
     $uid = $mybb->get_input('uid', MyBB::INPUT_INT);
@@ -323,7 +322,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $page = eval(templates_get('donate'));
 
-    run_hooks('donate_end');
+    $instance->run_hooks('donate_end');
 
     output_page($page);
 
@@ -335,7 +334,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     verify_post_check($mybb->get_input('postcode'));
 
-    run_hooks('do_donate_start');
+    $instance->run_hooks('do_donate_start');
 
     if (!$instance->user_permissions['cancp']) {
         $q = $db->simple_select(
@@ -355,7 +354,7 @@ if ($mybb->get_input('action') == 'stats') {
 
     $amount = round(
         $mybb->get_input('amount', MyBB::INPUT_FLOAT),
-        (int)$instance->settings_get_value('main_decimal')
+        (int)$instance->get_instance_data()['decimal_digits']
     );
 
     // do we have enough points?
@@ -385,14 +384,13 @@ if ($mybb->get_input('action') == 'stats') {
                 $to_user_id,
             );
     } catch (Exception $e) {
-        \Newpoints\Core\log_error(
+        log_error(
             $instance->instance_id,
             $e->getMessage(),
             user_id: $instance->get_user_id(),
             post_id: $instance->get_post_id(),
             thread_id: $instance->get_thread_id(),
             forum_id: $instance->get_forum_id(),
-            income_type: $instance->get_income_type(),
         );
     }
 
@@ -404,7 +402,7 @@ if ($mybb->get_input('action') == 'stats') {
                 $instance->get_user_id(),
             );
     } catch (Exception $e) {
-        \Newpoints\Core\log_error(
+        log_error(
             $instance->instance_id,
             $e->getMessage(),
             user_id: $to_user_id,
@@ -436,7 +434,7 @@ if ($mybb->get_input('action') == 'stats') {
         );
     }
 
-    run_hooks('do_donate_end');
+    $instance->run_hooks('do_donate_end');
 
     $link = $mybb->settings['bburl'] . '/newpoints.php';
 
@@ -621,7 +619,7 @@ if ($mybb->get_input('action') == 'stats') {
                 break;
         }
 
-        run_hooks('logs_log_row');
+        $instance->run_hooks('logs_log_row');
 
         switch ($log_data['action']) {
             case 'donation':
@@ -953,7 +951,7 @@ if ($mybb->get_input('action') == 'stats') {
         $newpoints_buttons = eval(templates_get('button_manage'));
     }
 
-    run_hooks('logs_end');
+    $instance->run_hooks('logs_end');
 
     $actions_select = (function () use ($action_types, $filters): string {
         $select_name = 'filter[actions][]';
@@ -984,6 +982,6 @@ if ($mybb->get_input('action') == 'stats') {
     exit;
 }
 
-run_hooks('terminate');
+$instance->run_hooks('terminate');
 
 exit;

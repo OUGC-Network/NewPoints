@@ -215,30 +215,18 @@ Below you can find a description of the plugin settings.
 
 ### Main Settings
 
-- **Currency Name** `text` Default: `Points`
-    - _Currency name to use in the forums._
-- **Currency Prefix** `text`
-    - _Currency prefix to render before the format of points._
-- **Currency Suffix** `text`
-    - _Currency suffix to render before the format of points._
-- **Decimal Places** `numeric` Default: `2`
-    - _Number of decimal spaces to use for the currency._
-- **Stats: Richest Users** `numeric` Default: `10`
-    - _Maximum number of richest users to display in the stats page._
 - **Group Rate For Primary Group Only** `yesNo`
     - _If you set this to yes, group rate rules will be calculated using only the primary user group. If you turn this
       off, all group rate rules wil be pondered and the closest value to 1 will always be used._
-- **Main File Name** `numeric` Default: `newpoints.php`
-    - _If you rename the main NewPoints file, update this setting._
 
 ### File Level Settings <a name = "file_level_settings"></a>
 
-Additionally, you can force your settings by updating the `SETTINGS` array constant in the `Newpoints\Core`
+Additionally, you can force your settings by updating the `SETTINGS` array constant in the `NewPoints\Core`
 namespace in the `./inc/plugins/newpoints.php` file. Any setting set this way will always bypass any front-end
 configuration. Use the setting key as shown below:
 
 ```PHP
-define('Newpoints\Core\SETTINGS', [
+define('NewPoints\Core\SETTINGS', [
     'disable_plugins' => true
 ]);
 ```
@@ -347,34 +335,34 @@ Provides a list of available variables, functions, and methods for plugins to us
 - `newpoints_admin_newpoints_permissions` (To be deprecated, use `newpoints_admin_permissions` instead.)
 - `newpoints_admin_user_groups_edit_graph_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_intermediate` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_end` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_commit_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
 - `newpoints_admin_formcontainer_end_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_intermediate` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_end` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_forum_management_edit_commit_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
 
 - `newpoints_global_start` (To be deprecated, use core `global_start` instead.)
 - `newpoints_xmlhttp` (To be deprecated, use core `xmlhttp` instead.)
@@ -435,7 +423,7 @@ Provides a list of available variables, functions, and methods for plugins to us
 - `newpoints_admin_settings_change_commit`
 - `newpoints_admin_settings_start`
 
-### List of available methods at the `Newpoints\Core` namespace: <a name="plugin_methods"></a>
+### List of available methods at the `NewPoints\Core` namespace: <a name="plugin_methods"></a>
 
 - `language_load(): bool { ... }`
 
@@ -443,19 +431,19 @@ Provides a list of available variables, functions, and methods for plugins to us
 
 The following is a list of constants are defined dynamically, `defined()`should be used to make sure they are defined.
 
-- `\Newpoints\DECIMAL_DATA_TYPE_SIZE (string)` Default: `16,4` To be used for DECIMAL data types.
-- `\Newpoints\DECIMAL_DATA_TYPE_STEP (float)` Default: `0.0001` To be used for DECIMAL data types. Example:
+- `\NewPoints\DECIMAL_DATA_TYPE_SIZE (string)` Default: `16,4` To be used for DECIMAL data types.
+- `\NewPoints\DECIMAL_DATA_TYPE_STEP (float)` Default: `0.0001` To be used for DECIMAL data types. Example:
 
 ```PHP
 const FIELDS_DATA = [
     'foo_table' => [
         'foo_column' => [
             'type' => 'DECIMAL',
-            'size' => \Newpoints\DECIMAL_DATA_TYPE_SIZE,
+            'size' => \NewPoints\DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'form_type' => \Newpoints\Core\FORM_TYPE_NUMERIC_FIELD,
+            'form_type' => \NewPoints\Core\FORM_TYPE_NUMERIC_FIELD,
             'form_options' => [
-                'step' => \Newpoints\DECIMAL_DATA_TYPE_STEP,
+                'step' => \NewPoints\DECIMAL_DATA_TYPE_STEP,
             ]
         ],
     ]

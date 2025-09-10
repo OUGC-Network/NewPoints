@@ -29,10 +29,10 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\instance_get;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\users_update;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\users_update;
 
 function task_newpoints(array &$task): array
 {
