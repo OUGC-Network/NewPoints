@@ -61,15 +61,20 @@ function newpoints_meta(): bool
             'link' => 'index.php?module=newpoints-plugins'
         ],
         20 => [
+            'id' => 'settings',
+            'title' => $lang->nav_settings,
+            'link' => 'index.php?module=newpoints-settings'
+        ],
+        30 => [
             'id' => 'instances',
             'title' => $lang->nav_instances,
             'link' => 'index.php?module=newpoints-instances'
-        ]
+        ],
     ];
 
     if (DEBUG) {
-        foreach (cache_get_instances() as $instance_id => $instance_data) {
-            try {
+        try {
+            foreach (cache_get_instances() as $instance_id => $instance_data) {
                 $instance = instance_object($instance_id);
 
                 $sub_menu_items[9000 + $instance->instance_id] = [
@@ -77,9 +82,8 @@ function newpoints_meta(): bool
                     'title' => $instance->get_display_name_upper(),
                     'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance->instance_id
                 ];
-            } catch (Exception $e) {
-                log_error($instance_id, $e->getMessage());
             }
+        } catch (Exception $e) {
         }
     }
 
@@ -143,17 +147,6 @@ function newpoints_admin_permissions(): array
         'settings' => $lang->can_manage_settings,
         'instances' => $lang->can_manage_instances,
     ];
-
-    foreach (cache_get_instances() as $instance_id => $instance_data) {
-        try {
-            $action_handlers['instance_' . instance_object($instance_id)->instance_id] = [
-                'active' => 'settings',
-                'file' => 'settings.php'
-            ];
-        } catch (Exception $e) {
-            log_error($instance_id, $e->getMessage());
-        }
-    }
 
     if (function_exists('\NewPoints\Core\language_load')) {
         $admin_permissions = run_hooks('admin_permissions', $admin_permissions);

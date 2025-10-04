@@ -1,9 +1,13 @@
 {
+  "menu_order": {
+    "type": "numeric",
+    "value": 10
+  },
   "richest_users_limit": {
     "type": "numeric",
     "value": 10
   },
-  "menu_order": {
+  "latest_donations": {
     "type": "numeric",
     "value": 10
   }

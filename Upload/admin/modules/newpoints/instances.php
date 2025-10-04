@@ -44,6 +44,7 @@ use function NewPoints\Core\instance_object;
 use function NewPoints\Core\instance_update;
 use function NewPoints\Core\language_load;
 use function NewPoints\Core\log_error;
+use function NewPoints\Core\main_file_name;
 use function NewPoints\Core\run_hooks;
 
 use const NewPoints\Core\FIELDS_DATA;
@@ -106,7 +107,7 @@ $groups_cache = (array)$mybb->cache->read('usergroups');
 
 $forums_cache = (array)$mybb->cache->read('forums');
 
-$existing_instances = instance_get(query_fields: ['users_column_name', 'script_name']);
+$existing_instances = instance_get(query_fields: ['users_column_name']);
 
 run_hooks('admin_instances_begin');
 
@@ -503,6 +504,14 @@ $(function() {
 
                 $language_key = str_replace('newpoints_', '', $permission_name);
 
+                $form_options = ($field_definition['form_options'] ?? []);
+
+                $permission_data[$permission_name] = match ($field_definition['type']) {
+                    'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_data[$permission_name],
+                    'FLOAT', 'DECIMAL' => (float)$permission_data[$permission_name],
+                    default => htmlspecialchars_uni($permission_data[$permission_name]),
+                };
+
                 switch ($field_definition['form_type']) {
                     case FORM_TYPE_NUMERIC_FIELD:
                         $form_input = '<div class="permissions_bit">';
@@ -517,8 +526,11 @@ $(function() {
 
                         $form_input .= $form->generate_numeric_field(
                             "permissions[{$permission_name}]",
-                            isset($permission_data[$permission_name]) ? (int)$permission_data[$permission_name] : 0,
-                            ['id' => $permission_name, 'class' => $field_definition['form_class'] ?? '']
+                            $permission_data[$permission_name],
+                            array_merge(
+                                $form_options,
+                                ['id' => $permission_name, 'class' => $field_definition['form_class'] ?? '']
+                            )
                         );
 
                         $form_input .= '</div>';
@@ -531,7 +543,10 @@ $(function() {
                             "permissions[{$permission_name}]",
                             1,
                             $permission_title,
-                            ['checked' => !empty($permission_data[$permission_name]), 'id' => $permission_name]
+                            array_merge(
+                                $form_options,
+                                ['checked' => !empty($permission_data[$permission_name]), 'id' => $permission_name]
+                            )
                         );
 
                         break;
@@ -837,7 +852,9 @@ $(function() {
 
         if (isset($permissions_cache[$instance->instance_id])) {
             foreach ($permissions_cache[$instance->instance_id] as $instance_permissions) {
-                $existing_permissions[$instance_permissions['forum_id']] = $instance_permissions;
+                if (!empty($instance_permissions['forum_id'])) {
+                    $existing_permissions[$instance_permissions['forum_id']] = $instance_permissions;
+                }
             }
         }
 
@@ -986,7 +1003,7 @@ $(function() {
 
                     if (isset($mybb->input[$field_name])) {
                         $insert_data[$field_name] = match ($field_definition['type']) {
-                            'INT', 'TINYINT', 'SMALLINT' => (int)$mybb->input[$field_name],
+                            'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$mybb->input[$field_name],
                             'FLOAT', 'DECIMAL' => (float)$mybb->input[$field_name],
                             default => $db->escape_string($mybb->input[$field_name]),
                         };
@@ -1014,27 +1031,6 @@ $(function() {
                             $insert_data['users_column_name']
                         ))) {
                     $error_messages[] = $lang->newpoints_admin_instances_error_duplicated_users_column_name;
-                }
-
-                if (!empty($insert_data['script_name']) && (in_array(
-                            $insert_data['script_name'],
-                            array_column($existing_instances, 'script_name')
-                        ) && (function (
-                            string $scriptName
-                        ) use ($instance_id, $existing_instances): bool {
-                            $duplicateScript = false;
-
-                            foreach ($existing_instances as $instance_data) {
-                                if ($instance_data['script_name'] === $scriptName && $instance_data['instance_id'] !== $instance_id) {
-                                    $duplicateScript = true;
-                                }
-                            }
-
-                            return $duplicateScript;
-                        })(
-                            $insert_data['script_name']
-                        ))) {
-                    $error_messages[] = $lang->newpoints_admin_instances_error_duplicated_script_file;
                 }
 
                 if (!$is_add_page &&
@@ -1138,7 +1134,7 @@ $(function() {
 
                         if (isset($permission_value[$field_name])) {
                             $insert_data[$field_name][$object_id] = match ($field_definition['type']) {
-                                'INT', 'TINYINT', 'SMALLINT' => (int)$permission_value[$field_name],
+                                'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_value[$field_name],
                                 'FLOAT', 'DECIMAL' => (float)$permission_value[$field_name],
                                 default => $db->escape_string($permission_value[$field_name]),
                             };
@@ -2027,7 +2023,7 @@ document.write('" . str_replace('/', '\/', $field_select) . "');
 
         $table->construct_cell($instance->instance_id, ['class' => 'align_center']);
 
-        $edit_url = (new \Newpoints\System\Url('index.php'))
+        $edit_url = (new Url('index.php'))
             ->build([
                 'module' => 'newpoints-instances',
                 'action' => 'edit',
@@ -2053,7 +2049,7 @@ document.write('" . str_replace('/', '\/', $field_select) . "');
             ['class' => 'align_center']
         );
 
-        $newpoints_file = $instance->get_script_name();
+        $newpoints_file = main_file_name();
 
         if ($main_file_exists = file_exists(MYBB_ROOT . $newpoints_file)) {
             $table->construct_cell(
@@ -2102,7 +2098,7 @@ document.write('" . str_replace('/', '\/', $field_select) . "');
             if ($missing_columns) {
                 $popup->add_item(
                     $lang->newpoints_instances_thead_options_rebuild_columns,
-                    (new \Newpoints\System\Url('index.php'))
+                    (new Url('index.php'))
                         ->build([
                             'module' => 'newpoints-instances',
                             'action' => 'rebuild_columns',
@@ -2115,7 +2111,7 @@ document.write('" . str_replace('/', '\/', $field_select) . "');
         if ($instance->instance_id !== INSTANCE_DEFAULT_ID) {
             $popup->add_item(
                 $lang->delete,
-                (new \Newpoints\System\Url('index.php'))
+                (new Url('index.php'))
                     ->build([
                         'module' => 'newpoints-instances',
                         'action' => 'delete',

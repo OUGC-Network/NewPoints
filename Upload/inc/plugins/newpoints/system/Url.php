@@ -31,18 +31,19 @@ declare(strict_types=1);
 
 namespace NewPoints\System;
 
-use PluginLibrary;
-
-use function NewPoints\Core\url_handler_build;
-use function NewPoints\Core\url_handler_get;
+use function NewPoints\Core\main_file_name;
 
 class Url
 {
     private string $url;
 
-    public function __construct(string $url = \NewPoints\Core\URL)
+    public function __construct(?string $url = null)
     {
-        $this->url = $url;
+        if ($url === null) {
+            $this->url = main_file_name();
+        } else {
+            $this->url = $url;
+        }
     }
 
     public function set_url(string $url): self
@@ -59,13 +60,17 @@ class Url
 
     public function build(array $url_parameters = []): string
     {
-        global $PL;
-
-        if (!($PL instanceof PluginLibrary)) {
-            require_once PLUGINLIBRARY;
+        if (($offset = strpos($this->get_url(), '#')) === false) {
+            $offset = strlen($this->get_url());
         }
 
-        return $PL->url_append($this->get_url(), $url_parameters);
+        return substr_replace(
+            $this->get_url(),
+            (str_contains($this->get_url(), '?') ? $separator = '&amp;' : '?') .
+            http_build_query($url_parameters, '', '&amp;'),
+            $offset,
+            0
+        );
     }
 
     public function build_absolute(array $url_params = []): string

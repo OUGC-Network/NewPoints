@@ -43,7 +43,7 @@ use Exception;
 use NewPoints\Core\IncomePermissions;
 use NewPoints\Core\IncomeRates;
 
-use function Newpoints\Core\cache_update_instances;
+use function NewPoints\Core\cache_update_instances;
 use function NewPoints\Core\instance_get;
 use function NewPoints\Core\instance_insert;
 use function NewPoints\Core\instance_object;
@@ -110,7 +110,7 @@ function plugin_information(): array
 function plugin_activation(): void
 {
     // todo: remove old templates from the global templates set
-    global $db, $cache, $mybb;
+    global $db, $cache;
 
     language_load();
 
@@ -188,10 +188,9 @@ function plugin_activation(): void
     if (!instance_get(INSTANCE_DEFAULT_ID)) {
         instance_insert([
             'instance_id' => INSTANCE_DEFAULT_ID,
-            'currency_name_singular' => 'Credit',
-            'currency_name_plural' => 'Credits',
+            'currency_name_singular' => 'NewPoint',
+            'currency_name_plural' => 'NewPoints',
             'users_column_name' => 'newpoints',
-            'script_name' => 'newpoints.php',
             'is_enabled' => 1,
         ]);
     }
@@ -1004,7 +1003,7 @@ function recount_rebuild_newpoints_recount(): void
 
             if ($thread_user_id !== $user_id) {
                 try {
-                    $user_instance = (instance_object($user_instance->instance_id, $thread_user_id))
+                    $user_instance = instance_object($user_instance->instance_id, $thread_user_id)
                         ->set_forum($forum_id);
                 } catch (Exception $e) {
                     log_error(
@@ -1200,7 +1199,7 @@ function my_alerts_install(): bool
         $newpoints_my_alerts_formatters = [
             0 => [
                 'plugin_code' => 'core',
-                'alert_types' => ['add_points', 'subtract_points'],
+                'alert_types' => ['add_points', 'subtract_points', 'donation_received'],
             ]
         ];
 
@@ -1252,7 +1251,7 @@ function my_alerts_uninstall(): bool
         $newpoints_my_alerts_formatters = [
             0 => [
                 'plugin_code' => 'core',
-                'alert_types' => ['add_points', 'subtract_points'],
+                'alert_types' => ['add_points', 'subtract_points', 'donation_received'],
             ]
         ];
 

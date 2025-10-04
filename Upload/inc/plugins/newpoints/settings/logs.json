@@ -1,7 +1,8 @@
 {
   "manage_groups": {
     "type": "groupselect",
-    "value": 4
+    "value": 4,
+    "instance": true
   },
   "per_page": {
     "type": "numeric",

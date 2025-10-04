@@ -122,6 +122,7 @@ A setup that meets the following requirements is necessary to use this plugin.
    │ │ │ │ ├── donate.html
    │ │ │ │ ├── donate_form.html
    │ │ │ │ ├── home.html
+   │ │ │ │ ├── home_income.html
    │ │ │ │ ├── home_income_row.html
    │ │ │ │ ├── home_income_table.html
    │ │ │ │ ├── menu.html
@@ -135,6 +136,8 @@ A setup that meets the following requirements is necessary to use this plugin.
    │ │ │ │ ├── profile_donate.html
    │ │ │ │ ├── statistics.html
    │ │ │ │ ├── statistics_donation.html
+   │ │ │ │ ├── statistics_donation_row.html
+   │ │ │ │ ├── statistics_richest.html
    │ │ │ │ ├── statistics_richest_user.html
    │ │ │ ├── upgrades
    │ │ │ │ ├── index.html
@@ -266,6 +269,10 @@ The following is a list of templates available for this plugin.
 - `newpoints_statistics`
     - _front end_;
 - `newpoints_statistics_donation`
+    - _front end_;
+- `newpoints_statistics_donation_row`
+    - _front end_;
+- `newpoints_statistics_richest`
     - _front end_;
 - `newpoints_statistics_richest_user`
     - _front end_;

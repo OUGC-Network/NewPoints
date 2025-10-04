@@ -2,7 +2,7 @@
 
 /***************************************************************************
  *
- *    NewPoints plugin (/inc/plugins/newpoints/alert_formatters/core_add_points_formatter.php)
+ *    NewPoints plugin (/inc/plugins/newpoints/alert_formatters/core_donation_received_formatter.php)
  *    Author: Pirata Nervo
  *    Copyright: © 2009 Pirata Nervo
  *    Copyright: © 2024 Omar Gonzalez
@@ -40,7 +40,7 @@ use function NewPoints\Core\language_load;
 use function NewPoints\Core\log_error;
 use function NewPoints\Core\main_file_name;
 
-class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
+class newpoints_core_donation_received_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
     public function init(): bool
     {
@@ -80,11 +80,12 @@ class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_A
         $points = (float)$log_data['points'];
 
         return $this->lang->sprintf(
-            $this->lang->newpoints_alert_text_core_add_points,
+            $this->lang->newpoints_alert_text_core_donation_received,
             $instance->get_display_name_upper($points),
             $instance->get_display_name_lower($points),
             $outputAlert['username'],
-            $instance->points_format($points)
+            $instance->points_format($points),
+            get_user($log_data['log_primary_id'] ?? 0)['username'] ?? '',
         );
     }
 

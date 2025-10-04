@@ -2,5 +2,21 @@
   "group_rate_primary_only": {
     "type": "yesno",
     "value": 1
+  },
+  "script_name": {
+    "type": "text",
+    "value": "newpoints.php"
+  },
+  "plugins_repositories": {
+    "type": "textarea",
+    "value": "community.mybb.com"
+  },
+  "disable_backups": {
+    "type": "yesno",
+    "value": 0
+  },
+  "disable_plugins": {
+    "type": "yesno",
+    "value": 0
   }
 }

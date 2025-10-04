@@ -76,11 +76,16 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            instance_object($instance_id, $post_user_id)
+            $instance = instance_object($instance_id, $post_user_id)
                 ->set_forum($forum_id)
                 ->set_thread($thread_id)
-                ->set_post($post_id)
-                ->income_post()
+                ->set_post($post_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_post()
                 ->income_post_characters($post_data['message']);
         } catch (Exception $e) {
             log_error(
@@ -95,11 +100,17 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
         if ($thread_user_id !== $post_user_id) {
             try {
-                instance_object($instance_id, $thread_user_id)
+                $instance = instance_object($instance_id, $thread_user_id)
                     ->set_forum($forum_id)
                     ->set_thread($thread_id)
                     ->set_post($post_id)
                     ->income_thread_reply();
+
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
+
+                $instance->income_thread_reply();
             } catch (Exception $e) {
                 log_error(
                     $instance_id,
@@ -151,6 +162,10 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                 ->set_thread($thread_id)
                 ->set_post($post_id);
 
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
             if ($old_character_count - $new_character_count < 0) {
                 $instance->income_post_characters(characters_count: $new_character_count - $old_character_count);
             } elseif ($old_character_count - $new_character_count > 0) {
@@ -196,8 +211,13 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
             $instance = instance_object($instance_id, $post_user_id)
                 ->set_forum($forum_id)
                 ->set_thread($thread_id)
-                ->set_post($post_id)
-                ->income_thread()
+                ->set_post($post_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_thread()
                 ->income_post_characters($post_data['message']);
         } catch (Exception $e) {
             log_error(
@@ -220,11 +240,16 @@ function datahandler_pm_insert_end(PMDataHandler &$data_handler): PMDataHandler
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            instance_object($instance_id, $user_id)
+            $instance = instance_object($instance_id, $user_id)
                 ->set_primary_id((int)($data_handler->pmid[0] ?? 0))
                 ->set_secondary_id((int)($data_handler->pmid[1] ?? 0))
-                ->set_tertiary_id((int)($data_handler->pmid[2] ?? 0))
-                ->income_private_message();
+                ->set_tertiary_id((int)($data_handler->pmid[2] ?? 0));
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_private_message();
         } catch (Exception $e) {
             log_error(
                 $instance_id,
@@ -316,7 +341,7 @@ function datahandler_user_update(userDataHandler &$data_handler): userDataHandle
             continue;
         }
 
-        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+        if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
             $data_handler->user_update_data[$data_field_key] = (int)($user_data[$data_field_key] ?? $mybb->input[$data_field_key]);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
             $data_handler->user_update_data[$data_field_key] = (float)($user_data[$data_field_key] ?? $mybb->input[$data_field_key]);
@@ -338,8 +363,13 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
 
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
-            instance_object($instance_id, $user_id)
-                ->income_registration();
+            $instance = instance_object($instance_id, $user_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_registration();
         } catch (Exception $e) {
             log_error(
                 $instance_id,
@@ -349,9 +379,14 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
         }
 
         try {
-            instance_object($instance_id, $referrer_user_id)
-                ->set_primary_id($user_id)
-                ->income_referral();
+            $instance = instance_object($instance_id, $referrer_user_id)
+                ->set_primary_id($user_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_referral();
         } catch (Exception $e) {
             log_error(
                 $instance_id,

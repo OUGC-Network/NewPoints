@@ -33,9 +33,7 @@ namespace NewPoints\Hooks\Admin;
 
 use Exception;
 use FormContainer;
-use InvalidArgumentException;
 use MyBB;
-
 use NewPoints\System\Url;
 
 use function NewPoints\Core\instance_object;
@@ -91,6 +89,21 @@ function admin_config_plugins_deactivate(): bool
     return true;
 }
 
+function admin_config_settings_begin(): void
+{
+    global $cache;
+
+    language_load();
+
+    $plugins_list = $cache->read('newpoints_plugins_versions');
+
+    foreach ($plugins_list as $plugin => $b) {
+        if ($plugin && $plugin = str_replace('newpoints_', '', $plugin)) {
+            language_load($plugin, false, true);
+        }
+    }
+}
+
 function admin_load(): bool
 {
     load_set_guest_data();
@@ -98,16 +111,19 @@ function admin_load(): bool
     global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    foreach (instance_get() as $instance_id => $instance_data) {
-        try {
-            $instance = instance_object($instance_id);
+    try {
+        foreach (instance_get() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id);
 
-            $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
-            $newpoints_user_balance_formatted = $mypoints =
-                $instance->points_format($instance->get_user_column_value());
-        } catch (Exception $e) {
-            log_error($instance_id, $e->getMessage());
+                $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+                $newpoints_user_balance_formatted = $mypoints =
+                    $instance->points_format($instance->get_user_column_value());
+            } catch (Exception $e) {
+                log_error($instance_id, $e->getMessage());
+            }
         }
+    } catch (Exception $e) {
     }
 
     run_hooks('admin_load');
@@ -309,7 +325,7 @@ function admin_user_groups_edit_graph(): bool
                 break;
             case FORM_TYPE_SELECT_FIELD:
             case FORM_TYPE_SELECT_FIELD_LEGACY:
-                if (in_array($data_field_data['type'], ['TINYINT', 'SMALLINT', 'INT'])) {
+                if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
                     $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
                 }
 
@@ -409,7 +425,7 @@ function admin_user_groups_edit_commit(): bool
     $hook_arguments = run_hooks('admin_user_groups_edit_commit_start', $hook_arguments);
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+        if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
             $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
             $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
@@ -598,7 +614,7 @@ function admin_forum_management_edit_commit(): bool
     $updated_forum = [];
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+        if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
             $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
             $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
@@ -734,7 +750,7 @@ function admin_forum_management_permissions_commit(): void
     foreach ($fields_data as $field_name => $field_definition) {
         if (isset($mybb->input['permissions'][$field_name])) {
             $update_array[$field_name] = match ($field_definition['type']) {
-                'INT', 'TINYINT', 'SMALLINT' => (int)$mybb->input['permissions'][$field_name],
+                'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$mybb->input['permissions'][$field_name],
                 'FLOAT', 'DECIMAL' => (float)$mybb->input['permissions'][$field_name],
                 default => $db->escape_string($mybb->input['permissions'][$field_name]),
             };

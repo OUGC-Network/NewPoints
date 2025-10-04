@@ -32,8 +32,6 @@ declare(strict_types=1);
 namespace NewPoints\System;
 
 use Exception;
-use InvalidArgumentException;
-use RuntimeException;
 
 use function NewPoints\Core\alert_send;
 use function NewPoints\Core\language_load;
@@ -41,7 +39,6 @@ use function NewPoints\Core\private_message_send;
 
 use const NewPoints\Core\LOGGING_TYPE_CHARGE;
 use const NewPoints\Core\LOGGING_TYPE_INCOME;
-use const NewPoints\Core\PRIVATE_MESSAGE_ENGINE_ID;
 
 class Logger
 {
@@ -132,8 +129,8 @@ class Logger
                             ],
                             'touid' => $user_id
                         ],
-                        PRIVATE_MESSAGE_ENGINE_ID,
-                        true
+                        admin_override: true,
+                        instance_id: $this->instance->instance_id
                     );
                 }
 
@@ -165,8 +162,8 @@ class Logger
                             ],
                             'touid' => $user_id
                         ],
-                        PRIVATE_MESSAGE_ENGINE_ID,
-                        true
+                        admin_override: true,
+                        instance_id: $this->instance->instance_id
                     );
                 }
 

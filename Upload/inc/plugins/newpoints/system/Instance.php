@@ -43,7 +43,6 @@ use function NewPoints\Core\log_error;
 use function NewPoints\Core\run_hooks;
 use function NewPoints\Core\templates_get;
 
-use const NewPoints\Core\URL;
 use const NewPoints\Core\ALL_UNLIMITED_VALUE;
 use const NewPoints\Core\GUEST_GROUP_ID;
 use const NewPoints\Core\INCOME_TYPE_PAGE_VIEW;
@@ -94,7 +93,7 @@ class Instance
 
     private array $tables_data = [];
 
-    public \NewPoints\System\Url $url;
+    public Url $url;
 
     private array $menu_items = [];
 
@@ -103,6 +102,8 @@ class Instance
      */
     public function __construct(int $instance_id, int $user_id = 0)
     {
+        //$instance_id || $instance_id = \NewPoints\Core\INSTANCE_DEFAULT_ID;
+
         if (!($this->instance_data = cache_get_instances($instance_id))) {
             throw new Exception("Instance with ID $instance_id does not exist.");
         }
@@ -117,7 +118,7 @@ class Instance
 
         require_once MYBB_ROOT . 'inc/plugins/newpoints/system/Url.php';
 
-        $this->url = new \NewPoints\System\Url($this->get_script_name());
+        $this->url = new Url();
 
         if ($user_id <= 0) {
             global $mybb;
@@ -129,20 +130,24 @@ class Instance
             $this->user_id = $user_id;
 
             $this->user_data = get_user($this->user_id);
+
+            if (!$this->user_data) {
+                throw new Exception('User with ID ' . $this->user_id . ' does not exist.');
+            }
         }
 
         $this->user_groups = ($this->user_data['usergroup'] ?? '') . ',' . ($this->user_data['additionalgroups'] ?? '');
 
-        $this->run_hooks('instance_construct_start', $this);
+        run_hooks('instance_construct_start', $this);
 
         $this->user_permissions = $this->set_user_permissions();
 
-        $this->run_hooks('instance_construct_end', $this);
+        run_hooks('instance_construct_end', $this);
     }
 
     private function set_user_permissions(): array
     {
-        static $user_permissions = null;
+        $user_permissions = null;
 
         if (isset($user_permissions)) {
             return $user_permissions;
@@ -223,12 +228,13 @@ class Instance
 
     public function is_enabled(): bool
     {
-        return !empty($this->instance_data['is_enabled']) && $this->users_column_exists();
-    }
+        static $is_enabled = null;
 
-    public function plugins_enabled(): bool
-    {
-        return !$this->instance_data['disable_plugins'];
+        if ($is_enabled === null) {
+            $is_enabled = !empty($this->instance_data['is_enabled']) && $this->users_column_exists();
+        }
+
+        return $is_enabled;
     }
 
     public function notifications_private_message_enabled(): bool
@@ -333,8 +339,10 @@ class Instance
         return $this->user_permissions[$permission_key] ?? '';
     }
 
-    public function get_user_permission_rate_addition(string $permission_key = IncomeRates::RateAddition): float
-    {
+    public function get_user_permission_rate_addition(
+        string $permission_key = IncomeRates::RateAddition,
+        bool $charge_rate = false
+    ): float {
         $user_rate = 1;
 
         if ($this->forum_id) {
@@ -343,21 +351,33 @@ class Instance
             $custom_permissions = $custom_permissions[$this->forum_id] ?? [];
 
             if (isset($custom_permissions[$permission_key])) {
-                $user_rate *= $custom_permissions[$permission_key];
+                if ($charge_rate) {
+                    $user_rate *= ($custom_permissions[$permission_key] / 100);
+                } else {
+                    $user_rate *= $custom_permissions[$permission_key];
+                }
             }
 
             if (isset($this->forum_permissions[$permission_key])) {
-                return ($user_rate * $this->forum_permissions[$permission_key]);
+                if ($charge_rate) {
+                    $user_rate *= ($this->forum_permissions[$permission_key] / 100);
+                } else {
+                    $user_rate *= $this->forum_permissions[$permission_key];
+                }
             }
         }
 
-        return ($user_rate * $this->user_permissions[$permission_key]);
+        if ($charge_rate) {
+            return ($user_rate * ($this->user_permissions[$permission_key] / 100));
+        } else {
+            return ($user_rate * $this->user_permissions[$permission_key]);
+        }
     }
 
     public function get_user_permission_rate_substraction(
         string $permission_key = IncomeRates::RateSubtraction,
     ): float {
-        return ($this->get_user_permission_rate_addition($permission_key) / 100);
+        return $this->get_user_permission_rate_addition($permission_key, true);
     }
 
     // this helper function is used when a permission is both a group and forum permission
@@ -394,7 +414,7 @@ class Instance
 
     private function get_group_permissions(int $group_id = GUEST_GROUP_ID): array
     {
-        static $group_permissions = [];
+        $group_permissions = [];
 
         if (isset($group_permissions[$group_id])) {
             return $group_permissions[$group_id];
@@ -410,7 +430,7 @@ class Instance
         ];
 
         // todo, similar to `admin_user_groups_edit_graph_start`
-        $hook_arguments = $this->run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
+        $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
 
         foreach ($fields_data as $data_field_key => $data_field_data) {
             if (!isset($data_field_data['is_permission'])) {
@@ -428,7 +448,7 @@ class Instance
             if (str_starts_with($permission_key, 'newpoints_') &&
                 isset($group_permissions[$group_id][$permission_key])) {
                 $group_permissions[$group_id][$permission_key] = match ($fields_data[$permission_key]['type']) {
-                    'INT', 'TINYINT', 'SMALLINT' => (int)$permission_value,
+                    'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_value,
                     'FLOAT', 'DECIMAL' => (float)$permission_value,
                     default => $permission_value,
                 };
@@ -473,11 +493,6 @@ class Instance
         return $this->post_id;
     }
 
-    public function get_script_name(): string
-    {
-        return $this->instance_data['script_name'] ?? URL;
-    }
-
     protected function get_currency_name_singular(): string
     {
         return $this->instance_data['currency_name_singular'] ?? $this->instance_data['currency_name_plural'];
@@ -510,15 +525,18 @@ class Instance
     {
         $user_rate = 1;
 
-        $income_value = 0;
-
         $global_setting_key = 'income_' . $income_permission;
 
         $group_setting_key = 'newpoints_income_' . $income_permission;
 
-        $income_value = ($this->settings_get_value($global_setting_key) === false ?
-            $this->user_permissions[$group_setting_key] :
-            $this->settings_get_value($global_setting_key)) ?? $this->user_permissions[$income_permission];
+        $income_value = ($this->settings_get_value($global_setting_key) !== false ?
+            (int)$this->settings_get_value($global_setting_key) :
+            (
+                $this->user_permissions[$group_setting_key] ??
+                (
+                    $this->user_permissions['newpoints_' . $income_permission] ?? $this->user_permissions[$income_permission]
+                )
+            )) ?? $this->user_permissions[$income_permission];
 
         if ($this->forum_id) {
             $custom_permissions = $this->cache_get_forum_permissions();
@@ -548,10 +566,13 @@ class Instance
 
     public function users_column_exists(): bool
     {
+        if (empty($this->instance_data['users_column_name'])) {
+            return false;
+        }
+
         global $db;
 
-        return !empty($this->instance_data['users_column_name']) &&
-            $db->field_exists($this->instance_data['users_column_name'], 'users');
+        return $db->field_exists($this->instance_data['users_column_name'], 'users');
     }
 
     public function users_column_get(): string
@@ -1380,12 +1401,12 @@ WHERE `uid`=\'' . $this->user_id . '\''
             'permission_id' => &$permission_id,
         ];
 
-        $hook_arguments = $this->run_hooks('permissions_group_insert_update_start', $hook_arguments);
+        $hook_arguments = run_hooks('permissions_group_insert_update_start', $hook_arguments);
 
         foreach ($this->tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
             if (isset($permission_data[$field_name])) {
                 $insert_data[$field_name] = match ($field_definition['type']) {
-                    'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
+                    'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_data[$field_name],
                     'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
                     default => $db->escape_string($permission_data[$field_name]),
                 };
@@ -1445,7 +1466,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             'permission_id' => &$permission_id,
         ];
 
-        $hook_arguments = $this->run_hooks('permissions_group_delete_start', $hook_arguments);
+        $hook_arguments = run_hooks('permissions_group_delete_start', $hook_arguments);
 
         try {
             $db->delete_query('newpoints_group_permissions', "permission_id='{$permission_id}'");
@@ -1473,12 +1494,12 @@ WHERE `uid`=\'' . $this->user_id . '\''
             'permission_id' => &$permission_id,
         ];
 
-        $hook_arguments = $this->run_hooks('permissions_forum_insert_update_start', $hook_arguments);
+        $hook_arguments = run_hooks('permissions_forum_insert_update_start', $hook_arguments);
 
         foreach ($this->tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
             if (isset($permission_data[$field_name])) {
                 $insert_data[$field_name] = match ($field_definition['type']) {
-                    'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
+                    'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_data[$field_name],
                     'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
                     default => $db->escape_string($permission_data[$field_name]),
                 };
@@ -1538,7 +1559,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             'permission_id' => &$permission_id,
         ];
 
-        $hook_arguments = $this->run_hooks('permissions_forum_delete_start', $hook_arguments);
+        $hook_arguments = run_hooks('permissions_forum_delete_start', $hook_arguments);
 
         try {
             $db->delete_query('newpoints_forum_permissions', "permission_id='{$permission_id}'");
@@ -1559,7 +1580,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             'cache_data' => &$cache_data,
         ];
 
-        $hook_arguments = $this->run_hooks('cache_update_groups_start', $hook_arguments);
+        $hook_arguments = run_hooks('cache_update_groups_start', $hook_arguments);
 
         $permissions_objects = $this->permissions_group_get(
             [],
@@ -1574,7 +1595,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             foreach ($this->tables_data['newpoints_group_permissions'] as $field_name => $field_definition) {
                 if (isset($permission_data[$field_name])) {
                     $cache_data[(int)$permission_data['instance_id']][$group_id][$field_name] = match ($field_definition['type']) {
-                        'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
+                        'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_data[$field_name],
                         'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
                         default => $db->escape_string($permission_data[$field_name]),
                     };
@@ -1582,7 +1603,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             }
         }
 
-        $hook_arguments = $this->run_hooks('cache_update_groups_end', $hook_arguments);
+        $hook_arguments = run_hooks('cache_update_groups_end', $hook_arguments);
 
         $cache->update('newpoints_group_permissions', $cache_data);
 
@@ -1599,7 +1620,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             'cache_data' => &$cache_data,
         ];
 
-        $hook_arguments = $this->run_hooks('cache_update_forums_start', $hook_arguments);
+        $hook_arguments = run_hooks('cache_update_forums_start', $hook_arguments);
 
         $permissions_objects = $this->permissions_forum_get(
             [],
@@ -1614,7 +1635,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             foreach ($this->tables_data['newpoints_forum_permissions'] as $field_name => $field_definition) {
                 if (isset($permission_data[$field_name])) {
                     $cache_data[(int)$permission_data['instance_id']][$forum_id][$field_name] = match ($field_definition['type']) {
-                        'INT', 'TINYINT', 'SMALLINT' => (int)$permission_data[$field_name],
+                        'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$permission_data[$field_name],
                         'FLOAT', 'DECIMAL' => (float)$permission_data[$field_name],
                         default => $db->escape_string($permission_data[$field_name]),
                     };
@@ -1622,7 +1643,7 @@ WHERE `uid`=\'' . $this->user_id . '\''
             }
         }
 
-        $hook_arguments = $this->run_hooks('cache_update_forums_end', $hook_arguments);
+        $hook_arguments = run_hooks('cache_update_forums_end', $hook_arguments);
 
         $cache->update('newpoints_forum_permissions', $cache_data);
 
@@ -1653,10 +1674,6 @@ WHERE `uid`=\'' . $this->user_id . '\''
 
     public function run_hooks(string $hook_name = '', array|Instance &$hook_arguments = []): array|Instance
     {
-        if (!$this->plugins_enabled()) {
-            return $hook_arguments;
-        }
-
         return run_hooks($hook_name, $hook_arguments);
     }
 

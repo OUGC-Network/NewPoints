@@ -36,11 +36,11 @@ $l['newpoints_header_menu'] = 'NewPoints';
 $l['newpoints_home'] = 'Inicio';
 $l['newpoints_menu'] = 'Menú';
 $l['newpoints_donate'] = 'Donar';
-$l['newpoints_donated'] = 'Has donado exitosamente {1} al usuario seleccionado.';
+$l['newpoints_donated'] = 'Has donado exitosamente {3} {2} al usuario seleccionado.';
 $l['newpoints_user'] = 'Usuario';
 $l['newpoints_user_desc'] = 'Ingresa el nombre de usuario de la persona a la que deseas enviar una donación.';
 $l['newpoints_amount'] = 'Cantidad';
-$l['newpoints_amount_desc'] = 'Ingresa la cantidad de puntos que deseas enviar al usuario.';
+$l['newpoints_amount_desc'] = 'Ingresa la cantidad que deseas enviar al usuario.';
 $l['newpoints_reason'] = 'Razón';
 $l['newpoints_reason_desc'] = '(Opcional) Ingresa una razón para la donación.';
 $l['newpoints_submit'] = 'Enviar';
@@ -54,7 +54,7 @@ $l['newpoints_invalid_user'] = 'Has ingresado un nombre de usuario inválido.';
 $l['newpoints_donate_log'] = '{1}-{2}-{3}';
 $l['newpoints_stats_disabled'] = 'Las estadísticas han sido deshabilitadas por el administrador.';
 $l['newpoints_statistics'] = 'Estadísticas';
-$l['newpoints_richest_users'] = 'Usuarios más ricos';
+$l['newpoints_richest_users'] = 'Usuarios más ricos ({1})';
 $l['newpoints_last_donations'] = 'Últimas donaciones';
 $l['newpoints_from'] = 'De';
 $l['newpoints_to'] = 'A';
@@ -65,15 +65,13 @@ $l['newpoints_amount_paid'] = 'Cantidad Pagada';
 $l['newpoints_source'] = 'Fuente';
 
 $l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo pero eficiente para MyBB.';
-$l['newpoints_home_description_primary'] = 'Hay algunas opciones en el menú a la izquierda que puedes usar.';
 $l['newpoints_home_description_header'] = '¿Cómo ganas {2}?';
 $l['newpoints_home_description_secondary'] = '';
-$l['newpoints_home_description_footer'] = 'Contacta a tu administrador si tienes alguna pregunta.';
 $l['newpoints_home_user_rate_description'] = 'Tu tasa para ganar {2} es <code>{3}</code> y tu tasa para gastar {2} es <code>{4}</code>.';
 
 $l['newpoints_action'] = 'Acción';
 $l['newpoints_chars'] = 'Caracteres';
-$l['newpoints_max_donations_control'] = 'Has alcanzado el máximo de {1} en los últimos 15 minutos. Por favor, espera antes de hacer una nueva.';
+$l['newpoints_max_donations_control'] = 'Has alcanzado el máximo de {3} {2} en los últimos 15 minutos. Por favor, espera antes de hacer una nueva.';
 
 // Settings translation
 $l['newpoints_income_source'] = 'Fuente';
@@ -183,6 +181,7 @@ $l['newpoints_log_pm_subtract_message'] = 'Hola {3}, {4} {2} fueron restados de 
 
 $l['newpoints_alert_text_core_add_points'] = '{4} {1} fueron añadidos a tu cuenta.';
 $l['newpoints_alert_text_core_subtract_points'] = '{4} {1} fueron restados de tu cuenta.';
+$l['newpoints_alert_text_core_donation_received'] = 'You received {4} {2} from {5}.';
 
 $l['myalerts_setting_newpoints_core_add_points'] = '¿Recibir alerta al recibir puntos?';
 $l['myalerts_setting_newpoints_core_subtract_points'] = '¿Recibir alerta al perder puntos?';

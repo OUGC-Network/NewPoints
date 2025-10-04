@@ -1,0 +1,61 @@
+array(1) {
+[0]=>
+object(stdClass)#34 (28) {
+["payment_id"]=>
+string(10) "5079373633"
+["payment_status"]=>
+string(7) "waiting"
+["pay_address"]=>
+string(34) "32KeUyTBMBEEm4n54yy1ES5kRgN94HT1DR"
+["price_amount"]=>
+int(10)
+["price_currency"]=>
+string(3) "usd"
+["pay_amount"]=>
+float(8.522E-5)
+["amount_received"]=>
+float(0.0770894)
+["pay_currency"]=>
+string(3) "btc"
+["order_id"]=>
+int(1)
+["order_description"]=>
+string(35) "NewPoints Deposit Points Request #1"
+["payin_extra_id"]=>
+NULL
+["ipn_callback_url"]=>
+string(56) "https://omarg.me/mybb2025/xmlhttp.php?action=nowpayments"
+["customer_email"]=>
+NULL
+["created_at"]=>
+string(24) "2025-09-18T05:25:00.464Z"
+["updated_at"]=>
+string(24) "2025-09-18T05:25:00.464Z"
+["purchase_id"]=>
+string(10) "5204216388"
+["smart_contract"]=>
+NULL
+["network"]=>
+string(3) "btc"
+["network_precision"]=>
+NULL
+["time_limit"]=>
+NULL
+["burning_percent"]=>
+NULL
+["expiration_estimate_date"]=>
+string(24) "2025-09-18T05:45:00.464Z"
+["is_fixed_rate"]=>
+bool(false)
+["is_fee_paid_by_user"]=>
+bool(false)
+["valid_until"]=>
+string(24) "2025-09-25T05:25:00.464Z"
+["type"]=>
+string(13) "crypto2crypto"
+["product"]=>
+string(3) "api"
+["origin_ip"]=>
+string(20) "2a01:4ff:1f0:e7f2::1"
+}
+}

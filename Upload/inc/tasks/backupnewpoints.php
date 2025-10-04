@@ -29,7 +29,7 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\cache_get_instances;
+use function NewPoints\Core\cache_get_instances;
 use function NewPoints\Core\get_setting;
 use function NewPoints\Core\language_load;
 use function NewPoints\Core\run_hooks;
@@ -53,7 +53,7 @@ function task_backupnewpoints(array &$task): array
 // a modified copy of task_backupdb() from backupdb.php
 function backupnewpoints_backupdb(): void
 {
-    if (get_setting('disable_backups')) {
+    if (get_setting('main_disable_backups')) {
         return;
     }
 
@@ -103,15 +103,19 @@ function backupnewpoints_backupdb(): void
     $contents = $header;
 
     foreach ($tables_data as $table_name => $fields_data) {
-        if ($table_name === 'users' || $table_name === 'threads') {
+        if (in_array($table_name, ['users', 'threads', 'usergroups', 'forums'])) {
             \NewPoints\Hooks\Forum\backupnewpoints_clear_overflow($fp, $contents);
 
             $field_list = array_keys($fields_data);
 
             if ($table_name === 'users') {
                 $field_list[] = 'uid';
-            } else {
+            } elseif ($table_name === 'threads') {
                 $field_list[] = 'tid';
+            } elseif ($table_name === 'usergroups') {
+                $field_list[] = 'gid';
+            } else {
+                $field_list[] = 'fid';
             }
 
             $query = $db->simple_select($table_name, implode(',', $field_list));
@@ -122,8 +126,12 @@ function backupnewpoints_backupdb(): void
                 foreach ($field_list as $field_name) {
                     if ($table_name === 'users') {
                         $update .= 'UPDATE `' . $db->table_prefix . "users` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `uid`='{$row_data['uid']}';\n";
-                    } else {
+                    } elseif ($table_name === 'threads') {
                         $update .= 'UPDATE `' . $db->table_prefix . "threads` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `tid`='{$row_data['tid']}';\n";
+                    } elseif ($table_name === 'usergroups') {
+                        $update .= 'UPDATE `' . $db->table_prefix . "usergroups` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `gid`='{$row_data['gid']}';\n";
+                    } else {
+                        $update .= 'UPDATE `' . $db->table_prefix . "forums` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `fid`='{$row_data['fid']}';\n";
                     }
                 }
 

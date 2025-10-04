@@ -29,11 +29,8 @@
 
 declare(strict_types=1);
 
-use function NewPoints\Core\cache_get_instances;
-use function NewPoints\Core\instance_get;
-use function NewPoints\Core\instance_object;
+use function NewPoints\Core\get_setting;
 use function NewPoints\Core\language_load;
-use function NewPoints\Core\log_error;
 use function NewPoints\Core\settings_add;
 use function NewPoints\Core\settings_rebuild_cache;
 use function NewPoints\Core\settings_remove;
@@ -44,6 +41,7 @@ if (!defined('IN_MYBB')) {
 
 global $plugins;
 
+$plugins->add_hook('newpoints_admin_settings_intermediate', 'newpoints_hello_world_admin_settings_intermediate');
 $plugins->add_hook('pre_output_page', 'newpoints_hello_world');
 
 function newpoints_hello_info(): array
@@ -149,6 +147,16 @@ function newpoints_hello_deactivate(): bool
     return true;
 }
 
+function newpoints_hello_world_admin_settings_intermediate(array &$hook_arguments): array
+{
+    language_load('newpoints_hello');
+
+    //unset($hook_arguments['active_plugins']['newpoints_signature_market']);
+
+    $hook_arguments['newpoints_hello'] = [];
+
+    return $hook_arguments;
+}
 
 function newpoints_hello_world(string &$page): string
 {
@@ -156,26 +164,12 @@ function newpoints_hello_world(string &$page): string
 
     language_load('newpoints_hello');
 
-    foreach (cache_get_instances() as $instance_id => $instance_data) {
-        try {
-            $instance = instance_object($instance_id);
-        } catch (Exception $e) {
-            log_error($instance_id, $e->getMessage());
-
-            continue;
-        }
-
-        if ($instance->settings_get_value('hello_show')) {
-            $page = str_replace(
-                '<!-- end: header -->',
-                '<!-- end: header -->' . $lang->sprintf(
-                    $lang->newpoints_hello_message,
-                    $instance->get_display_name_upper(),
-                    $instance->get_display_name_lower(),
-                ),
-                $page
-            );
-        }
+    if (get_setting('hello_show')) {
+        $page = str_replace(
+            '<!-- end: header -->',
+            '<!-- end: header -->' . $lang->newpoints_hello_message,
+            $page
+        );
     }
 
     return $page;

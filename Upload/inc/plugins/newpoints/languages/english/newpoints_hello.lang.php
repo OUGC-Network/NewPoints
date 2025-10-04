@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints is a complex but efficient points system for MyBB.
+ *    A sample plugin that prints hello world depending on the settings.
  *
  ***************************************************************************
  ****************************************************************************

@@ -161,6 +161,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
         }
 
         $active_plugins[$codename] = $codename;
+
         $executed[] = 'activate';
     } else {
         $message = $lang->success_plugin_deactivated;
@@ -179,6 +180,41 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
     }
 
     plugin_library_load();
+
+    $query = $db->simple_select(
+        'newpoints_settings',
+        'sid, plugin',
+        "plugin LIKE 'newpoints_%'"
+    );
+
+    while ($setting = $db->fetch_array($query)) {
+        $db->update_query(
+            'newpoints_settings',
+            ['plugin' => substr($setting['plugin'], 10)],
+            "sid='{$setting['sid']}'"
+        );
+    }
+
+    $query = $db->simple_select(
+        'newpoints_settings',
+        'sid, name, plugin',
+        options: ['limit' => 1]
+    );
+
+    while ($setting = $db->fetch_array($query)) {
+        $query2 = $db->simple_select(
+            'newpoints_settings',
+            'sid, name, plugin',
+            "sid!='{$db->escape_string($setting['sid'])}' AND name='{$db->escape_string($setting['name'])}' AND plugin='{$db->escape_string($setting['plugin'])}'",
+        );
+
+        while ($duplicated = $db->fetch_array($query2)) {
+            $db->delete_query(
+                'newpoints_settings',
+                "sid='{$db->escape_string($duplicated['sid'])}'"
+            );
+        }
+    }
 
     settings_rebuild();
 
@@ -318,7 +354,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
         admin_redirect($url->get_url());
     }
 
-    $plugin_repositories = array_map('trim', explode(PHP_EOL, get_setting('plugins_repositories')));
+    $plugin_repositories = array_map('trim', explode(PHP_EOL, get_setting('main_plugins_repositories')));
 
     $repositories_plugins = [];
 

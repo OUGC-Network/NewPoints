@@ -33,8 +33,6 @@ namespace NewPoints\Core;
 
 use Exception;
 
-use InvalidArgumentException;
-
 use const NewPoints\DECIMAL_DATA_TYPE_SIZE;
 use const NewPoints\DECIMAL_DATA_TYPE_STEP;
 
@@ -505,10 +503,15 @@ define('NewPoints\Core\TABLES_DATA', [
             'unsigned' => true,
             'default' => 0
         ],
+        'is_global' => [
+            'type' => 'TINYINT',
+            'unsigned' => true,
+            'default' => 1
+        ],
         'instance_id' => [
             'type' => 'INT',
             'unsigned' => true,
-            'default' => INSTANCE_DEFAULT_ID
+            'default' => 0
         ],
     ],
     'newpoints_log' => [
@@ -772,44 +775,32 @@ define('NewPoints\Core\TABLES_DATA', [
             'form_type' => FORM_TYPE_YES_NO_FIELD,
             'form_category' => 'main',
         ],
-        'script_name' => [
-            'type' => 'VARCHAR',
-            'size' => 50,
-            'default' => '',
-            'form_category' => 'main',
-            'form_type' => FORM_TYPE_TEXT_FIELD,
-        ],
         'users_column_name' => [
             'type' => 'VARCHAR',
             'size' => 50,
+            'default' => '',
             'unique' => true,
             'form_type' => FORM_TYPE_TEXT_FIELD,
             'form_category' => 'main',
             'is_disabled' => function (int $instance_id): bool {
+                if (!$instance_id) {
+                    return false;
+                }
+
                 if ($instance_id === INSTANCE_DEFAULT_ID) {
                     return true;
                 }
 
+                global $db;
+
                 try {
                     return instance_object($instance_id)->users_column_exists();
                 } catch (Exception $e) {
-                    log_error(
-                        $instance_id,
-                        $e->getMessage(),
-                    );
-
                     return true;
                 }
             }
         ],
         'is_enabled' => [
-            'type' => 'TINYINT',
-            'unsigned' => true,
-            'default' => 0,
-            'form_type' => FORM_TYPE_YES_NO_FIELD,
-            'form_category' => 'main',
-        ],
-        'disable_plugins' => [
             'type' => 'TINYINT',
             'unsigned' => true,
             'default' => 0,

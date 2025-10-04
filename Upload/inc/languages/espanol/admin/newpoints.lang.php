@@ -38,6 +38,29 @@ $l['newpoints_delete'] = 'Eliminar';
 $l['newpoints_missing_fields'] = 'Hay uno o más campos faltantes.';
 $l['newpoints_edit'] = 'Editar';
 
+$l['setting_newpoints_plugins_repositories'] = 'Repositorios de Plugins';
+$l['setting_newpoints_plugins_repositories_desc'] = 'Inserta tus repositorios de plugins personalizados para actualizaciones. Deja como predeterminado si no estás seguro. Predeterminado <code>community.mybb.com</code>';
+$l['setting_newpoints_disable_backups'] = 'Disable Backups';
+$l['setting_newpoints_disable_backups_desc'] = 'Disable automatic backups. Not recommended. Backing up requires a task to run.';
+$l['setting_newpoints_disable_plugins'] = 'Disable Plugins';
+$l['setting_newpoints_disable_plugins_desc'] = 'Disable NewPoints plugins from running globally.';
+$l['setting_newpoints_script_name'] = 'Script Name';
+$l['setting_newpoints_script_name_desc'] = 'Script for the NewPoints plugin to use. Default: <code>newpoints.php</code>.';
+$l['setting_newpoints_stats_menu_order'] = 'Stats Menu Order';
+$l['setting_newpoints_stats_menu_order_desc'] = 'Order for the stat page in the NewPoints menu item.';
+$l['setting_newpoints_stats_latest_donations'] = 'Últimas Donaciones';
+$l['setting_newpoints_stats_latest_donations_desc'] = 'Número de últimas donaciones a mostrar.';
+$l['setting_newpoints_donations_menu_order'] = 'Donations Menu Order';
+$l['setting_newpoints_donations_menu_order_desc'] = 'Order for the donations page page in the NewPoints menu item.';
+$l['setting_newpoints_logs_manage_groups'] = 'Manage Groups';
+$l['setting_newpoints_logs_manage_groups_desc'] = 'Select the groups that can manage the logs.';
+$l['setting_newpoints_logs_per_page'] = 'Logs Per Page';
+$l['setting_newpoints_logs_per_page_desc'] = 'Number of logs to show per page in the logs page.';
+$l['setting_newpoints_logs_menu_order'] = 'Logs Menu Order';
+$l['setting_newpoints_logs_menu_order_desc'] = 'Order for the logs page in the NewPoints menu item.';
+$l['setting_newpoints_donations_menu_order'] = 'Orden del Menú';
+$l['setting_newpoints_donations_menu_order_desc'] = 'Orden en el elemento del menú de NewPoints.';
+
 ///////////////// Plugins
 $l['newpoints_plugins'] = 'Plugins';
 $l['newpoints_plugins_description'] = 'Aquí puedes gestionar los plugins de NewPoints.';
@@ -75,9 +98,11 @@ $l['no_inactive_plugins'] = 'No hay plugins inactivos disponibles.';
 ///////////////// Settings
 $l['newpoints_settings_instance'] = 'Configuraciones de {1}';
 $l['newpoints_settings'] = 'Configuraciones';
-$l['newpoints_settings_description'] = 'Aquí puedes gestionar las configuraciones para la instancia {1}.';
+$l['newpoints_settings_description'] = 'Aquí puedes gestionar las configuraciones globales.';
+$l['newpoints_settings_instance_description'] = 'Aquí puedes gestionar las configuraciones para la instancia {1}.';
 $l['newpoints_settings_change'] = 'Cambiar';
-$l['newpoints_settings_change_description'] = 'Cambiar configuraciones de {3} para la instancia {1}.';
+$l['newpoints_settings_change_description'] = 'Cambiar configuraciones globales.';
+$l['newpoints_settings_change_instance_description'] = 'Cambiar configuraciones de {3} para la instancia {1}.';
 $l['newpoints_select_plugin'] = 'Debes seleccionar un grupo.';
 
 ///////////////// Log
@@ -220,12 +245,6 @@ $l['setting_newpoints_donations_flood_minutes'] = 'Control de Inundaciones: Minu
 $l['setting_newpoints_donations_flood_minutes_desc'] = 'Número de minutos a esperar entre donaciones máximas.';
 $l['setting_newpoints_donations_flood_limit'] = 'Control de Inundaciones: Donaciones Máximas';
 $l['setting_newpoints_donations_flood_limit_desc'] = 'Número máximo de donaciones que un usuario puede enviar por umbral de control de inundaciones.';
-$l['setting_newpoints_donations_send_private_message'] = '¿Enviar un MP al donar?';
-$l['setting_newpoints_donations_send_private_message_desc'] = '¿Quieres que se envíe automáticamente un nuevo mensaje privado a un usuario que recibe una donación?';
-$l['setting_newpoints_donations_stats_latest'] = 'Últimas Donaciones';
-$l['setting_newpoints_donations_stats_latest_desc'] = 'Número de últimas donaciones a mostrar.';
-$l['setting_newpoints_donations_menu_order'] = 'Orden del Menú';
-$l['setting_newpoints_donations_menu_order_desc'] = 'Orden en el elemento del menú de NewPoints.';
 
 $l['setting_group_newpoints_stats'] = 'Estadísticas';
 $l['setting_group_newpoints_stats_desc'] = 'Estas configuraciones están relacionadas con la página de estadísticas.';
@@ -238,13 +257,9 @@ $l['setting_group_newpoints_main'] = 'Principal';
 $l['setting_group_newpoints_main_desc'] = 'Estas configuraciones vienen con NewPoints por defecto.';
 $l['setting_newpoints_main_group_rate_primary_only'] = 'Tasa de Grupo Solo para el Grupo Primario';
 $l['setting_newpoints_main_group_rate_primary_only_desc'] = 'Si lo configuras en sí, las reglas de tasa de grupo se calcularán usando solo el grupo de usuarios primario. Si desactivas esto, todas las reglas de tasa de grupo se ponderarán y se usará siempre el valor más cercano a <code>1</code>.';
-$l['setting_newpoints_plugins_repositories'] = 'Repositorios de Plugins';
-$l['setting_newpoints_plugins_repositories_desc'] = 'Inserta tus repositorios de plugins personalizados para actualizaciones. Deja como predeterminado si no estás seguro. Predeterminado <code>community.mybb.com</code>';
 
 $l['setting_group_newpoints_logs'] = 'Registros';
 $l['setting_group_newpoints_logs_desc'] = 'Estas configuraciones están relacionadas con los registros.';
-$l['setting_newpoints_logs_manage_groups'] = 'Gestionar Grupos';
-$l['setting_newpoints_logs_manage_groups_desc'] = 'Selecciona los grupos que pueden gestionar los registros.';
 $l['setting_newpoints_logs_per_page'] = 'Registros';
 $l['setting_newpoints_logs_per_page_desc'] = 'Número de registros a mostrar por página en la página de registros.';
 
@@ -381,10 +396,10 @@ $l = array_merge($l, [
     'newpoints_admin_instances_edit' => 'Edit',
     'newpoints_admin_instances_edit_description' => 'Edit a new instance.',
 
-    'newpoints_admin_instances_edit_currency_name_singular' => 'Display Name (Singular)',
-    'newpoints_admin_instances_edit_currency_name_singular_description' => 'Enter the display name for this instance (singular).',
-    'newpoints_admin_instances_edit_currency_name_plural' => 'Display Name (Plural)',
-    'newpoints_admin_instances_edit_currency_name_plural_description' => 'Enter the display name for this instance (plural).',
+    'newpoints_admin_instances_edit_currency_name_singular' => 'Name (Singular)',
+    'newpoints_admin_instances_edit_currency_name_singular_description' => 'Enter the Name for this instance (singular).',
+    'newpoints_admin_instances_edit_currency_name_plural' => 'Name (Plural)',
+    'newpoints_admin_instances_edit_currency_name_plural_description' => 'Enter the Name for this instance (plural).',
     'newpoints_admin_instances_edit_users_column_name' => 'Users Column Name',
     'newpoints_admin_instances_edit_users_column_name_description' => 'Enter the name of the column in the users table that will store the NewPoints for this instance.',
     'newpoints_admin_instances_edit_enable_notifications_private_message' => 'Enable Private Message Notifications?',
@@ -395,8 +410,6 @@ $l = array_merge($l, [
     'newpoints_admin_instances_edit_is_enabled_description' => 'Select whether you want this instance to be enabled or disabled.',
     'newpoints_admin_instances_edit_display_order' => 'Display Order',
     'newpoints_admin_instances_edit_display_order_description' => 'Enter the display order for this instance.',
-    'newpoints_admin_instances_edit_script_name' => 'Script Name',
-    'newpoints_admin_instances_edit_script_name_description' => 'Script for this instance. Default: <code>newpoints.php</code>.',
 
     'newpoints_admin_instances_edit_button_submit' => 'Submit',
     'newpoints_admin_instances_edit_button_reset' => 'Reset',

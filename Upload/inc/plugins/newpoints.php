@@ -33,12 +33,6 @@ use NewPoints\Core\IncomePermissions;
 use NewPoints\Core\IncomeRates;
 use NewPoints\Core\Permissions;
 
-use function NewPoints\Admin\plugin_activation;
-use function NewPoints\Admin\plugin_deactivation;
-use function NewPoints\Admin\plugin_information;
-use function NewPoints\Admin\plugin_installation;
-use function NewPoints\Admin\plugin_is_installed;
-use function NewPoints\Admin\plugin_uninstallation;
 use function NewPoints\Core\add_hooks;
 use function NewPoints\Core\check_permissions;
 use function NewPoints\Core\count_characters;
@@ -69,6 +63,12 @@ use function NewPoints\Core\templates_rebuild;
 use function NewPoints\Core\templates_remove;
 use function NewPoints\Core\users_get_by_username;
 use function NewPoints\Core\users_update;
+use function NewPoints\Admin\plugin_activation;
+use function NewPoints\Admin\plugin_deactivation;
+use function NewPoints\Admin\plugin_information;
+use function NewPoints\Admin\plugin_installation;
+use function NewPoints\Admin\plugin_is_installed;
+use function NewPoints\Admin\plugin_uninstallation;
 
 use const NewPoints\ROOT;
 use const NewPoints\Core\INSTANCE_DEFAULT_ID;
@@ -208,8 +208,8 @@ function newpoints_add_setting(
     string $type,
     string $value = '',
     int $disporder = 0
-): bool {
-    return settings_add($name, $plugin, $title, $description, $type, $value, $disporder);
+): void {
+    settings_add($name, $plugin, $title, $description, $type, $value, $disporder);
 }
 
 #[Deprecated(message: 'use settings_add_group() instead', since: '3')]

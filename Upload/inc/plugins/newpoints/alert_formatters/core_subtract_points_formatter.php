@@ -32,13 +32,13 @@ declare(strict_types=1);
 namespace NewPoints\MyAlerts\Formatters;
 
 use Exception;
-use InvalidArgumentException;
 use MybbStuff_MyAlerts_Entity_Alert;
 use MybbStuff_MyAlerts_Formatter_AbstractFormatter;
 
 use function NewPoints\Core\instance_object;
 use function NewPoints\Core\language_load;
 use function NewPoints\Core\log_error;
+use function NewPoints\Core\main_file_name;
 
 class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
@@ -67,18 +67,24 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
             return '';
         }
 
+        if (!$instance->is_enabled()) {
+            return '';
+        }
+
         $details = $alert->toArray();
 
         $log_id = (int)$details['object_id'];
 
         $log_data = $instance->logger->get($log_id);
 
+        $points = (float)$log_data['points'];
+
         return $this->lang->sprintf(
             $this->lang->newpoints_alert_text_core_subtract_points,
-            $instance->get_display_name_upper(),
-            $instance->get_display_name_lower(),
+            $instance->get_display_name_upper($points),
+            $instance->get_display_name_lower($points),
             $outputAlert['username'],
-            $instance->points_format((float)$log_data['points'])
+            $instance->points_format($points)
         );
     }
 
@@ -96,14 +102,16 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
         try {
             $instance = instance_object((int)($alert->getExtraDetails()['instance_id'] ?? 0));
 
-            return $settings['bburl'] . '/' . $instance->get_script_name();
+            if ($instance->is_enabled()) {
+                return $settings['bburl'] . '/' . main_file_name();
+            }
         } catch (Exception $e) {
             log_error(
                 (int)($alert->getExtraDetails()['instance_id'] ?? 0),
                 $e->getMessage(),
             );
-
-            return $settings['bburl'];
         }
+
+        return $settings['bburl'];
     }
 }
