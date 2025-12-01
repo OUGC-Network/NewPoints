@@ -80,10 +80,10 @@ defined('IN_MYBB') || die('Direct initialization of this file is not allowed.');
 // You can uncomment the lines below to avoid storing some settings in the DB
 define('Newpoints\Core\SETTINGS', [
     //'main_file' => 'newpoints.php',
-    //'disablePlugins' => true
+    //'disablePlugins' => true,
     //'income_post' => 10,
     'my_alerts_version' => '2.1.0',
-    'disableBackUpSystem' => false
+    'disableBackUpSystem' => false,
 ]);
 
 define('Newpoints\Core\DEBUG', false);
