@@ -231,8 +231,8 @@ if ($mybb->get_input('action') == 'stats') {
 
     // get latest donations
     $query = $db->simple_select(
-        "newpoints_log l LEFT JOIN {$db->table_prefix}users u ON (u.uid=l.uid) LEFT JOIN {$db->table_prefix}users tu ON (tu.uid=l.log_primary_id)",
-        'l.date, l.uid, l.username, l.points, l.instance_id, u.usergroup, u.displaygroup, l.log_primary_id, l.instance_id, tu.username AS from_username, tu.usergroup AS from_usergroup, tu.displaygroup AS from_displaygroup',
+        "newpoints_log l LEFT JOIN {$db->table_prefix}users to_user ON (to_user.uid=l.uid) LEFT JOIN {$db->table_prefix}users from_user ON (from_user.uid=l.log_primary_id)",
+        'l.date, l.points, from_user.uid AS from_uid, from_user.username AS from_username, from_user.usergroup AS from_usergroup, from_user.displaygroup AS from_displaygroup, to_user.uid AS to_uid, to_user.username AS to_username, to_user.usergroup AS to_usergroup, to_user.displaygroup AS to_displaygroup, l.instance_id',
         implode(' AND ', array_merge($where_clauses, ["l.action='donation'"])),
         [
             'order_by' => 'l.date',
@@ -256,16 +256,16 @@ if ($mybb->get_input('action') == 'stats') {
                 $donation['from_usergroup'] ?? 0,
                 $donation['from_displaygroup'] ?? 0,
             ),
-            $donation['log_primary_id'] ?? 0
+            $donation['from_uid'] ?? 0
         );
 
         $to_username = build_profile_link(
             format_name(
-                htmlspecialchars_uni($donation['username']),
-                $donation['usergroup'],
-                $donation['displaygroup']
+                htmlspecialchars_uni($donation['to_username'] ?? ''),
+                $donation['to_usergroup'] ?? 0,
+                $donation['to_displaygroup'] ?? 0,
             ),
-            (int)$donation['uid']
+            $donation['to_uid'] ?? 0
         );
 
         $amount = $instance->points_format((float)($donation['points'] ?? 0));
