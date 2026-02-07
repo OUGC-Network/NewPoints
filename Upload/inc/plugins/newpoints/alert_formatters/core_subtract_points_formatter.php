@@ -77,7 +77,7 @@ class newpoints_core_subtract_points_formatter extends MybbStuff_MyAlerts_Format
 
         $log_data = $instance->logger->get($log_id);
 
-        $points = (float)$log_data['points'];
+        $points = (float)($log_data['points'] ?? 0);
 
         return $this->lang->sprintf(
             $this->lang->newpoints_alert_text_core_subtract_points,

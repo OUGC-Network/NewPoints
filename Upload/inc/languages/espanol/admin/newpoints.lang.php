@@ -218,7 +218,7 @@ $l['newpoints_instances_thead_column'] = 'Columna de Usuarios';
 $l['newpoints_instances_thead_main_file'] = 'Archivo Principal';
 $l['newpoints_instances_thead_enabled'] = 'Habilitada';
 $l['newpoints_instances_thead_options_settings'] = 'Configuraciones';
-$l['newpoints_instances_thead_options_rebuild_columns'] = 'Creat Columna';
+$l['newpoints_instances_thead_options_rebuild_columns'] = 'Crear Columna';
 
 $l['newpoints_instances_rebuild_columns_success'] = 'La columna de usuarios <code>{1}</code> para ka instancia {2} ha sido creada exitosamente.';
 

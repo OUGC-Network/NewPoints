@@ -88,7 +88,7 @@ class Logger
 
         language_load();
 
-        $log_id = (int)$db->insert_query(
+        $this->log_id = (int)$db->insert_query(
             'newpoints_log',
             [
                 'action' => $db->escape_string($log_action),
@@ -104,7 +104,7 @@ class Logger
             ]
         );
 
-        if (!$log_id) {
+        if (!$this->log_id) {
             throw new Exception('Failed to create log entry.');
         }
 

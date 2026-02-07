@@ -77,7 +77,7 @@ class newpoints_core_donation_received_formatter extends MybbStuff_MyAlerts_Form
 
         $log_data = $instance->logger->get($log_id);
 
-        $points = (float)$log_data['points'];
+        $points = (float)($log_data['points'] ?? 0);
 
         return $this->lang->sprintf(
             $this->lang->newpoints_alert_text_core_donation_received,

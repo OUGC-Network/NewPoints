@@ -278,7 +278,7 @@ function pre_parse_page(string &$page_contents): string
             log_error(
                 $instance_id,
                 $e->getMessage(),
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -560,7 +560,7 @@ function class_moderation_delete_post_start(&$post_id): int
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -583,7 +583,7 @@ function class_moderation_delete_post_start(&$post_id): int
                     $instance_id,
                     $e->getMessage(),
                     user_id: $thread_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -629,7 +629,7 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -652,7 +652,7 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
-                        post_id: $forum_id,
+                        post_id: $post_id,
                         thread_id: $thread_id,
                         forum_id: $forum_id,
                     );
@@ -702,7 +702,7 @@ function class_moderation_restore_posts(array &$post_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -725,7 +725,7 @@ function class_moderation_restore_posts(array &$post_ids): array
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
-                        post_id: $forum_id,
+                        post_id: $post_id,
                         thread_id: $thread_id,
                         forum_id: $forum_id,
                     );
@@ -770,7 +770,7 @@ function class_moderation_approve_threads(array &$thread_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -818,7 +818,7 @@ function class_moderation_approve_posts(array &$post_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -841,7 +841,7 @@ function class_moderation_approve_posts(array &$post_ids): array
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
-                        post_id: $forum_id,
+                        post_id: $post_id,
                         thread_id: $thread_id,
                         forum_id: $forum_id,
                     );
@@ -886,7 +886,7 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -932,7 +932,7 @@ function class_moderation_unapprove_posts(array &$post_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -955,7 +955,7 @@ function class_moderation_unapprove_posts(array &$post_ids): array
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
-                        post_id: $forum_id,
+                        post_id: $post_id,
                         thread_id: $thread_id,
                         forum_id: $forum_id,
                     );
@@ -1018,7 +1018,7 @@ function class_moderation_delete_thread(int &$thread_id): int
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -1062,7 +1062,7 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $thread_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -1085,7 +1085,7 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -1131,7 +1131,7 @@ function class_moderation_restore_threads(array &$thread_ids): array
                         $instance_id,
                         $e->getMessage(),
                         user_id: $thread_user_id,
-                        post_id: $forum_id,
+                        post_id: $post_id,
                         thread_id: $thread_id,
                         forum_id: $forum_id,
                     );
@@ -1155,7 +1155,7 @@ function class_moderation_restore_threads(array &$thread_ids): array
                     $instance_id,
                     $e->getMessage(),
                     user_id: $post_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -1192,7 +1192,7 @@ function polls_do_newpoll_process(): void
             log_error(
                 $instance_id,
                 $e->getMessage(),
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -1239,7 +1239,7 @@ function class_moderation_delete_poll(int &$post_id): int
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -1275,7 +1275,7 @@ function polls_vote_process(): void
             log_error(
                 $instance_id,
                 $e->getMessage(),
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -1309,7 +1309,7 @@ function ratethread_process(): void
             log_error(
                 $instance_id,
                 $e->getMessage(),
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );

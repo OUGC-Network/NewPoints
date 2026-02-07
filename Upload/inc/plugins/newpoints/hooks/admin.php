@@ -223,7 +223,7 @@ function admin_user_groups_edit_graph(): bool
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? $data_field_data['formType'] ?? null;
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -326,7 +326,7 @@ function admin_user_groups_edit_graph(): bool
             case FORM_TYPE_SELECT_FIELD:
             case FORM_TYPE_SELECT_FIELD_LEGACY:
                 if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
-                    $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
+                    $value = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
                 }
 
                 if (is_callable($data_field_data['formFunction'] ?? '')) {
@@ -477,7 +477,7 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
     $hook_arguments = run_hooks('admin_formcontainer_end_start', $hook_arguments);
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? $data_field_data['formType'] ?? null;
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -792,7 +792,7 @@ function admin_user_users_edit_graph(): bool
     $hook_arguments = run_hooks('admin_user_users_edit_graph', $hook_arguments);
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? $data_field_data['formType'] ?? null;
 
         if (empty($data_field_data['form_type'])) {
             continue;

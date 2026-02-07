@@ -64,10 +64,17 @@ class Url
             $offset = strlen($this->get_url());
         }
 
+        $url_query = http_build_query($url_parameters, '', '&amp;');
+
+        $separator = '';
+
+        if ($url_query) {
+            $separator = str_contains($this->get_url(), '?') ? '&amp;' : '?';
+        }
+
         return substr_replace(
             $this->get_url(),
-            (str_contains($this->get_url(), '?') ? $separator = '&amp;' : '?') .
-            http_build_query($url_parameters, '', '&amp;'),
+            $separator . $url_query,
             $offset,
             0
         );

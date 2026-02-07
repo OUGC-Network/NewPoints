@@ -92,7 +92,7 @@ define('NewPoints\Core\SETTINGS', [
     'disable_backups' => false,
 ]);
 
-define('NewPoints\Core\DEBUG', true);
+define('NewPoints\Core\DEBUG', false);
 
 define('NewPoints\DECIMAL_DATA_TYPE_SIZE', '16,4');
 

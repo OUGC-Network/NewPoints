@@ -92,7 +92,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -116,7 +116,7 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
                     $instance_id,
                     $e->getMessage(),
                     user_id: $thread_user_id,
-                    post_id: $forum_id,
+                    post_id: $post_id,
                     thread_id: $thread_id,
                     forum_id: $forum_id,
                 );
@@ -166,17 +166,19 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
                 continue;
             }
 
-            if ($old_character_count - $new_character_count < 0) {
-                $instance->income_post_characters(characters_count: $new_character_count - $old_character_count);
-            } elseif ($old_character_count - $new_character_count > 0) {
-                $instance->charge_post_characters(characters_count: $new_character_count - $old_character_count);
+            $character_difference = $old_character_count - $new_character_count;
+
+            if ($character_difference < 0) {
+                $instance->income_post_characters(characters_count: abs($character_difference));
+            } elseif ($character_difference > 0) {
+                $instance->charge_post_characters(characters_count: abs($character_difference));
             }
         } catch (Exception $e) {
             log_error(
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -224,7 +226,7 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
                 $instance_id,
                 $e->getMessage(),
                 user_id: $post_user_id,
-                post_id: $forum_id,
+                post_id: $post_id,
                 thread_id: $thread_id,
                 forum_id: $forum_id,
             );
@@ -289,7 +291,7 @@ function datahandler_user_validate(userDataHandler &$data_handler): userDataHand
     $user_data = &$data_handler->data;
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? $data_field_data['formType'] ?? null;
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -334,7 +336,7 @@ function datahandler_user_update(userDataHandler &$data_handler): userDataHandle
     global $mybb, $db;
 
     foreach ($fields_data as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? $data_field_data['formType'] ?? null;
 
         if (empty($data_field_data['form_type']) ||
             (!isset($user_data[$data_field_key]) && !isset($mybb->input[$data_field_key]))) {
