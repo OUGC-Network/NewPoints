@@ -103,7 +103,7 @@ $sub_tabs = [
         'description' => $lang->newpoints_instances_description
     ],
     'newpoints_settings' => [
-        'title' => $lang->newpoints_settings,
+        'title' => $page_title,
         'link' => $url->get_url(),
         'description' => ($instance instanceof Instance) ? $lang->sprintf(
             $lang->newpoints_settings_instance_description,
@@ -112,6 +112,8 @@ $sub_tabs = [
         ) : $lang->newpoints_settings_description,
     ],
 ];
+
+$page->add_breadcrumb_item($lang->newpoints_breadcrumb_settings, $url->get_url());
 
 if ($mybb->get_input('action') == 'change') {
     $plugin_title = '';
@@ -285,10 +287,8 @@ if ($mybb->get_input('action') == 'change') {
         $plugin_description = htmlspecialchars_uni($lang->{$group_desc_lang_var});
     }
 
-    $page->add_breadcrumb_item($lang->newpoints_settings, $url->get_url());
-
     if ($instance instanceof Instance) {
-        $page->add_breadcrumb_item($lang->newpoints_instances, 'index.php?module=newpoints-instances');
+        $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances, 'index.php?module=newpoints-instances');
 
         $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
     }
@@ -660,10 +660,8 @@ if ($mybb->get_input('action') == 'change') {
 
     run_hooks('admin_settings_start');
 
-    $page->add_breadcrumb_item($lang->newpoints_settings, $url->get_url());
-
     if ($instance instanceof Instance) {
-        $page->add_breadcrumb_item($lang->newpoints_instances, 'index.php?module=newpoints-instances');
+        $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances, 'index.php?module=newpoints-instances');
 
         $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
     }

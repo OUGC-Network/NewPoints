@@ -1,3 +1,3 @@
 <?php
 
-//refactored
+// deprecated file

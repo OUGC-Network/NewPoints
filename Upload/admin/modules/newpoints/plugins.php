@@ -503,7 +503,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
         admin_redirect($url->get_url());
     }
 
-    $page->add_breadcrumb_item($lang->newpoints_plugins_plugin_updates);
+    $page->add_breadcrumb_item($lang->newpoints_breadcrumb_plugins_updates);
 
     $page->output_header($lang->newpoints_plugins_plugin_updates);
 
@@ -513,7 +513,7 @@ if ($mybb->get_input('action') === 'activate' || $mybb->get_input('action') === 
 
     $page->output_footer();
 } else {
-    $page->add_breadcrumb_item($lang->newpoints_plugins, $url->get_url());
+    $page->add_breadcrumb_item($lang->newpoints_breadcrumb_plugins, $url->get_url());
 
     $page->output_header($lang->newpoints_plugins);
 

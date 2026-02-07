@@ -334,11 +334,11 @@ if ($mybb->input['action'] == 'clear_group_permission') {
     }
 
     if (!$is_modal) {
-        $page->add_breadcrumb_item($lang->newpoints_instances, $url->build());
+        $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances, $url->build());
 
         $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
 
-        $page->add_breadcrumb_item($lang->newpoints_admin_instances_permissions_form_custom_permissions);
+        $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances_custom_permissions);
 
         $page->extra_header .= "<script src=\"jscripts/quick_perm_editor.js\" type=\"text/javascript\"></script>\n";
 
@@ -708,11 +708,11 @@ $(function() {
     }
 
     if (!$is_modal) {
-        $page->add_breadcrumb_item($lang->newpoints_instances, $url->build());
+        $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances, $url->build());
 
         $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
 
-        $page->add_breadcrumb_item($lang->newpoints_admin_instances_permissions_form_custom_permissions);
+        $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances_custom_permissions);
 
         $page->extra_header .= "<script src=\"jscripts/quick_perm_editor.js\" type=\"text/javascript\"></script>\n";
 
@@ -1182,14 +1182,14 @@ $(function() {
         }
     }
 
-    $page->add_breadcrumb_item($lang->newpoints_instances, $url->build());
+    $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances, $url->build());
 
     if (!$is_add_page) {
         $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
     }
 
     $page->add_breadcrumb_item(
-        $lang->newpoints_admin_instances_edit,
+        $lang->newpoints_breadcrumb_instances_edit,
         $url->build(['action' => $is_add_page ? 'add' : 'edit', 'instance_id' => $instance_id])
     );
 
@@ -1974,7 +1974,7 @@ document.write('" . str_replace('/', '\/', $field_select) . "');
 
     admin_redirect('index.php?module=newpoints-instances');
 } else {
-    $page->add_breadcrumb_item($lang->newpoints_instances, $url->build());
+    $page->add_breadcrumb_item($lang->newpoints_breadcrumb_instances, $url->build());
 
     $page->output_header($lang->newpoints_instances);
 

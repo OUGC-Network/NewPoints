@@ -75,9 +75,16 @@ $l['no_plugins'] = 'There are no plugins on your forum at this time.';
 $l['no_active_plugins'] = 'There are no active plugins on your forum.';
 $l['no_inactive_plugins'] = 'There are no inactive plugins available.';
 
+$l['newpoints_breadcrumb_settings'] = 'Settings';
+$l['newpoints_breadcrumb_plugins'] = 'Plugins';
+$l['newpoints_breadcrumb_plugins_updates'] = 'Plugin Updates';
+$l['newpoints_breadcrumb_instances'] = 'Instances';
+$l['newpoints_breadcrumb_instances_edit'] = 'Edit';
+$l['newpoints_breadcrumb_instances_custom_permissions'] = 'Custom Permissions';
+
 ///////////////// Settings
-$l['newpoints_settings_instance'] = '{1} Settings';
-$l['newpoints_settings'] = 'Settings';
+$l['newpoints_settings'] = 'Global Settings';
+$l['newpoints_settings_instance'] = 'Instance Settings ({1})';
 $l['newpoints_settings_description'] = 'Here you can configure global settings.';
 $l['newpoints_settings_instance_description'] = 'Here you can configure settings for the {1} instance.';
 $l['newpoints_settings_change'] = 'Change';
