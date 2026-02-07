@@ -246,6 +246,7 @@ if ($mybb->get_input('action') == 'stats') {
     while ($donation = $db->fetch_array($query)) {
         $instance_id = (int)$donation['instance_id'];
 
+
         $instance = $instance_objects[$instance_id];
 
         $instance_name_upper = $instance->get_display_name_upper();
