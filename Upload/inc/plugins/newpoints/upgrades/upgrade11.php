@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -27,96 +27,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
-declare(strict_types=1);
-
-use function Newpoints\Core\settings_add;
-use function Newpoints\Core\templates_add;
-use function Newpoints\Core\templates_remove;
-
-if (!defined('IN_MYBB')) {
-    die('This file cannot be accessed directly.');
-}
-
-if (!defined('IN_ADMINCP')) {
-    die('This file must be accessed from the Administrator Panel.');
-}
-
-function upgrade11_info()
-{
-    return [
-        'new_version' => '1.1',
-        'name' => 'Upgrade to 1.1',
-        'description' => 'Upgrade NewPoints 1.0 to NewPoints 1.1'
-    ];
-}
-
-// upgrade function
-function upgrade11_run()
-{
-    settings_add(
-        'newpoints_income_referral',
-        'income',
-        'Per Referral',
-        'Amount of points received everytime a user is referred. (the referred user is who receives the points)',
-        'text',
-        '5',
-        12
-    );
-
-    change_admin_permission('newpoints', 'upgrades', 1);
-
-    templates_remove(['newpoints_donate']);
-
-    templates_add(
-        'newpoints_donate',
-        '
-<html>
-<head>
-<title>{$lang->newpoints} - {$lang->newpoints_donate}</title>
-{$headerinclude}
-</head>
-<body>
-{$header}
-<table width="100%" border="0" align="center">
-<tr>
-<td valign="top" width="180">
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead"><strong>{$lang->newpoints_menu}</strong></td>
-</tr>
-{$options}
-</table>
-</td>
-<td valign="top">
-<form action="newpoints.php" method="POST">
-<input type="hidden" name="postcode" value="{$mybb->post_code}">
-<input type="hidden" name="action" value="do_donate">
-<table border="0" cellspacing="{$theme[\'borderwidth\']}" cellpadding="{$theme[\'tablespace\']}" class="tborder">
-<tr>
-<td class="thead" colspan="2"><strong>{$lang->newpoints_donate}</strong></td>
-</tr>
-<tr>
-<td class="trow1" width="50%"><strong>{$lang->newpoints_user}:</strong><br /><span class="smalltext">{$lang->newpoints_user_desc}</span></td>
-<td class="trow1" width="50%"><input type="text" name="username" value="{$user[\'username\']}" class="textbox"></td>
-</tr>
-<tr>
-<td class="trow2" width="50%"><strong>{$lang->newpoints_amount}:</strong><br /><span class="smalltext">{$lang->newpoints_amount_desc}</span></td>
-<td class="trow2" width="50%"><input type="text" name="amount" value="" class="textbox"></td>
-</tr>
-<tr>
-<td class="trow1" width="50%"><strong>{$lang->newpoints_reason}:</strong><br /><span class="smalltext">{$lang->newpoints_reason_desc}</span></td>
-<td class="trow1" width="50%"><input type="text" name="reason" value="" class="textbox"></td>
-</tr>
-<tr>
-<td class="tfoot" width="100%" colspan="2" align="center"><input type="submit" name="submit" value="{$lang->newpoints_submit}"></td>
-</tr>
-</table>
-</form>
-</td>
-</tr>
-</table>
-{$footer}
-</body>
-</html>'
-    );
-}
+// deprecated file

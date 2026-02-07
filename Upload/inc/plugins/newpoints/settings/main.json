@@ -1,42 +1,22 @@
 {
-  "curname": {
-    "type": "text",
-    "value": "Points"
-  },
-  "curprefix": {
-    "type": "text",
-    "value": ""
-  },
-  "cursuffix": {
-    "type": "text",
-    "value": "€"
-  },
-  "decimal": {
-    "type": "numeric",
-    "value": 2
-  },
-  "stats_richestusers": {
-    "type": "numeric",
-    "value": 10
-  },
   "group_rate_primary_only": {
     "type": "yesno",
     "value": 1
   },
-  "file": {
+  "script_name": {
     "type": "text",
     "value": "newpoints.php"
-  },
-  "my_alerts_enabled": {
-    "type": "yesno",
-    "value": 0
-  },
-  "pm_alerts_enabled": {
-    "type": "yesno",
-    "value": 0
   },
   "plugins_repositories": {
     "type": "textarea",
     "value": "community.mybb.com"
+  },
+  "disable_backups": {
+    "type": "yesno",
+    "value": 0
+  },
+  "disable_plugins": {
+    "type": "yesno",
+    "value": 0
   }
 }

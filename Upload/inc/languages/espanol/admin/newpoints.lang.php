@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -28,7 +28,7 @@
  ****************************************************************************/
 
 $l['newpoints'] = 'NewPoints';
-$l['newpoints_description'] = 'Plugin NewPoints para MyBB - Un sistema de puntos complejo pero eficiente para MyBB.';
+$l['newpoints_description'] = 'NewPoints es un sistema de puntos complejo pero eficiente para MyBB.';
 $l['newpoints_submit_button'] = 'Enviar';
 $l['newpoints_reset_button'] = 'Restablecer';
 $l['newpoints_error'] = 'Ha ocurrido un error desconocido.';
@@ -37,6 +37,29 @@ $l['newpoints_click_continue'] = 'Haz clic en Continuar para proceder.';
 $l['newpoints_delete'] = 'Eliminar';
 $l['newpoints_missing_fields'] = 'Hay uno o más campos faltantes.';
 $l['newpoints_edit'] = 'Editar';
+
+$l['setting_newpoints_plugins_repositories'] = 'Repositorios de Plugins';
+$l['setting_newpoints_plugins_repositories_desc'] = 'Inserta tus repositorios de plugins personalizados para actualizaciones. Deja como predeterminado si no estás seguro. Predeterminado <code>community.mybb.com</code>';
+$l['setting_newpoints_disable_backups'] = 'Disable Backups';
+$l['setting_newpoints_disable_backups_desc'] = 'Disable automatic backups. Not recommended. Backing up requires a task to run.';
+$l['setting_newpoints_disable_plugins'] = 'Disable Plugins';
+$l['setting_newpoints_disable_plugins_desc'] = 'Disable NewPoints plugins from running globally.';
+$l['setting_newpoints_script_name'] = 'Script Name';
+$l['setting_newpoints_script_name_desc'] = 'Script for the NewPoints plugin to use. Default: <code>newpoints.php</code>.';
+$l['setting_newpoints_stats_menu_order'] = 'Stats Menu Order';
+$l['setting_newpoints_stats_menu_order_desc'] = 'Order for the stat page in the NewPoints menu item.';
+$l['setting_newpoints_stats_latest_donations'] = 'Últimas Donaciones';
+$l['setting_newpoints_stats_latest_donations_desc'] = 'Número de últimas donaciones a mostrar.';
+$l['setting_newpoints_donations_menu_order'] = 'Donations Menu Order';
+$l['setting_newpoints_donations_menu_order_desc'] = 'Order for the donations page page in the NewPoints menu item.';
+$l['setting_newpoints_logs_manage_groups'] = 'Manage Groups';
+$l['setting_newpoints_logs_manage_groups_desc'] = 'Select the groups that can manage the logs.';
+$l['setting_newpoints_logs_per_page'] = 'Logs Per Page';
+$l['setting_newpoints_logs_per_page_desc'] = 'Number of logs to show per page in the logs page.';
+$l['setting_newpoints_logs_menu_order'] = 'Logs Menu Order';
+$l['setting_newpoints_logs_menu_order_desc'] = 'Order for the logs page in the NewPoints menu item.';
+$l['setting_newpoints_donations_menu_order'] = 'Orden del Menú';
+$l['setting_newpoints_donations_menu_order_desc'] = 'Orden en el elemento del menú de NewPoints.';
 
 ///////////////// Plugins
 $l['newpoints_plugins'] = 'Plugins';
@@ -73,10 +96,13 @@ $l['no_active_plugins'] = 'No hay plugins activos en tu foro.';
 $l['no_inactive_plugins'] = 'No hay plugins inactivos disponibles.';
 
 ///////////////// Settings
+$l['newpoints_settings_instance'] = 'Configuraciones de {1}';
 $l['newpoints_settings'] = 'Configuraciones';
-$l['newpoints_settings_description'] = 'Aquí puedes gestionar las configuraciones de NewPoints.';
+$l['newpoints_settings_description'] = 'Aquí puedes gestionar las configuraciones globales.';
+$l['newpoints_settings_instance_description'] = 'Aquí puedes gestionar las configuraciones para la instancia {1}.';
 $l['newpoints_settings_change'] = 'Cambiar';
-$l['newpoints_settings_change_description'] = 'Cambiar configuraciones.';
+$l['newpoints_settings_change_description'] = 'Cambiar configuraciones globales.';
+$l['newpoints_settings_change_instance_description'] = 'Cambiar configuraciones de {3} para la instancia {1}.';
 $l['newpoints_select_plugin'] = 'Debes seleccionar un grupo.';
 
 ///////////////// Log
@@ -111,28 +137,16 @@ $l['newpoints_username'] = 'Nombre de usuario';
 ///////////////// Maintenance
 $l['newpoints_recount_from_logs'] = 'Recontar NewPoints de Usuario Desde Registros';
 $l['newpoints_recount_from_logs_description'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar la resta aritmética de los registros de cargos de los registros de ingresos.';
-$l['newpoints_recount_from_logs_success'] = 'La cantidad de NewPoints para los usuarios se ha reconstruido exitosamente a partir de los registros.';
+$l['newpoints_recount_from_logs_success'] = 'La cantidad de {2} de usuario se ha reconstruido exitosamente a partir de los registros.';
 
-$l['newpoints_recount'] = 'Recontar NewPoints de Usuario (Obsoleto)';
+$l['newpoints_recount'] = 'Recontar NewPoints de Usuario Desde Configuracion';
 $l['newpoints_recount_desc'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar su valor actual en vivo basado en la configuración de ingresos.';
-$l['newpoints_recount_success'] = 'La cantidad de NewPoints para los usuarios se ha reconstruido exitosamente.';
+$l['newpoints_recount_success'] = 'La cantidad de {2} de usuario se ha reconstruido exitosamente a partir de la configuracion.';
 $l['newpoints_reset'] = 'Restablecer NewPoints de Usuario';
-$l['newpoints_reset_success'] = 'El restablecimiento de los puntos de usuario fue exitoso.';
+$l['newpoints_reset_success'] = 'El restablecimiento de {2} de usuario fue exitoso.';
 $l['newpoints_reset_desc'] = 'Cuando esto se ejecute, la cantidad de NewPoints para cada usuario se actualizará para reflejar este valor.';
+$l['newpoints_reset_amount'] = 'Cantidad por usuario';
 $l['newpoints_invalid_user'] = 'Usuario inválido.';
-
-///////////////// Stats
-$l['newpoints_stats'] = 'Estadísticas';
-$l['newpoints_stats_description'] = 'Ver las estadísticas de tu foro.';
-$l['newpoints_stats_lastdonations'] = 'Últimas Donaciones';
-$l['newpoints_error_gathering'] = 'No se pudo recopilar ningún dato.';
-$l['newpoints_stats_richest_users'] = 'Usuarios más ricos';
-$l['newpoints_stats_from'] = 'De';
-$l['newpoints_stats_to'] = 'A';
-$l['newpoints_stats_date'] = 'Fecha';
-$l['newpoints_stats_user'] = 'Usuario';
-$l['newpoints_stats_points'] = 'Puntos';
-$l['newpoints_stats_amount'] = 'Cantidad';
 
 ///////////////// Forum Rules
 $l['newpoints_forumrules'] = 'Reglas del Foro';
@@ -194,6 +208,23 @@ $l['newpoints_grouprules_edited'] = 'La regla seleccionada ha sido editada exito
 $l['newpoints_grouprules_deleted'] = 'La regla seleccionada ha sido eliminada exitosamente.';
 $l['newpoints_grouprules_deleteconfirm'] = '¿Estás seguro de que deseas eliminar la regla seleccionada?';
 
+$l['newpoints_instances'] = 'Instancias';
+$l['newpoints_instances_description'] = 'Gestionar instancias de NewPoints.';
+$l['newpoints_instances_title'] = 'Instancias de NewPoints';
+$l['newpoints_instances_thead_id'] = 'ID';
+$l['newpoints_instances_thead_id'] = 'ID';
+$l['newpoints_instances_thead_name'] = 'Nombre';
+$l['newpoints_instances_thead_column'] = 'Columna de Usuarios';
+$l['newpoints_instances_thead_main_file'] = 'Archivo Principal';
+$l['newpoints_instances_thead_enabled'] = 'Habilitada';
+$l['newpoints_instances_thead_options_settings'] = 'Configuraciones';
+$l['newpoints_instances_thead_options_rebuild_columns'] = 'Creat Columna';
+
+$l['newpoints_instances_rebuild_columns_success'] = 'La columna de usuarios <code>{1}</code> para ka instancia {2} ha sido creada exitosamente.';
+
+$l['newpoints_instances_add'] = 'Agregar';
+$l['newpoints_instances_add_description'] = 'Agregar una nueva instancia de NewPoints.';
+
 ///////////////// Upgrades
 $l['newpoints_upgrades'] = 'Actualizaciones';
 $l['newpoints_upgrades_description'] = 'Actualiza NewPoints desde aquí.';
@@ -214,45 +245,21 @@ $l['setting_newpoints_donations_flood_minutes'] = 'Control de Inundaciones: Minu
 $l['setting_newpoints_donations_flood_minutes_desc'] = 'Número de minutos a esperar entre donaciones máximas.';
 $l['setting_newpoints_donations_flood_limit'] = 'Control de Inundaciones: Donaciones Máximas';
 $l['setting_newpoints_donations_flood_limit_desc'] = 'Número máximo de donaciones que un usuario puede enviar por umbral de control de inundaciones.';
-$l['setting_newpoints_donations_send_private_message'] = '¿Enviar un MP al donar?';
-$l['setting_newpoints_donations_send_private_message_desc'] = '¿Quieres que se envíe automáticamente un nuevo mensaje privado a un usuario que recibe una donación?';
-$l['setting_newpoints_donations_stats_latest'] = 'Últimas Donaciones';
-$l['setting_newpoints_donations_stats_latest_desc'] = 'Número de últimas donaciones a mostrar.';
-$l['setting_newpoints_donations_menu_order'] = 'Orden del Menú';
-$l['setting_newpoints_donations_menu_order_desc'] = 'Orden en el elemento del menú de NewPoints.';
 
 $l['setting_group_newpoints_stats'] = 'Estadísticas';
 $l['setting_group_newpoints_stats_desc'] = 'Estas configuraciones están relacionadas con la página de estadísticas.';
+$l['setting_newpoints_stats_richest_users_limit'] = 'Estadísticas: Usuarios Más Ricos';
+$l['setting_newpoints_stats_richest_users_limit_desc'] = 'Número máximo de usuarios más ricos a mostrar en la página de estadísticas.';
 $l['setting_newpoints_stats_menu_order'] = 'Orden del Menú';
 $l['setting_newpoints_stats_menu_order_desc'] = 'Orden en el elemento del menú de NewPoints.';
 
 $l['setting_group_newpoints_main'] = 'Principal';
 $l['setting_group_newpoints_main_desc'] = 'Estas configuraciones vienen con NewPoints por defecto.';
-$l['setting_newpoints_main_curname'] = 'Nombre de la Moneda';
-$l['setting_newpoints_main_curname_desc'] = 'Nombre de la moneda a usar en los foros.';
-$l['setting_newpoints_main_curprefix'] = 'Prefijo de la Moneda';
-$l['setting_newpoints_main_curprefix_desc'] = 'Prefijo de la moneda que se mostrará antes del formato de puntos.';
-$l['setting_newpoints_main_cursuffix'] = 'Sufijo de la Moneda';
-$l['setting_newpoints_main_cursuffix_desc'] = 'Sufijo de la moneda que se mostrará después del formato de puntos.';
-$l['setting_newpoints_main_decimal'] = 'Decimales';
-$l['setting_newpoints_main_decimal_desc'] = 'Número de espacios decimales a usar para la moneda.';
-$l['setting_newpoints_main_stats_richestusers'] = 'Estadísticas: Usuarios Más Ricos';
-$l['setting_newpoints_main_stats_richestusers_desc'] = 'Número máximo de usuarios más ricos a mostrar en la página de estadísticas.';
 $l['setting_newpoints_main_group_rate_primary_only'] = 'Tasa de Grupo Solo para el Grupo Primario';
 $l['setting_newpoints_main_group_rate_primary_only_desc'] = 'Si lo configuras en sí, las reglas de tasa de grupo se calcularán usando solo el grupo de usuarios primario. Si desactivas esto, todas las reglas de tasa de grupo se ponderarán y se usará siempre el valor más cercano a <code>1</code>.';
-$l['setting_newpoints_main_file'] = 'Nombre del Archivo Principal';
-$l['setting_newpoints_main_file_desc'] = 'Si cambias el nombre del archivo principal de NewPoints, actualiza esta configuración. Por defecto: <code>newpoints.php</code>';
-$l['setting_newpoints_main_my_alerts_enabled'] = 'Habilitar Integración de MyAlerts';
-$l['setting_newpoints_main_my_alerts_enabled_desc'] = 'Si habilitas esto, los usuarios podrán recibir notificaciones de MyAlerts al recibir o perder puntos. Esta configuración también se aplica a los plugins de NewPoints que soportan alertas.';
-$l['setting_newpoints_main_pm_alerts_enabled'] = 'Habilitar Notificaciones de Mensajes Privados';
-$l['setting_newpoints_main_pm_alerts_enabled_desc'] = 'Habilita esto para enviar notificaciones de MP cuando los usuarios reciban o pierdan puntos.';
-$l['setting_newpoints_main_plugins_repositories'] = 'Repositorios de Plugins';
-$l['setting_newpoints_main_plugins_repositories_desc'] = 'Inserta tus repositorios de plugins personalizados para actualizaciones. Deja como predeterminado si no estás seguro. Predeterminado <code>community.mybb.com</code>';
 
 $l['setting_group_newpoints_logs'] = 'Registros';
 $l['setting_group_newpoints_logs_desc'] = 'Estas configuraciones están relacionadas con los registros.';
-$l['setting_newpoints_logs_manage_groups'] = 'Gestionar Grupos';
-$l['setting_newpoints_logs_manage_groups_desc'] = 'Selecciona los grupos que pueden gestionar los registros.';
 $l['setting_newpoints_logs_per_page'] = 'Registros';
 $l['setting_newpoints_logs_per_page_desc'] = 'Número de registros a mostrar por página en la página de registros.';
 
@@ -293,10 +300,72 @@ $l['newpoints_user_groups_income_user_registration'] = 'Nueva Registro<br /><sma
 $l['newpoints_user_groups_income_user_referral'] = 'Nueva Referencia<br /><small class="input">Cantidad de puntos recibidos por cada usuario referido al foro.</small><br />';
 $l['newpoints_user_groups_income_private_message'] = 'Nuevo Mensaje Privado<br /><small class="input">Cantidad de puntos recibidos por cada mensaje privado enviado.</small><br />';
 
-$l['newpoints_forums'] = 'Configuración de NewPoints';
-$l['newpoints_forums_rate'] = 'Tasa del Foro<br /><small class="input">La tasa de ingresos para este foro. El valor predeterminado es <code>1</code>.</small><br />';
-$l['newpoints_forums_view_lock_points'] = 'Puntos Mínimos para Ver<br /><small class="input">Establece una cantidad de puntos que los usuarios deben tener para poder ver este foro.</small><br />';
-$l['newpoints_forums_post_lock_points'] = 'Puntos Mínimos para Publicar<br /><small class="input">Establece una cantidad de puntos que los usuarios deben tener para poder publicar en este foro.</small><br />';
+$l['newpoints_permission_general'] = 'General';
+$l['newpoints_permission_rates'] = 'Rates';
+$l['newpoints_permission_income'] = 'Income';
+
+$l['newpoints_permission_group_can_get_points'] = 'Can get income points?';
+$l['newpoints_permission_group_can_get_points_description'] = '';
+$l['newpoints_permission_group_can_see_page'] = 'Can see main page?';
+$l['newpoints_permission_group_can_see_page_description'] = '';
+$l['newpoints_permission_group_can_see_stats'] = 'Can see the stats page?';
+$l['newpoints_permission_group_can_see_stats_description'] = '';
+$l['newpoints_permission_group_can_donate'] = 'Can donate points?';
+$l['newpoints_permission_group_can_donate_description'] = '';
+
+$l['newpoints_permission_group_rate_addition'] = 'Group Rate for Additions';
+$l['newpoints_permission_group_rate_addition_description'] = 'The income rate for this group, used when adding points to users (i.e: income earnings). Default is <code>1</code>.';
+$l['newpoints_permission_group_rate_subtraction'] = 'Group Rate for Subtraction <code style="color: darkorange;">Lowest from all groups. Percentage.</code>';
+$l['newpoints_permission_group_rate_subtraction_description'] = 'The income rate for this group, used when subtracting points from users (i.e: selling, purchasing, etc). Default is <code>100</code>.';
+
+$l['newpoints_permission_group_income_thread'] = 'New Thread';
+$l['newpoints_permission_group_income_thread_description'] = 'Amount of points received for each new thread.';
+$l['newpoints_permission_group_income_thread_reply'] = 'New Thread Reply';
+$l['newpoints_permission_group_income_thread_reply_description'] = 'Amount of points received for each reply to a thread.';
+$l['newpoints_permission_group_income_thread_rate'] = 'New Thread Rate';
+$l['newpoints_permission_group_income_thread_rate_description'] = 'Amount of points received for each new thread rate received.';
+$l['newpoints_permission_group_income_post'] = 'New Post';
+$l['newpoints_permission_group_income_post_description'] = 'Amount of points received for each new post.';
+$l['newpoints_permission_group_income_post_minimum_characters'] = 'Minimum Characters';
+$l['newpoints_permission_group_income_post_minimum_characters_description'] = 'Minimum characters required in order to receive the amount of points per character for new threads or posts.';
+$l['newpoints_permission_group_income_post_character'] = 'Post Character';
+$l['newpoints_permission_group_income_post_character_description'] = 'Amount of points received for each character in a thread or post.';
+$l['newpoints_permission_group_income_page_view'] = 'Page View';
+$l['newpoints_permission_group_income_page_view_description'] = 'Amount of points received for each page view.';
+$l['newpoints_permission_group_income_visit'] = 'Visit';
+$l['newpoints_permission_group_income_visit_description'] = 'Amount of points received for each visit.';
+$l['newpoints_permission_group_income_visit_minutes'] = 'Visit Interval';
+$l['newpoints_permission_group_income_visit_minutes_description'] = 'Time in minutes that the user must wait to receive the points again.';
+$l['newpoints_permission_group_income_poll'] = 'New Poll';
+$l['newpoints_permission_group_income_poll_description'] = 'Amount of points received for each new poll.';
+$l['newpoints_permission_group_income_poll_vote'] = 'New Poll Vote';
+$l['newpoints_permission_group_income_poll_vote_description'] = 'Amount of points received for each poll vote.';
+$l['newpoints_permission_group_income_user_allowance'] = 'User Allowance';
+$l['newpoints_permission_group_income_user_allowance_description'] = 'Amount of points received.';
+$l['newpoints_permission_group_income_user_allowance_minutes'] = 'User Allowance Interval';
+$l['newpoints_permission_group_income_user_allowance_minutes_description'] = 'Time in minutes that the user must wait to receive the points again.';
+$l['newpoints_permission_group_income_user_allowance_primary_only'] = 'Grant allowance if this is the user primary group only?';
+$l['newpoints_permission_group_income_user_registration'] = 'New Registration';
+$l['newpoints_permission_group_income_user_registration_description'] = 'Amount of points received when users register to the forum.';
+$l['newpoints_permission_group_income_user_referral'] = 'New Referral';
+$l['newpoints_permission_group_income_user_referral_description'] = 'Amount of points received for each user referred to the forum.';
+$l['newpoints_permission_group_income_private_message'] = 'New Private Message';
+$l['newpoints_permission_group_income_private_message_description'] = 'Amount of points received for each private message sent.';
+
+$l['newpoints_permissions_forum_can_get_points'] = 'Can get points posting in this forum?';
+$l['newpoints_permissions_forum_rate_addition'] = 'Forum Rate';
+$l['newpoints_permissions_forum_rate_addition_description'] = 'The income rate for this forum. Default is <code>1</code>.';
+$l['newpoints_permissions_forum_view_lock_points'] = 'Minimum Points To View';
+$l['newpoints_permissions_forum_view_lock_points_description'] = 'Set an amount of points users must have in order to view this forum.';
+$l['newpoints_permissions_forum_post_lock_points'] = 'Minimum Points To Post';
+$l['newpoints_permissions_forum_post_lock_points_description'] = 'Set an amount of points users must have in order to post in this forum.';
+
+$l['newpoints_forums'] = 'NewPoints';
+$l['newpoints_field_newpoints_rate_addition'] = 'Tasa del Foro<br /><small class="input">La tasa de ingresos para este foro. El valor predeterminado es <code>1</code>.</small><br />';
+$l['newpoints_field_newpoints_view_lock_points'] = 'Puntos Mínimos para Ver<br /><small class="input">Establece una cantidad de puntos que los usuarios deben tener para poder ver este foro.</small><br />';
+$l['newpoints_field_newpoints_post_lock_points'] = 'Puntos Mínimos para Publicar<br /><small class="input">Establece una cantidad de puntos que los usuarios deben tener para poder publicar en este foro.</small><br />';
+
+$l['newpoints_users_amount'] = 'Monto de NewPoints';
 
 $l['newpoints_forums_rates'] = 'Configuración de Tasas de NewPoints';
 
@@ -305,7 +374,76 @@ $l['newpoints_task_main_ran'] = 'Tarea principal de NewPoints ejecutada';
 
 $l['newpoints_users_tab'] = 'NewPoints';
 $l['newpoints_users_title'] = 'Información de NewPoints';
+$l['newpoints_user_deprecated'] = 'This section is deprecated and the <a href="https://community.mybb.com/mods.php?action=view&pid=1623">Quick Edit</a> plugin is recommended instead.<br />You may still update some NewPoints data for this user here.';
 $l['newpoints_user_newpoints'] = 'NewPoints<br /><small class="input">Actualizar los NewPoints actuales para este usuario.</small><br />';
 
-$l['group_newpoints'] = 'NewPoints';
+$l['newpoints_forums'] = 'NewPoints';
 $l['newpoints_field_newpoints_can_get_points'] = '¿Puede obtener puntos publicando en este foro?';
+
+$l = array_merge($l, [
+    'newpoints_admin_instances_success_new_instance' => 'The NewPoints instance was successfully added.',
+    'newpoints_admin_instances_success_updated_instance' => 'The NewPoints instance settings were successfully updated.',
+    'newpoints_admin_instances_success_instance_edit_permissions_groups' => 'The instance custom group permissions were successfully edited.',
+    'newpoints_admin_instances_success_instance_edit_permissions_forums' => 'The instance custom forum permissions were successfully edited.',
+
+    'newpoints_admin_instances_error_duplicated_users_column_name' => 'The selected users column name is already in use.',
+    'newpoints_admin_instances_error_duplicated_script_file' => 'The selected script file is already in use.',
+
+    'newpoints_admin_instances_edit_tabs_main' => 'Main',
+    'newpoints_admin_instances_edit_tabs_permissions' => 'Group Permissions',
+    'newpoints_admin_instances_edit_tabs_forum_permissions' => 'Forum Permissions',
+
+    'newpoints_admin_instances_edit' => 'Edit',
+    'newpoints_admin_instances_edit_description' => 'Edit a new instance.',
+
+    'newpoints_admin_instances_edit_currency_name_singular' => 'Name (Singular)',
+    'newpoints_admin_instances_edit_currency_name_singular_description' => 'Enter the Name for this instance (singular).',
+    'newpoints_admin_instances_edit_currency_name_plural' => 'Name (Plural)',
+    'newpoints_admin_instances_edit_currency_name_plural_description' => 'Enter the Name for this instance (plural).',
+    'newpoints_admin_instances_edit_users_column_name' => 'Users Column Name',
+    'newpoints_admin_instances_edit_users_column_name_description' => 'Enter the name of the column in the users table that will store the NewPoints for this instance.',
+    'newpoints_admin_instances_edit_enable_notifications_private_message' => 'Enable Private Message Notifications?',
+    'newpoints_admin_instances_edit_enable_notifications_private_message_description' => 'If you enable this, users will receive a private message when they gain or lose points in this instance.',
+    'newpoints_admin_instances_edit_enable_notifications_alert' => 'Enable MyAlerts Notifications?',
+    'newpoints_admin_instances_edit_enable_notifications_alert_description' => 'If you enable this, users will receive a MyAlerts notification when they gain or lose points in this instance.',
+    'newpoints_admin_instances_edit_is_enabled' => 'Enabled?',
+    'newpoints_admin_instances_edit_is_enabled_description' => 'Select whether you want this instance to be enabled or disabled.',
+    'newpoints_admin_instances_edit_display_order' => 'Display Order',
+    'newpoints_admin_instances_edit_display_order_description' => 'Enter the display order for this instance.',
+
+    'newpoints_admin_instances_edit_button_submit' => 'Submit',
+    'newpoints_admin_instances_edit_button_reset' => 'Reset',
+
+    'newpoints_admin_instances_permissions_form_group' => 'Group',
+    'newpoints_admin_instances_permissions_form_group_permissions' => 'Group Permissions',
+    'newpoints_admin_instances_permissions_form_allowed_actions' => 'Overview: Allowed Actions',
+    'newpoints_admin_instances_permissions_form_disallowed_actions' => 'Overview: Disallowed Actions',
+    'newpoints_admin_instances_permissions_form_inherited' => 'inherited',
+    'newpoints_admin_instances_permissions_form_custom' => 'custom',
+    'newpoints_admin_instances_permissions_form_edit' => 'Edit Custom Permissions',
+    'newpoints_admin_instances_permissions_form_clear' => 'Clear Custom Permissions',
+    'newpoints_admin_instances_permissions_form_set' => 'Set Custom Permissions',
+    'newpoints_admin_instances_permissions_form_save_groups' => 'Save Group Permissions',
+
+    'newpoints_admin_instances_permissions_form_custom_permissions' => 'Custom Permissions',
+    'newpoints_admin_instances_permissions_form_custom_permissions_description' => 'Here you can modify the full custom permissions for an individual group for a single instance.',
+
+    'newpoints_admin_instances_permissions_form_custom_permissions_success' => 'The instance custom group permissions have been saved successfully.',
+
+    'newpoints_admin_instances_permissions_form_confirm_clear' => 'Are you sure you wish to clear this custom permission?',
+
+    'newpoints_admin_instances_permissions_form_button_submit_groups' => 'Save Group Permissions',
+
+    'newpoints_admin_instances_permissions_clear_confirm' => 'Are you sure you wish to clear this custom permission?',
+    'newpoints_admin_instances_permissions_clear_success' => 'The custom group permissions for this instance have been cleared successfully.',
+
+    'newpoints_admin_instances_permissions_form_forum' => 'Forum',
+    'newpoints_admin_instances_permissions_form_forum_permissions' => 'Forum Permissions',
+    'newpoints_admin_instances_permissions_form_save_forums' => 'Save Forum Permissions',
+
+    'newpoints_admin_instances_permissions_form_button_submit_forums' => 'Save Forum Permissions',
+
+    'newpoints_forums_general' => 'General',
+    'newpoints_forums_rates' => 'Rates',
+    'newpoints_forums_income' => 'Income',
+]);

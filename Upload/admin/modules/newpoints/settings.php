@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,9 +29,17 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\settings_rebuild_cache;
+use NewPoints\System\Instance;
+use NewPoints\System\Url;
+
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\settings_rebuild;
+use function NewPoints\Core\settings_rebuild_cache;
+
+use const NewPoints\Core\INSTANCE_DEFAULT_ID;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -39,21 +47,103 @@ if (!defined('IN_MYBB')) {
 
 global $lang, $plugins, $page, $db, $mybb, $cache, $config;
 
+$array = [];
+
+settings_rebuild_cache($array);
+
 language_load();
 
 $lang->load('config_settings', false, true);
 
-$sub_tabs['newpoints_settings'] = [
-    'title' => $lang->newpoints_settings,
-    'link' => 'index.php?module=newpoints-settings',
-    'description' => $lang->newpoints_settings_description
+$instance_id = $mybb->get_input('instance_id', MyBB::INPUT_INT);
+
+$instance = false;
+
+$where_clause = "is_global='1'";
+
+if ($instance_id) {
+    try {
+        $instance = instance_object($instance_id);
+
+        $instance_id = $instance->instance_id;
+    } catch (Exception $e) {
+        log_error($mybb->get_input('instance_id', MyBB::INPUT_INT), $e->getMessage());
+
+        flash_message($e->getMessage(), 'error');
+
+        admin_redirect('index.php?module=newpoints-instances');
+
+        exit;
+    }
+
+    $where_clause = "(is_global='0' AND instance_id='{$instance_id}')";
+}
+
+$url = new Url('index.php');
+
+$url = $url->set_url($url->build([
+    'module' => 'newpoints-settings',
+    'instance_id' => $instance_id,
+]));
+
+$page_title = $lang->newpoints_settings;
+
+if ($instance instanceof Instance) {
+    $page_title = $lang->sprintf(
+        $lang->newpoints_settings_instance,
+        $instance->get_display_name_upper(),
+        $instance->get_display_name_lower(),
+    );
+}
+
+$sub_tabs = [
+    'newpoints_instances' => [
+        'title' => $lang->newpoints_instances,
+        'link' => $url->build(),
+        'description' => $lang->newpoints_instances_description
+    ],
+    'newpoints_settings' => [
+        'title' => $lang->newpoints_settings,
+        'link' => $url->get_url(),
+        'description' => ($instance instanceof Instance) ? $lang->sprintf(
+            $lang->newpoints_settings_instance_description,
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
+        ) : $lang->newpoints_settings_description,
+    ],
 ];
 
 if ($mybb->get_input('action') == 'change') {
+    $plugin_title = '';
+
+    $plugin_code = trim($mybb->get_input('plugin'));
+
+    $lang_var = 'setting_group_newpoints_' . $plugin_code;
+
+    language_load($plugin_code, suppress_error: true);
+
+    language_load(str_replace('_', '', $plugin_code), suppress_error: true);
+
+    if (in_array($plugin_code, ['main', 'donations', 'stats', 'logs'], true)) {
+        $plugin_title = $lang->{$lang_var};
+    } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
+        $plugin_title = htmlspecialchars_uni($plugin_information['name']);
+    } else {
+        $plugin_title = htmlspecialchars_uni(
+            $lang->{"setting_group_newpoints_{$plugin_code}"} ??
+            $lang->{'setting_group_newpoints_' . str_replace('_', '', $plugin_code)}
+        );
+    }
+
     $sub_tabs['newpoints_settings_change'] = [
         'title' => $lang->newpoints_settings_change,
-        'link' => 'index.php?module=newpoints-settings&amp;action=change',
-        'description' => $lang->newpoints_settings_change_description
+        'link' => $url->build(['action' => 'change', 'plugin' => $mybb->get_input('plugin')]),
+        'description' => ($instance instanceof Instance) ? $lang->sprintf(
+            $lang->newpoints_settings_change_instance_description,
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
+            $plugin_title
+        ) : $lang->newpoints_settings_change_description
     ];
 }
 
@@ -72,7 +162,7 @@ if ($mybb->get_input('action') == 'change') {
             $query = $db->simple_select(
                 'newpoints_settings',
                 'name, type',
-                "type IN('forumselect', 'groupselect', 'checkbox') OR type LIKE 'checkbox%'"
+                "(type IN('forumselect', 'groupselect', 'checkbox') OR type LIKE 'checkbox%') AND {$where_clause}"
             );
 
             while ($multi_setting = $db->fetch_array($query)) {
@@ -118,7 +208,7 @@ if ($mybb->get_input('action') == 'change') {
                 $db->update_query(
                     'newpoints_settings',
                     ['value' => $db->escape_string($value)],
-                    "name='{$db->escape_string($name)}'"
+                    "name='{$db->escape_string($name)}' AND {$where_clause}"
                 );
                 //$db->update_query("settings", array('value' => $value), "name='".$db->escape_string($name)."'");
             }
@@ -126,8 +216,7 @@ if ($mybb->get_input('action') == 'change') {
 
         rebuild_settings();
 
-        $array = [];
-        settings_rebuild_cache($array);
+        settings_rebuild_cache();
 
         run_hooks('admin_settings_change_commit');
 
@@ -135,7 +224,8 @@ if ($mybb->get_input('action') == 'change') {
         log_admin_action();
 
         flash_message($lang->success_settings_updated, 'success');
-        admin_redirect('index.php?module=newpoints-settings');
+
+        admin_redirect($url->get_url());
     }
 
     $cache_groups = $cache_settings = [];
@@ -147,23 +237,24 @@ if ($mybb->get_input('action') == 'change') {
     if (!$plugin_code) {
         flash_message($lang->newpoints_select_plugin, 'error');
 
-        admin_redirect('index.php?module=newpoints-settings');
+        admin_redirect($url->get_url());
     }
 
-    $plugin_title = $plugin_description = '';
+    $plugin_description = '';
 
     $group_key = str_replace('newpoints_', '', $plugin_code);
 
     $query = $db->simple_select(
         'newpoints_settings',
         '*',
-        "plugin='" . $db->escape_string($group_key) . "'",
+        "plugin='" . $db->escape_string($group_key) . "' AND {$where_clause}",
         ['order_by' => 'disporder']
     );
 
     if (!$db->num_rows($query)) {
         flash_message($lang->error_no_settings_found, 'error');
-        admin_redirect('index.php?module=newpoints-settings');
+
+        admin_redirect($url->get_url());
     }
 
     while ($setting = $db->fetch_array($query)) {
@@ -171,14 +262,8 @@ if ($mybb->get_input('action') == 'change') {
     }
 
     if (in_array($plugin_code, ['main', 'donations', 'stats', 'logs'], true)) {
-        $lang_var = 'setting_group_newpoints_' . $plugin_code;
-
-        $plugin_title = $lang->{$lang_var};
-
         $plugin_description = $lang->{$lang_var . '_desc'};
     } elseif ($plugin_information = newpoints_get_plugininfo($plugin_code)) {
-        $plugin_title = htmlspecialchars_uni($plugin_information['name']);
-
         $plugin_description = htmlspecialchars_uni($plugin_description);
     } else {
         $setting_groups_objects = [];
@@ -188,27 +273,36 @@ if ($mybb->get_input('action') == 'change') {
         if (!isset($setting_groups_objects[$plugin_code])) {
             flash_message($lang->error_no_settings_found, 'error');
 
-            admin_redirect('index.php?module=newpoints-settings');
+            admin_redirect($url->get_url());
         }
 
         $group_key = $plugin_code;
 
         $group_lang_var = "setting_group_newpoints_{$group_key}";
 
-        $plugin_title = htmlspecialchars_uni($lang->{$group_lang_var});
-
         $group_desc_lang_var = "setting_group_newpoints_{$group_key}_desc";
 
         $plugin_description = htmlspecialchars_uni($lang->{$group_desc_lang_var});
     }
 
+    $page->add_breadcrumb_item($lang->newpoints_settings, $url->get_url());
+
+    if ($instance instanceof Instance) {
+        $page->add_breadcrumb_item($lang->newpoints_instances, 'index.php?module=newpoints-instances');
+
+        $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
+    }
+
     // Page header
     $page->add_breadcrumb_item($plugin_title);
-    $page->output_header($lang->board_settings . " - {$plugin_title}");
+
+    $page->output_header($page_title . " - {$plugin_title}");
 
     $page->output_nav_tabs($sub_tabs, 'newpoints_settings_change');
 
-    $form = new Form('index.php?module=newpoints-settings&amp;action=change', 'post', 'change');
+    $form = new Form($url->build(['action' => 'change']), 'post', 'change');
+
+    echo $form->generate_hidden_field('instance_id', $instance_id);
 
     // Build rest of page
     $buttons[] = $form->generate_submit_button($lang->save_settings);
@@ -230,7 +324,7 @@ if ($mybb->get_input('action') == 'change') {
 
     foreach ($cache_settings[$group_key] as $setting) {
         $options = '';
-        
+
         $type = explode("\n", $setting['type']);
 
         $type[0] = trim($type[0]);
@@ -553,20 +647,29 @@ if ($mybb->get_input('action') == 'change') {
             ['id' => 'row_' . $element_id]
         );
     }
+
     $form_container->end();
 
     $form->output_submit_wrapper($buttons);
+
     echo '<br />';
 
     $form->end();
-
-    $page->output_footer();
 } else {
+    settings_rebuild();
+
     run_hooks('admin_settings_start');
 
-    $page->add_breadcrumb_item($lang->newpoints_settings, 'index.php?module=newpoints-settings');
+    $page->add_breadcrumb_item($lang->newpoints_settings, $url->get_url());
 
-    $page->output_header($lang->board_settings);
+    if ($instance instanceof Instance) {
+        $page->add_breadcrumb_item($lang->newpoints_instances, 'index.php?module=newpoints-instances');
+
+        $page->add_breadcrumb_item($instance->get_display_name_upper(), $url->get_url());
+    }
+
+    $page->output_header($page_title);
+
     if (isset($message)) {
         $page->output_inline_message($message);
     }
@@ -578,18 +681,32 @@ if ($mybb->get_input('action') == 'change') {
     $table->construct_header($lang->setting_groups);
 
     foreach (['main', 'donations', 'stats', 'logs'] as $core_group) {
-        $settingcount = $db->fetch_field(
-            $db->simple_select('newpoints_settings', 'COUNT(sid) as settings', "plugin='{$core_group}'"),
+        $settings_count = (int)($db->fetch_field(
+            $db->simple_select(
+                'newpoints_settings',
+                'COUNT(sid) as settings',
+                "plugin='{$core_group}' AND {$where_clause}"
+            ),
             'settings'
-        );
+        ));
+
+        if (empty($settings_count)) {
+            continue;
+        }
 
         $group_title = htmlspecialchars_uni($lang->{"setting_group_newpoints_{$core_group}"});
 
         $group_desc = htmlspecialchars_uni($lang->{"setting_group_newpoints_{$core_group}_desc"});
 
+        $edit_url = $url->build([
+            'action' => 'change',
+            'plugin' => $core_group,
+        ]);
+
         $table->construct_cell(
-            "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin={$core_group}\">{$group_title}</a></strong> ({$settingcount} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
+            "<strong><a href=\"{$edit_url}\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
         );
+
         $table->construct_row();
     }
 
@@ -612,22 +729,20 @@ if ($mybb->get_input('action') == 'change') {
 
     if (!empty($active_plugins)) {
         foreach ($active_plugins as $plugin) {
-            $plugin_info = newpoints_get_plugininfo($plugin);
-
-            if ($plugin_info === false) {
+            if (!newpoints_get_plugininfo($plugin)) {
                 continue;
             }
 
             $group_key = str_replace('newpoints_', '', $plugin);
 
-            $settings_count = $db->fetch_field(
+            $settings_count = (int)($db->fetch_field(
                 $db->simple_select(
                     'newpoints_settings',
                     'COUNT(sid) as settings_count',
-                    "plugin='{$db->escape_string($group_key)}'"
+                    "plugin='{$db->escape_string($group_key)}' AND {$where_clause}"
                 ),
                 'settings_count'
-            );
+            ));
 
             if (empty($settings_count)) {
                 continue;
@@ -645,10 +760,13 @@ if ($mybb->get_input('action') == 'change') {
 
             $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
 
+            $edit_url = $url->build([
+                'action' => 'change',
+                'plugin' => $plugin,
+            ]);
+
             $table->construct_cell(
-                "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=" . htmlspecialchars_uni(
-                    $plugin
-                ) . "\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
+                "<strong><a href=\"{$edit_url}\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
             );
 
             $table->construct_row();
@@ -656,14 +774,14 @@ if ($mybb->get_input('action') == 'change') {
     }
 
     foreach ($setting_groups_objects as $group_key => $group_data) {
-        $settings_count = $db->fetch_field(
+        $settings_count = (int)($db->fetch_field(
             $db->simple_select(
                 'newpoints_settings',
                 'COUNT(sid) as settings_count',
-                "plugin='{$db->escape_string($group_key)}'"
+                "plugin='{$db->escape_string($group_key)}' AND {$where_clause}"
             ),
             'settings_count'
-        );
+        ));
 
         if (empty($settings_count)) {
             continue;
@@ -677,21 +795,24 @@ if ($mybb->get_input('action') == 'change') {
 
         $group_desc = htmlspecialchars_uni($lang->{$group_lang_var_desc});
 
+        $edit_url = $url->build([
+            'action' => 'change',
+            'plugin' => $group_key,
+        ]);
+
         $table->construct_cell(
-            "<strong><a href=\"index.php?module=newpoints-settings&amp;action=change&amp;plugin=" . htmlspecialchars_uni(
-                $group_key
-            ) . "\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
+            "<strong><a href=\"{$edit_url}\">{$group_title}</a></strong> ({$settings_count} {$lang->bbsettings})<br /><small>{$group_desc}</small>"
         );
 
         $table->construct_row();
     }
 
-    $table->output($lang->board_settings);
+    $table->output($page_title);
 
     echo '</div>';
-
-    $page->output_footer();
 }
+
+$page->output_footer();
 
 function newpoints_get_plugininfo($plugin): array
 {

@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,30 +29,34 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Hooks\Admin;
+namespace NewPoints\Hooks\Admin;
 
+use Exception;
 use FormContainer;
 use MyBB;
+use NewPoints\System\Url;
 
-use function Newpoints\Admin\recount_rebuild_newpoints_recount;
-use function Newpoints\Admin\recount_rebuild_newpoints_recount_from_logs;
-use function Newpoints\Admin\recount_rebuild_newpoints_reset;
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\points_format;
-use function Newpoints\Core\run_hooks;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\get_setting;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\load_set_guest_data;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Admin\recount_rebuild_newpoints_recount;
+use function NewPoints\Admin\recount_rebuild_newpoints_recount_from_logs;
+use function NewPoints\Admin\recount_rebuild_newpoints_reset;
 
-use const Newpoints\Core\FIELDS_DATA;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
-use const Newpoints\Core\FORM_TYPE_PHP_CODE;
-use const Newpoints\Core\FORM_TYPE_PHP_CODE_LEGACY;
-use const Newpoints\Core\FORM_TYPE_SELECT_FIELD;
-use const Newpoints\Core\FORM_TYPE_SELECT_FIELD_LEGACY;
-use const Newpoints\ROOT;
+use const NewPoints\ROOT;
+use const NewPoints\Core\FIELDS_DATA;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
+use const NewPoints\Core\FORM_TYPE_PHP_CODE;
+use const NewPoints\Core\FORM_TYPE_PHP_CODE_LEGACY;
+use const NewPoints\Core\FORM_TYPE_SELECT_FIELD;
+use const NewPoints\Core\FORM_TYPE_SELECT_FIELD_LEGACY;
 
 function admin_config_plugins_deactivate(): bool
 {
@@ -68,7 +72,13 @@ function admin_config_plugins_deactivate(): bool
 
     if ($mybb->request_method !== 'post') {
         $page->output_confirm_action(
-            'index.php?module=config-plugins&amp;action=deactivate&amp;uninstall=1&amp;plugin=newpoints'
+            (new Url('index.php'))
+                ->build([
+                    'module' => 'config-plugins',
+                    'action' => 'deactivate',
+                    'uninstall' => 1,
+                    'plugin' => 'newpoints',
+                ]),
         );
     }
 
@@ -79,14 +89,42 @@ function admin_config_plugins_deactivate(): bool
     return true;
 }
 
+function admin_config_settings_begin(): void
+{
+    global $cache;
+
+    language_load();
+
+    $plugins_list = $cache->read('newpoints_plugins_versions');
+
+    foreach ($plugins_list as $plugin => $b) {
+        if ($plugin && $plugin = str_replace('newpoints_', '', $plugin)) {
+            language_load($plugin, false, true);
+        }
+    }
+}
+
 function admin_load(): bool
 {
     load_set_guest_data();
 
-    global $mybb;
+    global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    try {
+        foreach (instance_get() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id);
+
+                $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+                $newpoints_user_balance_formatted = $mypoints =
+                    $instance->points_format($instance->get_user_column_value());
+            } catch (Exception $e) {
+                log_error($instance_id, $e->getMessage());
+            }
+        }
+    } catch (Exception $e) {
+    }
 
     run_hooks('admin_load');
 
@@ -166,7 +204,7 @@ function admin_user_groups_edit_graph(): bool
 
     language_load();
 
-    $data_fields = FIELDS_DATA['usergroups'];
+    $fields_data = FIELDS_DATA['usergroups'];
 
     echo '<div id="tab_newpoints">';
 
@@ -175,7 +213,8 @@ function admin_user_groups_edit_graph(): bool
     $form_fields = $form_fields_rate = $form_fields_income = [];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
         'form_fields' => &$form_fields,
         'form_fields_rate' => &$form_fields_rate,
         'form_fields_income' => &$form_fields_income
@@ -183,14 +222,15 @@ function admin_user_groups_edit_graph(): bool
 
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_start', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
         }
 
         if (my_strpos($data_field_key, 'newpoints_income') === 0) {
+            // usergroup or forums permissions match global settings only, so settings_get_value() is not necessary
             if (get_setting(str_replace('newpoints_', '', $data_field_key)) !== false) {
                 continue;
             }
@@ -285,7 +325,7 @@ function admin_user_groups_edit_graph(): bool
                 break;
             case FORM_TYPE_SELECT_FIELD:
             case FORM_TYPE_SELECT_FIELD_LEGACY:
-                if (in_array($data_field_data['type'], ['TINYINT', 'SMALLINT', 'INT'])) {
+                if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
                     $value = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
                 }
 
@@ -361,7 +401,6 @@ function admin_user_groups_edit_graph(): bool
         );
     }
 
-
     $hook_arguments = run_hooks('admin_user_groups_edit_graph_end', $hook_arguments);
 
     $form_container->end();
@@ -376,16 +415,17 @@ function admin_user_groups_edit_commit(): bool
     global $mybb, $db;
     global $updated_group;
 
-    $data_fields = FIELDS_DATA['usergroups'];
+    $fields_data = FIELDS_DATA['usergroups'];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('admin_user_groups_edit_commit_start', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
             $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
             $updated_group[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
@@ -423,20 +463,21 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
     language_load();
 
-    $data_fields = FIELDS_DATA['forums'];
+    $fields_data = FIELDS_DATA['forums'];
 
     $form_fields = $form_fields_rate = [];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
         'form_fields' => &$form_fields,
         'form_fields_rate' => &$form_fields_rate
     ];
 
     $hook_arguments = run_hooks('admin_formcontainer_end_start', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -444,7 +485,12 @@ function admin_formcontainer_end(array &$current_hook_arguments): array
 
         $setting_language_string = $data_field_key;
 
-        if (strpos($data_field_key, 'newpoints_forums_') !== 0) {
+        if (!str_starts_with($data_field_key, 'newpoints_forum_setting_')) {
+            $setting_language_string = str_replace('newpoints_', 'newpoints_forum_setting_', $data_field_key);
+        }
+
+        //backwards compatibility, to be removed in future versions
+        if (!isset($lang->{$setting_language_string}) && !str_starts_with($data_field_key, 'newpoints_forums_')) {
             $setting_language_string = str_replace('newpoints_', 'newpoints_forums_', $data_field_key);
         }
 
@@ -556,18 +602,19 @@ function admin_forum_management_edit_commit(): bool
 {
     global $db, $mybb, $fid;
 
-    $data_fields = FIELDS_DATA['forums'];
+    $fields_data = FIELDS_DATA['forums'];
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('admin_forum_management_edit_commit_start', $hook_arguments);
 
     $updated_forum = [];
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
             $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_INT);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
             $updated_forum[$data_field_key] = $mybb->get_input($data_field_key, MyBB::INPUT_FLOAT);
@@ -585,34 +632,132 @@ function admin_forum_management_edit_commit(): bool
 
 function admin_forum_management_permission_groups(array &$groups): array
 {
+    global $hidefields;
+
     language_load();
 
-    foreach (FIELDS_DATA['forumpermissions'] as $column_name => $column_data) {
-        $groups[$column_name] = 'newpoints';
+    $fields_data = FIELDS_DATA['forumpermissions'];
+
+    foreach ($fields_data as $field_name => $field_definition) {
+        if (!empty($field_definition['form_options']) && !empty($field_definition['form_options']['disabled_for_guest_group'])) {
+            global $usergroup;
+
+            if ((int)$usergroup['gid'] === 1) {
+                $hidefields[] = $field_name;
+            }
+        }
+
+        $groups[$field_name] = 'newpoints';
     }
 
     return $groups;
 }
 
-function admin_forum_management_permissions_commit(): bool
+function admin_formcontainer_output_row(array &$hook_arguments): array
+{
+    global $lang, $page;
+    global $usergroup, $forum, $group;
+
+    if ($page->active_module !== 'forum' ||
+        $page->active_action !== 'management' ||
+        !isset($lang->custom_permissions_for) ||
+        !str_contains($hook_arguments['this']->_title, $lang->custom_permissions_for) ||
+        !isset($usergroup['title']) ||
+        !str_contains($hook_arguments['this']->_title, htmlspecialchars_uni($usergroup['title'])) ||
+        !isset($forum['name']) ||
+        !str_contains($hook_arguments['this']->_title, htmlspecialchars_uni($forum['name'])) ||
+        empty($group) ||
+        $group !== 'newpoints'
+    ) {
+        return $hook_arguments;
+    }
+
+
+    global $form, $lang;
+    global $permission_data, $fields;
+
+    $fields_data = FIELDS_DATA['forumpermissions'];
+
+    $fields = [];
+
+    (function () use (&$fields_data, &$permission_data, &$fields) {
+        $hook_arguments = [
+            'fields_data' => &$fields_data,
+            'permission_data' => &$permission_data,
+            'fields' => &$fields
+        ];
+
+        $hook_arguments = run_hooks('admin_forum_permissions_start', $hook_arguments);
+    })();
+
+    foreach ($fields_data as $field_name => $field_definition) {
+        if (empty($field_definition['form_type'])) {
+            continue;
+        }
+
+        $lang_field = str_replace('newpoints_', 'newpoints_field_newpoints_', $field_name);
+
+        switch ($field_definition['form_type']) {
+            case FORM_TYPE_NUMERIC_FIELD:
+                $fields[] = "{$lang->{$lang_field}}<br /><small class=\"input\">{$lang->{"{$lang_field}_description"}}</small><br />" . $form->generate_numeric_field(
+                        "permissions[{$field_name}]",
+                        $permission_data[$field_name] ?? 0,
+                        $field_definition['form_options']
+                    );
+                break;
+            case FORM_TYPE_CHECK_BOX:
+                $fields[] = $form->generate_check_box(
+                    "permissions[{$field_name}]",
+                    1,
+                    $lang->{$lang_field},
+                    array_merge(
+                        $field_definition['form_options'] ?? [],
+                        ['checked' => !empty($permission_data[$field_name]), 'id' => $field_name]
+                    )
+                );
+                break;
+        }
+    }
+
+    $hook_arguments['content'] = '<div class="forum_settings_bit">' . implode(
+            '</div><div class="forum_settings_bit">',
+            $fields
+        ) . '</div>';
+
+    return $hook_arguments;
+}
+
+function admin_forum_management_permissions_commit(): void
 {
     global $mybb;
 
     if (!isset($mybb->input['permissions'])) {
-        return false;
+        return;
     }
 
+    $fields_data = FIELDS_DATA['forumpermissions'];
+
+    $hook_arguments = [
+        'fields_data' => &$fields_data,
+        'permissions' => &$mybb->input['permissions'],
+    ];
+
+    $hook_arguments = run_hooks('admin_forum_permissions_commit', $hook_arguments);
+
+    global $db;
     global $update_array;
 
-    foreach (FIELDS_DATA['forumpermissions'] as $column_name => $column_data) {
-        if (isset($mybb->input['permissions'][$column_name])) {
-            $update_array[$column_name] = 1;
+    foreach ($fields_data as $field_name => $field_definition) {
+        if (isset($mybb->input['permissions'][$field_name])) {
+            $update_array[$field_name] = match ($field_definition['type']) {
+                'BIGINT', 'INT', 'SMALLINT', 'TINYINT' => (int)$mybb->input['permissions'][$field_name],
+                'FLOAT', 'DECIMAL' => (float)$mybb->input['permissions'][$field_name],
+                default => $db->escape_string($mybb->input['permissions'][$field_name]),
+            };
         } else {
-            $update_array[$column_name] = 0;
+            $update_array[$field_name] = 0;
         }
     }
-
-    return true;
 }
 
 function admin_user_users_edit_graph_tabs(array &$tabs): array
@@ -633,20 +778,21 @@ function admin_user_users_edit_graph(): bool
 
     language_load();
 
-    $data_fields = FIELDS_DATA['users'];
+    $fields_data = FIELDS_DATA['users'];
 
     echo '<div id="tab_newpoints">';
 
     $form_container = new FormContainer($lang->newpoints_users_title . ': ' . htmlspecialchars_uni($user['username']));
 
     $hook_arguments = [
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('admin_user_users_edit_graph', $hook_arguments);
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -728,6 +874,10 @@ function admin_user_users_edit_graph(): bool
     $hook_arguments = run_hooks('admin_user_users_edit_graph_intermediate', $hook_arguments);
 
     $form_container->output_row(
+        "<span style='color: darkred;'>{$lang->newpoints_user_deprecated}:</span>",
+    );
+
+    $form_container->output_row(
         $lang->newpoints_forums,
         '',
         "<div class=\"user_settings_bit\">" . implode(
@@ -759,32 +909,111 @@ function admin_tools_recount_rebuild_output_list(): bool
     global $lang;
     global $form_container, $form;
 
-    $form_container->output_cell(
-        "<label>{$lang->newpoints_recount_from_logs}</label><div class=\"description\">{$lang->newpoints_recount_from_logs_description}</div>"
+    $instances_select = $form->generate_select_box(
+        'newpoints_recount_from_logs_instance_id',
+        (function (): array {
+            $instances = [
+                0 => ''
+            ];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                try {
+                    $instances[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                    );
+                }
+            }
+
+            return $instances;
+        })()
     );
+
     $form_container->output_cell(
-        $form->generate_numeric_field('newpoints_recount', 50, ['style' => 'width: 150px;', 'min' => 0])
+        "<label>{$lang->newpoints_recount_from_logs}</label><div class=\"description\">{$lang->newpoints_recount_from_logs_description}</div>{$instances_select}"
     );
+
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_recount_from_logs', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+
     $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_recount_newpoints_from_logs'])
     );
+
     $form_container->construct_row();
 
-    $form_container->output_cell(
-        "<label>{$lang->newpoints_recount}</label><div class=\"description\">{$lang->newpoints_recount_desc}</div>"
+    $instances_select = $form->generate_select_box(
+        'newpoints_recount_from_settings_instance_id',
+        (function (): array {
+            $instances = [
+                0 => ''
+            ];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                try {
+                    $instances[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                    );
+                }
+            }
+
+            return $instances;
+        })()
     );
+
     $form_container->output_cell(
-        $form->generate_numeric_field('newpoints_recount', 50, ['style' => 'width: 150px;', 'min' => 0])
+        "<label>{$lang->newpoints_recount}</label><div class=\"description\">{$lang->newpoints_recount_desc}</div>{$instances_select}"
     );
+
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_recount_from_settings', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+
     $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_recount_newpoints']));
+
     $form_container->construct_row();
 
-    $form_container->output_cell(
-        "<label>{$lang->newpoints_reset}</label><div class=\"description\">{$lang->newpoints_reset_desc}</div>"
+    $instances_select = $form->generate_select_box(
+        'newpoints_reset_instance_id',
+        (function (): array {
+            $instances = [
+                0 => ''
+            ];
+
+            foreach (instance_get() as $instance_id => $instance_data) {
+                try {
+                    $instances[$instance_id] = instance_object($instance_id)->get_display_name_upper();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                    );
+                }
+            }
+
+            return $instances;
+        })()
     );
+
     $form_container->output_cell(
-        $form->generate_numeric_field('newpoints_reset', 0, ['style' => 'width: 150px;', 'min' => 0])
+        "<label>{$lang->newpoints_reset}</label><div class=\"description\">{$lang->newpoints_reset_desc}</div>{$instances_select} {$lang->newpoints_reset_amount}:" . $form->generate_numeric_field(
+            'newpoints_reset_amount',
+            0,
+            ['style' => 'width: 100px;', 'min' => 0]
+        )
     );
+
+    $form_container->output_cell(
+        $form->generate_numeric_field('newpoints_reset', 50, ['style' => 'width: 150px;', 'min' => 0])
+    );
+
     $form_container->output_cell($form->generate_submit_button($lang->go, ['name' => 'do_reset_newpoints']));
+
     $form_container->construct_row();
 
     return true;
@@ -799,10 +1028,10 @@ function admin_tools_do_recount_rebuild(): bool
             log_admin_action('recount_from_logs');
         }
 
-        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+        $per_page = $mybb->get_input('newpoints_recount_from_logs', MyBB::INPUT_INT);
 
         if (!$per_page || $per_page <= 0) {
-            $mybb->input['newpoints_recount'] = 50;
+            $mybb->input['newpoints_recount_from_logs'] = 50;
         }
 
         recount_rebuild_newpoints_recount_from_logs();
@@ -813,10 +1042,10 @@ function admin_tools_do_recount_rebuild(): bool
             log_admin_action('recount');
         }
 
-        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+        $per_page = $mybb->get_input('newpoints_recount_from_settings', MyBB::INPUT_INT);
 
         if (!$per_page || $per_page <= 0) {
-            $mybb->input['newpoints_recount'] = 50;
+            $mybb->input['newpoints_recount_from_settings'] = 50;
         }
 
         recount_rebuild_newpoints_recount();
@@ -827,10 +1056,10 @@ function admin_tools_do_recount_rebuild(): bool
             log_admin_action('reset');
         }
 
-        $per_page = $mybb->get_input('newpoints_recount', MyBB::INPUT_INT);
+        $per_page = $mybb->get_input('newpoints_reset', MyBB::INPUT_INT);
 
         if (!$per_page || $per_page <= 0) {
-            $mybb->input['newpoints_recount'] = 50;
+            $mybb->input['newpoints_reset'] = 50;
         }
 
         recount_rebuild_newpoints_reset();

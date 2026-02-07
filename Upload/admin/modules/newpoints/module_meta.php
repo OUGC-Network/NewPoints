@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,8 +29,13 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
+
+use const NewPoints\Core\DEBUG;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -40,7 +45,7 @@ function newpoints_meta(): bool
 {
     global $page, $lang;
 
-    if (function_exists('\Newpoints\Core\language_load')) {
+    if (function_exists('\NewPoints\Core\language_load')) {
         language_load();
     } else {
         isset($lang->newpoints) || $lang->load('newpoints');
@@ -55,29 +60,34 @@ function newpoints_meta(): bool
             'title' => $lang->nav_plugins,
             'link' => 'index.php?module=newpoints-plugins'
         ],
-        15 => [
+        20 => [
             'id' => 'settings',
             'title' => $lang->nav_settings,
             'link' => 'index.php?module=newpoints-settings'
         ],
-        20 => [
-            'id' => 'log',
-            'title' => $lang->nav_log,
-            'link' => 'index.php?module=newpoints-log'
-        ],
-        25 => [
-            'id' => 'forumrules',
-            'title' => $lang->nav_forumrules,
-            'link' => 'index.php?module=newpoints-forumrules'
-        ],
         30 => [
-            'id' => 'grouprules',
-            'title' => $lang->nav_grouprules,
-            'link' => 'index.php?module=newpoints-grouprules'
-        ]
+            'id' => 'instances',
+            'title' => $lang->nav_instances,
+            'link' => 'index.php?module=newpoints-instances'
+        ],
     ];
 
-    if (function_exists('\Newpoints\Core\run_hooks')) {
+    if (DEBUG) {
+        try {
+            foreach (cache_get_instances() as $instance_id => $instance_data) {
+                $instance = instance_object($instance_id);
+
+                $sub_menu_items[9000 + $instance->instance_id] = [
+                    'id' => 'instance_' . $instance->instance_id,
+                    'title' => $instance->get_display_name_upper(),
+                    'link' => 'index.php?module=newpoints-settings&instance_id=' . $instance->instance_id
+                ];
+            }
+        } catch (Exception $e) {
+        }
+    }
+
+    if (function_exists('\NewPoints\Core\run_hooks')) {
         $sub_menu_items = run_hooks('admin_menu', $sub_menu_items);
     }
 
@@ -101,17 +111,9 @@ function newpoints_action_handler(string $current_action): string
             'active' => 'settings',
             'file' => 'settings.php'
         ],
-        'log' => [
-            'active' => 'log',
-            'file' => 'log.php'
-        ],
-        'forumrules' => [
-            'active' => 'forumrules',
-            'file' => 'forumrules.php'
-        ],
-        'grouprules' => [
-            'active' => 'grouprules',
-            'file' => 'grouprules.php'
+        'instances' => [
+            'active' => 'instances',
+            'file' => 'instances.php'
         ],
     ];
 
@@ -132,7 +134,7 @@ function newpoints_admin_permissions(): array
 {
     global $lang;
 
-    if (function_exists('\Newpoints\Core\language_load')) {
+    if (function_exists('\NewPoints\Core\language_load')) {
         language_load();
     } else {
         isset($lang->newpoints) || $lang->load('newpoints');
@@ -143,12 +145,10 @@ function newpoints_admin_permissions(): array
         'newpoints' => $lang->can_manage_newpoints,
         'plugins' => $lang->can_manage_plugins,
         'settings' => $lang->can_manage_settings,
-        'log' => $lang->can_manage_log,
-        'forumrules' => $lang->can_manage_forumrules,
-        'grouprules' => $lang->can_manage_grouprules,
+        'instances' => $lang->can_manage_instances,
     ];
 
-    if (function_exists('\Newpoints\Core\language_load')) {
+    if (function_exists('\NewPoints\Core\language_load')) {
         $admin_permissions = run_hooks('admin_permissions', $admin_permissions);
     }
 

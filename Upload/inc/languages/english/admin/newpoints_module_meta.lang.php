@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -32,6 +32,7 @@ $l['nav_settings'] = 'Settings';
 $l['nav_log'] = 'Log';
 $l['nav_forumrules'] = 'Forum Rules';
 $l['nav_grouprules'] = 'Group Rules';
+$l['nav_instances'] = 'Instances';
 $l['nav_stats'] = 'Statistics';
 $l['nav_upgrades'] = 'Upgrades';
 
@@ -40,5 +41,6 @@ $l['can_manage_settings'] = 'Can Manage Settings?';
 $l['can_manage_log'] = 'Can Manage Log?';
 $l['can_manage_forumrules'] = 'Can Manage Forum Rules?';
 $l['can_manage_grouprules'] = 'Can Manage Group Rules?';
+$l['can_manage_instances'] = 'Can Manage Instances?';
 $l['can_manage_stats'] = 'Can Manage Statistics?';
 $l['can_manage_upgrades'] = 'Can Manage Upgrades?';

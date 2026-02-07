@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,54 +29,39 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Hooks\Forum;
+namespace NewPoints\Hooks\Forum;
 
 use MyBB;
-
 use MybbStuff_MyAlerts_AlertFormatterManager;
+use Exception;
+use NewPoints\Core\Permissions;
+use NewPoints\System\Url;
 
-use function Newpoints\Core\count_characters;
-use function Newpoints\Core\get_income_value;
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\load_set_guest_data;
-use function Newpoints\Core\log_add;
-use function Newpoints\Core\main_file_name;
-use function Newpoints\Core\my_alerts_initiate;
-use function Newpoints\Core\points_add_simple;
-use function Newpoints\Core\points_format;
-use function Newpoints\Core\points_subtract;
-use function Newpoints\Core\templates_get;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\url_handler_build;
-use function Newpoints\Core\user_can_get_points;
-use function Newpoints\Core\users_get_group_permissions;
+use function NewPoints\Core\forum_rule_post_lock;
+use function NewPoints\Core\forum_rule_view_lock;
+use function NewPoints\Core\build_income_table;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\load_set_guest_data;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\main_file_name;
+use function NewPoints\Core\my_alerts_initiate;
+use function NewPoints\Core\templates_get;
+use function NewPoints\Core\run_hooks;
 
-use const Newpoints\Core\INCOME_TYPE_PAGE_VIEW;
-use const Newpoints\Core\INCOME_TYPE_POLL;
-use const Newpoints\Core\INCOME_TYPE_POLL_VOTE;
-use const Newpoints\Core\INCOME_TYPE_POST;
-use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
-use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
-use const Newpoints\Core\INCOME_TYPE_THREAD_RATE;
-use const Newpoints\Core\INCOME_TYPE_THREAD;
-use const Newpoints\Core\INCOME_TYPE_VISIT;
-use const Newpoints\Core\LOGGING_TYPE_CHARGE;
-use const Newpoints\Core\LOGGING_TYPE_INCOME;
-
-function global_start09(): bool
+function global_start09(): void
 {
     load_set_guest_data();
 
     my_alerts_initiate();
-
-    return true;
 }
 
 // Loads plugins from global_start and runs a new hook called 'newpoints_global_start' that can be used by NewPoints plugins (instead of global_start)
 // global_start can't be used by NP plugins
 // todo, fix plugins not being able to use global_start by loading plugins before
-function global_start(): bool
+function global_start(): void
 {
     global $templatelist;
 
@@ -101,12 +86,17 @@ function global_start(): bool
         ],
         'showthread.php' => [
             'newpoints_postbit',
-            'newpoints_postbit_donate'
+            'newpoints_postbit_donate',
         ],
         'member.php' => [
             'newpoints_profile',
-            'newpoints_profile_donate'
-        ]
+            'newpoints_profile_donate',
+        ],
+        'forumdisplay.php' => [
+            'forum_income',
+            'forum_income_row',
+            'forum_income_table',
+        ],
     ];
 
     if (defined('THIS_SCRIPT')) {
@@ -126,28 +116,49 @@ function global_start(): bool
             $templatelist .= ',' . implode(',', $templates);
         }
     }
-
     //users_update();
 
-    return true;
 }
 
-function global_intermediate(): bool
+function global_intermediate(): void
 {
-    global $mybb, $lang;
-    global $newpoints_user_balance_formatted, $mypoints, $newpoints_header_menu;
+    global $mybb;
+    global $newpoints_header_menu;
+    global $newpoints_globals;
+    global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    isset($newpoints_header_menu) || $newpoints_header_menu = '';
 
-    $newpoints_file = main_file_name();
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
 
-    language_load();
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
 
-    $newpoints_header_menu = eval(templates_get('header_menu'));
+            continue;
+        }
 
-    return true;
+        $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+        $newpoints_user_balance_formatted = $mypoints =
+            $instance->points_format($instance->get_user_column_value());
+
+        $newpoints_file = main_file_name();
+
+        $instance_name_upper = $instance->get_display_name_upper();
+
+        $instance_name_lower = $instance->get_display_name_lower();
+
+        $newpoints_header_menu .= eval(templates_get('header_menu'));
+    }
 }
 
+/**
+ * @throws Exception
+ */
 function pre_parse_page(string &$page_contents): string
 {
     global $mybb;
@@ -203,7 +214,7 @@ function pre_parse_page(string &$page_contents): string
                 $forum_id = (int)$thread_data['fid'];
                 break;
             case 'newthread.php':
-                if ($mybb->get_input('action') == 'editdraft' ||
+                if ($mybb->get_input('action') === 'editdraft' ||
                     ($mybb->get_input('savedraft') && $mybb->get_input('tid', MyBB::INPUT_INT)) ||
                     ($mybb->get_input('tid', MyBB::INPUT_INT) && $mybb->get_input('pid', MyBB::INPUT_INT))
                 ) {
@@ -227,7 +238,7 @@ function pre_parse_page(string &$page_contents): string
 
                 break;
             case 'polls.php':
-                if ($mybb->get_input('action') == 'newpoll') {
+                if ($mybb->get_input('action') === 'newpoll') {
                     $thread_id = $mybb->get_input('tid', MyBB::INPUT_INT);
 
                     $thread_data = get_thread($thread_id);
@@ -235,7 +246,7 @@ function pre_parse_page(string &$page_contents): string
                     $forum_id = (int)$thread_data['fid'];
                 }
 
-                if ($mybb->get_input('action') == 'editpoll' || $mybb->get_input('action') == 'showresults') {
+                if ($mybb->get_input('action') === 'editpoll' || $mybb->get_input('action') === 'showresults') {
                     $poll_id = $mybb->get_input('pid', MyBB::INPUT_INT);
 
                     $query = $db->simple_select('polls', 'tid', "pid='{$poll_id}'");
@@ -250,71 +261,39 @@ function pre_parse_page(string &$page_contents): string
         }
     }
 
-    $current_user_id = (int)$mybb->user['uid'];
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-    if (user_can_get_points($current_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_PAGE_VIEW, $current_user_id, $forum_id);
-
-        $income_value *= $mybb->usergroup['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple(
-                $current_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_PAGE_VIEW,
-                '',
-                get_user($current_user_id)['username'] ?? '',
-                $current_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-    }
-
-    if (user_can_get_points($current_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_VISIT, $current_user_id, $forum_id);
-
-        $income_value *= $mybb->usergroup['newpoints_rate_addition'];
-
-        if ($income_value) {
-            if ((TIME_NOW - $mybb->user['lastactive']) > $mybb->usergroup['newpoints_income_visit_minutes'] * 60) {
-                points_add_simple(
-                    $current_user_id,
-                    $income_value
-                );
-
-                log_add(
-                    'income_' . INCOME_TYPE_VISIT,
-                    '',
-                    get_user($current_user_id)['username'] ?? '',
-                    $current_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
-                );
+            if (!$instance->is_enabled()) {
+                continue;
             }
+
+            $instance->income_page_view()
+                ->income_visit();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
         }
     }
 
     return $page_contents;
 }
 
-function misc_rules_end(): bool
+function misc_rules_end(): void
 {
     global $mybb;
     global $newpoints_forum_id;
 
     $newpoints_forum_id = $mybb->get_input('fid', MyBB::INPUT_INT);
-
-    return true;
 }
 
 function error(string &$error_message): string
@@ -326,44 +305,66 @@ function error(string &$error_message): string
     return $error_message;
 }
 
-function xmlhttp09(): bool
+function xmlhttp09(): void
 {
     load_set_guest_data();
 
-    global $mybb;
+    global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+            $newpoints_user_balance_formatted = $mypoints =
+                $instance->points_format($instance->get_user_column_value());
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
+    }
 
     my_alerts_initiate();
-
-    return true;
 }
 
 // Loads plugins from xmlhttp and runs a new hook called 'newpoints_xmlhttp' that can be used by NewPoints plugins (instead of xmlhttp)
 // xmlhttp can't be used by NP plugins
 // todo, fix plugins not being able to use xmlhttp by loading plugins before
-function xmlhttp(): bool
+function xmlhttp(): void
 {
     run_hooks('xmlhttp');
-
-    return true;
 }
 
 // Loads plugins when in archive and runs a new hook called 'newpoints_archive_start' that can be used by NewPoints plugins (instead of archive_start)
 // todo, fix plugins not being able to use archive_start by loading plugins before
-function archive_start(): bool
+function archive_start(): void
 {
     load_set_guest_data();
 
-    global $mybb;
+    global $newpoints_globals;
     global $newpoints_user_balance_formatted, $mypoints;
 
-    $newpoints_user_balance_formatted = $mypoints = points_format($mybb->user['newpoints']);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $newpoints_globals[$instance->users_column_get() . '_user_balance_formatted'] =
+            $newpoints_user_balance_formatted = $mypoints =
+                $instance->points_format($instance->get_user_column_value());
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
+    }
 
     run_hooks('archive_start');
-
-    return true;
 }
 
 function postbit(array &$post): array
@@ -378,31 +379,66 @@ function postbit(array &$post): array
 
     language_load();
 
-    $newpoints_file = main_file_name();
+    $replacements = [
+        '<!--NEWPOINTS_POST_USER_POINTS-->' => &$post['newpoints_balance_formatted'],
+    ];
 
-    $currency = get_setting('main_curname');
+    $url = new Url();
 
-    $points = $post['newpoints_balance_formatted'] = points_format((float)$post['newpoints']);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
 
-    $user_id = $uid = (int)$post['uid'];
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
 
-    $current_user_id = (int)$mybb->user['uid'];
+            continue;
+        }
 
-    $post_id = (int)$post['pid'];
+        $newpoints_amount = $post[$instance->users_column_get() . '_user_balance_formatted'] =
+        $post['newpoints_balance_formatted'] = $points =
+            $instance->points_format((float)$post[$instance->users_column_get()]);
 
-    $donate = '';
+        $replacements["<!--NewPoints_{$instance->users_column_get()}-->"] = $newpoints_amount;
 
-    if (!empty($mybb->usergroup['newpoints_can_donate']) && $current_user_id && $user_id !== $current_user_id) {
-        $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'pid' => $post_id, 'modal' => 1]);
+        $newpoints_file = main_file_name();
 
-        $donate = eval(templates_get('postbit_donate'));
+        $instance_name_upper = $instance->get_display_name_upper();
+
+        $instance_name_lower = $instance->get_display_name_lower();
+
+        $user_id = $uid = (int)$post['uid'];
+
+        $post_id = (int)$post['pid'];
+
+        $donate = '';
+
+        if (
+            $instance->user_permissions[Permissions::CanDonate] &&
+            $user_id !== $instance->get_user_id()
+        ) {
+            $donate_url = $url->build(
+                [
+                    'action' => 'donate',
+                    'uid' => $user_id,
+                    'pid' => $post_id,
+                    'modal' => 1,
+                    'instance_id' => $instance_id
+                ]
+            );
+
+            $donate = eval(templates_get('postbit_donate'));
+        }
+
+        $post['newpoints_postbit'] .= eval(templates_get('postbit'));
     }
 
-    $post['newpoints_postbit'] = eval(templates_get('postbit'));
-
     $post['user_details'] = str_replace(
-        ['<!--NEWPOINTS_POST_USER_DETAILS-->', '<!--NEWPOINTS_POST_USER_POINTS-->'],
-        [$post['newpoints_postbit'], $post['newpoints_balance_formatted']],
+        array_keys($replacements),
+        array_values($replacements),
         $post['user_details']
     );
 
@@ -424,7 +460,7 @@ function postbit_announcement(array &$post_data): array
     return postbit($post_data);
 }
 
-function member_profile_end(): bool
+function member_profile_end(): void
 {
     global $mybb, $currency, $points, $memprofile, $newpoints_profile, $lang, $uid;
     global $newpoints_profile_user_balance_formatted;
@@ -433,36 +469,57 @@ function member_profile_end(): bool
 
     language_load();
 
-    $newpoints_file = main_file_name();
+    $url = new Url();
 
-    $currency = get_setting('main_curname');
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
 
-    $points = $newpoints_profile_user_balance_formatted = points_format((float)$memprofile['newpoints']);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
 
-    $user_id = $uid = (int)$memprofile['uid'];
+            continue;
+        }
 
-    $current_user_id = (int)$mybb->user['uid'];
+        $newpoints_amount = $memprofile[$instance->users_column_get() . '_user_balance_formatted'] =
+        $newpoints_profile_user_balance_formatted = $points =
+            $instance->points_format((float)$memprofile[$instance->users_column_get()]);
 
-    $donate = '';
+        $newpoints_file = main_file_name();
 
-    if (!empty($mybb->usergroup['newpoints_can_donate']) && $current_user_id && $user_id !== $current_user_id) {
-        $donate_url = url_handler_build(['action' => 'donate', 'uid' => $user_id, 'modal' => 1]);
+        $instance_name_upper = $instance->get_display_name_upper();
 
-        $donate = eval(templates_get('profile_donate'));
+        $instance_name_lower = $instance->get_display_name_lower();
+
+        $user_id = $uid = (int)$memprofile['uid'];
+
+        $donate = '';
+
+        if ($instance->user_permissions[Permissions::CanDonate] &&
+            $user_id !== $instance->get_user_id()) {
+            $donate_url = $url->build(
+                ['action' => 'donate', 'uid' => $user_id, 'modal' => 1, 'instance_id' => $instance_id]
+            );
+
+            $donate = eval(templates_get('profile_donate'));
+        }
+
+        $newpoints_profile .= eval(templates_get('profile'));
     }
-
-    $newpoints_profile = eval(templates_get('profile'));
-
-    return true;
 }
 
 // todo, I'm unsure how this is necessary if we already hook at the data handler
 // removed in 3.1.5 because the data handler should take care of this already
-function xmlhttp_edit_post_end(): bool
+function xmlhttp_edit_post_end(): void
 {
-    return false;
 }
 
+/**
+ * @throws Exception
+ */
 function class_moderation_delete_post_start(&$post_id): int
 {
     $post_id = (int)$post_id;
@@ -485,94 +542,53 @@ function class_moderation_delete_post_start(&$post_id): int
 
     $thread_id = (int)$thread_data['tid'];
 
-    if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-        // we are not the thread started so remove points from him/her
-        $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-        $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id) *
-            ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-        if ($income_value) {
-            points_subtract(
-                $thread_user_id,
-                $income_value,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_THREAD_REPLY,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
+            $instance->charge_post()
+                ->charge_post_characters($post_data['message']);
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
             );
         }
-    }
 
-    if (!user_can_get_points($post_user_id, $forum_id)) {
-        return $post_id;
-    }
+        if ($thread_user_id !== $post_user_id) {
+            try {
+                $instance = instance_object($instance_id, $thread_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-    // calculate points per character bonus
-    // let's see if the number of characters in the post is greater than the minimum characters
-    $characters_count = count_characters($post_data['message']);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-    $income_bonus = 0;
-
-    $post_user_group_permissions = users_get_group_permissions($post_user_id);
-
-    if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-        $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-    }
-
-    $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-    if ($income_bonus) {
-        points_subtract(
-            $post_user_id,
-            $income_bonus,
-            $forum_id
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_POST_CHARACTER,
-            '',
-            get_user($post_user_id)['username'] ?? '',
-            $post_user_id,
-            $income_bonus,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
-    }
-
-    $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
-
-    $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-    if ($income_value) {
-        points_subtract(
-            $post_user_id,
-            $income_value,
-            $forum_id
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_POST,
-            '',
-            get_user($post_user_id)['username'] ?? '',
-            $post_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+                $instance->charge_thread_reply();
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $thread_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
+            }
+        }
     }
 
     return $post_id;
@@ -595,101 +611,62 @@ function class_moderation_soft_delete_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-            $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-            $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-            $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-            // we are not the thread started so remove points from him/her
-            if ($income_value) {
-                points_subtract(
-                    $thread_user_id,
-                    $income_value,
-                    $forum_id
-                );
-
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_CHARGE
+                $instance->charge_post()
+                    ->charge_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
             }
-        }
 
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            continue;
-        }
+            if ($thread_user_id !== $post_user_id) {
+                try {
+                    $instance = instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id);
 
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
+                    if (!$instance->is_enabled()) {
+                        continue;
+                    }
 
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $income_bonus = 0;
-
-        $characters_count = count_characters($post_data['message']);
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
-        }
-
-        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
-
-        $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_value) {
-            points_subtract(
-                $post_user_id,
-                $income_value,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                    $instance->charge_thread_reply();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
+            }
         }
     }
 
     return $post_ids;
 }
 
+/**
+ * @throws Exception
+ */
 function class_moderation_restore_posts(array &$post_ids): array
 {
     foreach ($post_ids as $post_id) {
@@ -707,95 +684,53 @@ function class_moderation_restore_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-            // we are not the thread started so give points to them
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-            $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-            $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
-
-            $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
-
-            if ($income_value) {
-                points_add_simple(
-                    $thread_user_id,
-                    $income_value
-                );
-
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
+                $instance->income_post()
+                    ->income_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
             }
-        }
 
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            return $post_ids;
-        }
+            if ($thread_user_id !== $post_user_id) {
+                try {
+                    $instance = instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id);
 
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
+                    if (!$instance->is_enabled()) {
+                        continue;
+                    }
 
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $characters_count = count_characters($post_data['message']);
-
-        $income_bonus = 0;
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            // give points to the author of the post
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-
-        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
-
-        $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        // give points to the author of the post
-        if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                    $instance->income_thread_reply();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
+            }
         }
     }
 
@@ -817,65 +752,29 @@ function class_moderation_approve_threads(array &$thread_ids): array
 
         $forum_id = (int)$post_data['fid'];
 
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            continue;
-        }
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-        $income_value = get_income_value(INCOME_TYPE_THREAD, $post_user_id, $forum_id);
-
-        $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        // add points to the poster
-        if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $income_bonus = 0;
-
-        $characters_count = count_characters($post_data['message']);
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                $instance->income_thread()
+                    ->income_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
+            }
         }
     }
 
@@ -901,92 +800,53 @@ function class_moderation_approve_posts(array &$post_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-            $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-            $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-            $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
-
-            if ($income_value) {
-                points_add_simple(
-                    $thread_user_id,
-                    $income_value
-                );
-
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
+                $instance->income_post()
+                    ->income_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
             }
-        }
 
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            continue;
-        }
+            if ($thread_user_id !== $post_user_id) {
+                try {
+                    $instance = instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id);
 
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
+                    if (!$instance->is_enabled()) {
+                        continue;
+                    }
 
-        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
-
-        $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            // give points to the author of the post
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $income_bonus = 0;
-
-        $characters_count = count_characters($post_data['message']);
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+                    $instance->income_thread_reply();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
+            }
         }
     }
 
@@ -1000,78 +860,37 @@ function class_moderation_unapprove_threads(array &$thread_ids): array
 
         $thread_data = get_thread($thread_id);
 
-        $thread_user_id = (int)$thread_data['uid'];
-
         $post_data = get_post((int)$thread_data['firstpost']);
 
         $post_id = (int)$post_data['pid'];
 
         $forum_id = (int)$post_data['fid'];
 
-        if (!user_can_get_points($thread_user_id, $forum_id)) {
-            continue;
-        }
+        $post_user_id = (int)$post_data['uid'];
 
-        $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $characters_count = count_characters($post_data['message']);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-        $income_bonus = 0;
-
-        if ($characters_count >= $thread_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(
-                    INCOME_TYPE_POST_CHARACTER,
-                    $thread_user_id,
-                    $forum_id
+                $instance->charge_thread()
+                    ->charge_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
-        }
-
-        $income_bonus *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_bonus) {
-            points_subtract(
-                $thread_user_id,
-                $income_bonus,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
-        }
-
-        $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id, $forum_id);
-
-        $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_value) {
-            points_subtract(
-                $thread_user_id,
-                $income_value,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+            }
         }
     }
 
@@ -1093,95 +912,55 @@ function class_moderation_unapprove_posts(array &$post_ids): array
 
         $forum_id = (int)$post_data['fid'];
 
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
-
         $thread_user_id = (int)$thread_data['uid'];
 
-        if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-            $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-            $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-            // we are not the thread started so remove points from them
-            if ($income_value) {
-                points_subtract(
-                    $thread_user_id,
-                    $income_value,
-                    $forum_id
-                );
-
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_CHARGE
+                $instance->charge_post()
+                    ->charge_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
             }
-        }
 
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            continue;
-        }
+            if ($thread_user_id !== $post_user_id) {
+                try {
+                    $instance = instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id);
 
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $income_bonus = 0;
+                    if (!$instance->is_enabled()) {
+                        continue;
+                    }
 
-        $characters_count = count_characters($post_data['message']);
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
-        }
-
-        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
-
-        $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_value) {
-            points_subtract(
-                $post_user_id,
-                $income_value,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                    $instance->charge_thread_reply();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
+            }
         }
     }
 
@@ -1208,132 +987,42 @@ function class_moderation_delete_thread(int &$thread_id): int
 
     $post_id = (int)$post_data['pid'];
 
-    $thread_user_id = (int)$thread_data['uid'];
+    $post_user_id = (int)$thread_data['uid'];
 
-    $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
-
-    if (!user_can_get_points($thread_user_id, $forum_id)) {
-        return $thread_id;
-    }
-
-    if (!empty($thread_data['poll'])) {
-        // if this thread has a poll, remove points from the author of the thread
-
-        $income_value = get_income_value(INCOME_TYPE_POLL, $thread_user_id, $forum_id);
-
-        $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_value) {
-            points_subtract(
-                $thread_user_id,
-                $income_value,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POLL,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
-        }
-    }
-
-    $thread_user_id = (int)$thread_data['uid'];
-
-    $post_user_id = (int)$thread_data['tid'];
-
+    // todo, this should use the replies field as other areas do
     $q = $db->simple_select(
         'posts',
         'COUNT(pid) as total_replies',
-        "uid!='{$thread_user_id}' AND tid='{$post_user_id}'"
+        "uid!='{$post_user_id}' AND tid='{$thread_id}'"
     );
 
     $thread_data['replies'] = (int)$db->fetch_field($q, 'total_replies');
 
-    $income_value = $thread_data['replies'] * get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-    $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-    if ($income_value) {
-        points_subtract(
-            $thread_user_id,
-            $income_value,
-            $forum_id
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_THREAD_REPLY,
-            '',
-            get_user($thread_user_id)['username'] ?? '',
-            $thread_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
-    }
-
-    $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id, $forum_id);
-
-    $income_value *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-    if ($income_value) {
-        points_subtract(
-            $thread_user_id,
-            $income_value,
-            $forum_id
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_THREAD,
-            '',
-            get_user($thread_user_id)['username'] ?? '',
-            $thread_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
-    }
-
-    // calculate points per character bonus
-    // let's see if the number of characters in the thread is greater than the minimum characters
-    $income_bonus = 0;
-
-    $characters_count = count_characters($post_data['message'] ?? '');
-
-    if ($characters_count >= $thread_user_group_permissions['newpoints_income_post_minimum_characters']) {
-        $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $thread_user_id, $forum_id);
-    }
-
-    $income_bonus *= ($thread_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-    if ($income_bonus) {
-        points_subtract(
-            $thread_user_id,
-            $income_bonus,
-            $forum_id
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_POST_CHARACTER,
-            '',
-            get_user($thread_user_id)['username'] ?? '',
-            $thread_user_id,
-            $income_bonus,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            $instance->charge_thread()
+                ->charge_post_characters($post_data['message'])
+                ->charge_thread_reply($thread_data['replies'])
+                ->charge_poll();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
+        }
     }
 
     return $thread_id;
@@ -1354,95 +1043,53 @@ function class_moderation_soft_delete_threads(array &$thread_ids): array
 
         $forum_id = (int)$post_data['fid'];
 
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
-
         $thread_user_id = (int)$thread_data['uid'];
 
-        if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-            $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            try {
+                $instance = instance_object($instance_id, $thread_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-            $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-            // we are not the thread started so remove points from him/her
-            if ($income_value) {
-                points_subtract(
-                    $thread_user_id,
-                    $income_value,
-                    $forum_id
-                );
-
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_CHARGE
+                $instance->charge_thread_reply();
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $thread_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
             }
-        }
 
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            continue;
-        }
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-        $income_value = get_income_value(INCOME_TYPE_THREAD, $post_user_id, $forum_id);
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
 
-        $income_value *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_value) {
-            points_subtract(
-                $post_user_id,
-                $income_value,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
-        }
-
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $income_bonus = 0;
-
-        $characters_count = count_characters($post_data['message']);
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus,
-                $forum_id
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
-            );
+                $instance->charge_thread()
+                    ->charge_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
+            }
         }
     }
 
@@ -1466,137 +1113,96 @@ function class_moderation_restore_threads(array &$thread_ids): array
 
         $thread_user_id = (int)$thread_data['uid'];
 
-        $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+        foreach (cache_get_instances() as $instance_id => $instance_data) {
+            if ($thread_user_id !== $post_user_id) {
+                try {
+                    $instance = instance_object($instance_id, $thread_user_id)
+                        ->set_forum($forum_id)
+                        ->set_thread($thread_id)
+                        ->set_post($post_id);
 
-        if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-            $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+                    if (!$instance->is_enabled()) {
+                        continue;
+                    }
 
-            $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
+                    $instance->income_thread_reply();
+                } catch (Exception $e) {
+                    log_error(
+                        $instance_id,
+                        $e->getMessage(),
+                        user_id: $thread_user_id,
+                        post_id: $forum_id,
+                        thread_id: $thread_id,
+                        forum_id: $forum_id,
+                    );
+                }
+            }
 
-            if ($income_value) {
-                points_add_simple(
-                    $thread_user_id,
-                    $income_value
-                );
+            try {
+                $instance = instance_object($instance_id, $post_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id);
 
-                log_add(
-                    'income_' . INCOME_TYPE_THREAD_REPLY,
-                    '',
-                    get_user($thread_user_id)['username'] ?? '',
-                    $thread_user_id,
-                    $income_value,
-                    $post_id,
-                    $thread_id,
-                    $forum_id,
-                    LOGGING_TYPE_INCOME
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
+
+                $instance->income_thread()
+                    ->income_post_characters($post_data['message']);
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $post_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
                 );
             }
-        }
-
-        if (!user_can_get_points($post_user_id, $forum_id)) {
-            continue;
-        }
-
-        $post_user_group_permissions = users_get_group_permissions($post_user_id);
-
-        // calculate points per character bonus
-        // let's see if the number of characters in the post is greater than the minimum characters
-        $income_bonus = 0;
-
-        $characters_count = count_characters($post_data['message']);
-
-        if ($characters_count >= $post_user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-        }
-
-        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-
-        $income_value = get_income_value(INCOME_TYPE_THREAD, $post_user_id, $forum_id);
-
-        $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
         }
     }
 
     return $thread_ids;
 }
 
-function polls_do_newpoll_process(): bool
+function polls_do_newpoll_process(): void
 {
     global $mybb, $fid, $thread;
 
     $forum_id = (int)$fid;
 
-    $current_user_id = (int)$mybb->user['uid'];
+    $thread_id = (int)$thread['tid'];
 
-    $income_value = get_income_value(INCOME_TYPE_POLL, $current_user_id, $forum_id);
+    $post_id = (int)$thread['firstpost'];
 
-    // give points to the author of the new polls
-    if ($income_value && user_can_get_points($current_user_id, $forum_id)) {
-        $thread_id = (int)$thread['tid'];
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-        $post_id = (int)$thread['firstpost'];
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-        points_add_simple(
-            $current_user_id,
-            $income_value
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_POLL,
-            '',
-            get_user($current_user_id)['username'] ?? '',
-            $current_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_INCOME
-        );
+            $instance->income_poll();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
+        }
     }
-
-    return true;
 }
 
 function class_moderation_delete_poll(int &$post_id): int
 {
-    global $db, $mybb;
+    global $db;
 
     $query = $db->simple_select('polls', '*', "pid='{$post_id}'");
 
@@ -1604,146 +1210,182 @@ function class_moderation_delete_poll(int &$post_id): int
 
     $forum_id = (int)$poll['fid'];
 
-    $poll_user_id = (int)$poll['uid'];
-
     $post_data = get_post($post_id);
 
     $thread_id = (int)$post_data['tid'];
 
-    if (!user_can_get_points($poll_user_id, $forum_id)) {
+    $post_user_id = (int)$post_data['uid'];
+
+    if (!$thread_id ||
+        !($thread_data = get_thread($thread_id)) ||
+        empty($thread_data['poll'])) {
         return $post_id;
     }
 
-    $poll_user_group_permissions = users_get_group_permissions($poll_user_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-    $income_value = get_income_value(INCOME_TYPE_POLL, $poll_user_id, $forum_id);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-    $income_value *= ($poll_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-    if ($income_value) {
-        points_subtract(
-            $poll_user_id,
-            $income_value,
-            $forum_id
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_THREAD,
-            '',
-            get_user($poll_user_id)['username'] ?? '',
-            $poll_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_CHARGE
-        );
+            $instance->charge_poll();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
+        }
     }
 
     return $post_id;
 }
 
-function polls_vote_process(): bool
+function polls_vote_process(): void
 {
     global $mybb, $fid, $thread;
 
     $forum_id = (int)$fid;
 
-    $current_user_id = (int)$mybb->user['uid'];
+    $thread_id = (int)$thread['tid'];
 
-    if (!user_can_get_points($current_user_id, $forum_id)) {
-        return false;
+    $post_id = (int)$thread['firstpost'];
+
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->charge_poll_vote();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
+        }
     }
-
-    $income_value = get_income_value(INCOME_TYPE_POLL_VOTE, $current_user_id, $forum_id);
-
-    if ($income_value) {
-        $thread_id = (int)$thread['tid'];
-
-        $post_id = (int)$thread['firstpost'];
-
-        // give points to us as we're voting in a poll
-        points_add_simple(
-            $current_user_id,
-            $income_value
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_POLL_VOTE,
-            '',
-            get_user($current_user_id)['username'] ?? '',
-            $current_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_INCOME
-        );
-    }
-
-    return true;
 }
 
-function ratethread_process(): bool
+function ratethread_process(): void
 {
     global $mybb, $fid, $thread;
 
     $forum_id = (int)$fid;
 
-    $current_user_id = (int)$mybb->user['uid'];
+    $thread_id = (int)$thread['tid'];
 
-    if (!user_can_get_points($current_user_id, $forum_id)) {
-        return false;
+    $post_id = (int)$thread['firstpost'];
+
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_thread_rating();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
+            );
+        }
     }
-
-    $income_value = get_income_value(INCOME_TYPE_THREAD_RATE, $current_user_id, $forum_id);
-
-    if ($income_value) {
-        $thread_id = (int)$thread['tid'];
-
-        $post_id = (int)$thread['firstpost'];
-
-        // give points us, as we're rating a thread
-        points_add_simple(
-            $current_user_id,
-            $income_value
-        );
-
-        log_add(
-            'income_' . INCOME_TYPE_THREAD_RATE,
-            '',
-            get_user($current_user_id)['username'] ?? '',
-            $current_user_id,
-            $income_value,
-            $post_id,
-            $thread_id,
-            $forum_id,
-            LOGGING_TYPE_INCOME
-        );
-    }
-
-    return true;
 }
 
-function forumdisplay_start(): bool
+function forumdisplay_start(): void
 {
     global $mybb;
 
-    _helper_evaluate_forum_view_lock($mybb->get_input('fid', MyBB::INPUT_INT));
-
-    return true;
+    forum_rule_view_lock($mybb->get_input('fid', MyBB::INPUT_INT));
 }
 
-function showthread_start(): bool
+function forumdisplay_end(): void
+{
+    global $lang;
+    global $theme;
+    global $header;
+    global $fid;
+
+    foreach (instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id)->set_forum((int)$fid);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                post_id: (int)$fid,
+            );
+
+            continue;
+        }
+
+        language_load();
+
+        $instance_name_upper = $instance->get_display_name_upper();
+
+        $instance_name_lower = $instance->get_display_name_lower();
+
+        $user_group_rate_addition = $instance->get_user_permission_rate_addition();
+
+        $user_group_rate_subtraction = $instance->get_user_permission_rate_substraction();
+
+        $user_rate_description = $lang->sprintf(
+            $lang->newpoints_home_user_rate_description,
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
+            $user_group_rate_addition,
+            $user_group_rate_subtraction
+        );
+
+        $description_header = $lang->sprintf(
+            $lang->newpoints_home_description_header,
+            $instance->get_display_name_upper(),
+            $instance->get_display_name_lower(),
+        );
+
+        $income_settings = build_income_table($instance, 'forum');
+
+        $header .= eval(templates_get('forum_income'));
+    }
+}
+
+function showthread_start(): void
 {
     global $forum;
 
-    _helper_evaluate_forum_view_lock((int)$forum['fid']);
-
-    return true;
+    forum_rule_view_lock((int)$forum['fid']);
 }
 
-function editpost_start(): bool
+function editpost_start(): void
 {
     global $mybb;
 
@@ -1751,122 +1393,60 @@ function editpost_start(): bool
 
     $post_data = get_post($post_id);
 
-    _helper_evaluate_forum_view_lock((int)$post_data['fid']);
-
-    return true;
+    forum_rule_view_lock((int)$post_data['fid']);
 }
 
-function sendthread_do_sendtofriend_start(): bool
+function sendthread_do_sendtofriend_start(): void
 {
     global $thread;
 
-    _helper_evaluate_forum_view_lock((int)$thread['fid']);
-
-    return true;
+    forum_rule_view_lock((int)$thread['fid']);
 }
 
-function sendthread_start(): bool
+function sendthread_start(): void
 {
-    return sendthread_do_sendtofriend_start();
+    sendthread_do_sendtofriend_start();
 }
 
-function archive_forum_start(): bool
+function archive_forum_start(): void
 {
     global $forum;
 
-    _helper_evaluate_forum_view_lock((int)$forum['fid']);
-
-    return true;
+    forum_rule_view_lock((int)$forum['fid']);
 }
 
-function archive_thread_start(): bool
+function archive_thread_start(): void
 {
-    return archive_forum_start();
+    archive_forum_start();
 }
 
-function printthread_end(): bool
+function printthread_end(): void
 {
     global $thread;
 
-    _helper_evaluate_forum_view_lock((int)$thread['fid']);
-
-    return true;
+    forum_rule_view_lock((int)$thread['fid']);
 }
 
-function newreply_start(): bool
+function newreply_start(): void
 {
     global $fid;
 
-    _helper_evaluate_forum_post_lock((int)$fid);
-
-    return true;
+    forum_rule_post_lock((int)$fid);
 }
 
-function newreply_do_newreply_start(): bool
+function newreply_do_newreply_start(): void
 {
-    return newreply_start();
+    newreply_start();
 }
 
-function newthread_start(): bool
+function newthread_start(): void
 {
-    return newreply_start();
+    newreply_start();
 }
 
-function newthread_do_newthread_start(): bool
+function newthread_do_newthread_start(): void
 {
-    return newreply_start();
-}
-
-function _helper_evaluate_forum_view_lock(int $forum_id): bool
-{
-    $forum_data = get_forum($forum_id);
-
-    $minimum_points = (float)$forum_data['newpoints_view_lock_points'];
-
-    if (!($minimum_points > 0)) {
-        return false;
-    }
-
-    global $mybb, $lang;
-
-    if ($minimum_points > $mybb->user['newpoints']) {
-        language_load();
-
-        \error(
-            $lang->sprintf(
-                $lang->newpoints_not_enough_points,
-                points_format($minimum_points)
-            )
-        );
-    }
-
-    return true;
-}
-
-function _helper_evaluate_forum_post_lock(int $forum_id): bool
-{
-    $forum_data = get_forum($forum_id);
-
-    $minimum_points = (float)$forum_data['newpoints_post_lock_points'];
-
-    if (!($minimum_points > 0)) {
-        return false;
-    }
-
-    global $mybb, $lang;
-
-    if ($minimum_points > $mybb->user['newpoints']) {
-        language_load();
-
-        \error(
-            $lang->sprintf(
-                $lang->newpoints_not_enough_points,
-                points_format($minimum_points)
-            )
-        );
-    }
-
-    return true;
+    newreply_start();
 }
 
 function fetch_wol_activity_end(array &$user_activity): array
@@ -1889,6 +1469,12 @@ function fetch_wol_activity_end(array &$user_activity): array
         $user_activity['activity'] = 'newpoints_logs';
     }
 
+    $hook_arguments = [
+        'user_activity' => &$user_activity,
+    ];
+
+    $hook_arguments = run_hooks('wol_fetch', $hook_arguments);
+
     return $user_activity;
 }
 
@@ -1898,84 +1484,134 @@ function build_friendly_wol_location_end(array &$hook_arguments): array
 
     language_load();
 
-    switch ($hook_arguments['user_activity']['activity']) {
-        case 'newpoints_home':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_home,
-                $mybb->settings['bburl'],
-                main_file_name()
-            );
-            break;
-        case 'newpoints_stats':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_stats,
-                $mybb->settings['bburl'],
-                url_handler_build(['action' => 'stats'])
-            );
-            break;
-        case 'newpoints_donation':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_donation,
-                $mybb->settings['bburl'],
-                url_handler_build(['action' => 'donate'])
-            );
-            break;
-        case 'newpoints_logs':
-            $hook_arguments['location_name'] = $lang->sprintf(
-                $lang->newpoints_wol_location_logs,
-                $mybb->settings['bburl'],
-                url_handler_build(['action' => 'logs'])
-            );
-            break;
+    $url = new Url();
+
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
+
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+
+            continue;
+        }
+
+        $hook_arguments['instance_object'] = &$instance;
+
+        if (my_strpos($hook_arguments['user_activity']['location'], main_file_name()) === false) {
+            continue;
+        }
+
+        switch ($hook_arguments['user_activity']['activity']) {
+            case 'newpoints_home':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_home,
+                    $mybb->settings['bburl'],
+                    main_file_name()
+                );
+                break;
+            case 'newpoints_stats':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_stats,
+                    $mybb->settings['bburl'],
+                    $url->build(['action' => 'stats'])
+                );
+                break;
+            case 'newpoints_donation':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_donation,
+                    $mybb->settings['bburl'],
+                    $url->build(['action' => 'donate'])
+                );
+                break;
+            case 'newpoints_logs':
+                $hook_arguments['location_name'] = $lang->sprintf(
+                    $lang->newpoints_wol_location_logs,
+                    $mybb->settings['bburl'],
+                    $url->build(['action' => 'logs'])
+                );
+                break;
+        }
+
+        $hook_arguments = run_hooks('wol_format', $hook_arguments);
+
+        break;
     }
 
     return $hook_arguments;
 }
 
-function memberlist_start(): bool
+function memberlist_start(): void
 {
     global $mybb;
+    global $newpoints_member_list_sort;
 
-    if ($mybb->get_input('sort') === 'newpoints') {
-        global $newpointsMemberListSort;
+    foreach (instance_get() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
 
-        $newpointsMemberListSort = true;
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            if ($mybb->get_input('sort') === $instance->users_column_get()) {
+                $newpoints_member_list_sort = $instance->users_column_get();
+
+                break;
+            }
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
     }
-
-    return true;
 }
 
-function memberlist_intermediate(): bool
+function memberlist_intermediate(): void
 {
-    global $newpointsMemberListSort;
+    global $newpoints_member_list_sort;
 
-    if (!empty($newpointsMemberListSort)) {
-        global $mybb;
-        global $sort, $sort_field;
-
-        $sort_field = 'u.newpoints';
-
-        $sort = $mybb->input['sort'] = 'newpoints';
+    if (empty($newpoints_member_list_sort)) {
+        return;
     }
 
-    return true;
+    global $mybb;
+    global $sort, $sort_field;
+
+    $sort_field = 'u.' . $newpoints_member_list_sort;
+
+    $sort = $mybb->input['sort'] = $newpoints_member_list_sort;
 }
 
 function memberlist_user(array &$user_data): array
 {
-    $user_data['newpoints'] = (float)($user_data['newpoints'] ?? 0);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id);
 
-    $user_data['newpoints_formatted'] = points_format($user_data['newpoints']);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $user_data[$instance->users_column_get()] =
+                (float)($user_data[$instance->users_column_get()] ?? 0);
+
+            $user_data[$instance->users_column_get() . '_user_balance_formatted'] =
+                $instance->points_format($user_data[$instance->users_column_get()]);
+        } catch (Exception $e) {
+            log_error($instance_id, $e->getMessage());
+        }
+    }
 
     return $user_data;
 }
 
-function myalerts_register_client_alert_formatters(): bool
+function myalerts_register_client_alert_formatters(): void
 {
-    if (!get_setting('main_my_alerts_enabled') ||
-        !class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') ||
+    if (!class_exists('MybbStuff_MyAlerts_Formatter_AbstractFormatter') ||
         !class_exists('MybbStuff_MyAlerts_AlertFormatterManager')) {
-        return false;
+        return;
     }
 
     global $newpoints_my_alerts_formatters;
@@ -2007,19 +1643,13 @@ function myalerts_register_client_alert_formatters(): bool
             }
         }
     }
-
-    return true;
 }
 
-function myalerts_load_lang(): string
+function myalerts_load_lang(): void
 {
-    if (!get_setting('main_my_alerts_enabled')) {
-        return '';
-    }
-
     $hook_arguments = [];
 
-    $hook_arguments = run_hooks('my_alerts_language_load', $hook_arguments);
+    language_load();
 
-    return '';
+    $hook_arguments = run_hooks('my_alerts_language_load', $hook_arguments);
 }

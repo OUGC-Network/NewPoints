@@ -122,6 +122,7 @@ A setup that meets the following requirements is necessary to use this plugin.
    │ │ │ │ ├── donate.html
    │ │ │ │ ├── donate_form.html
    │ │ │ │ ├── home.html
+   │ │ │ │ ├── home_income.html
    │ │ │ │ ├── home_income_row.html
    │ │ │ │ ├── home_income_table.html
    │ │ │ │ ├── menu.html
@@ -135,6 +136,8 @@ A setup that meets the following requirements is necessary to use this plugin.
    │ │ │ │ ├── profile_donate.html
    │ │ │ │ ├── statistics.html
    │ │ │ │ ├── statistics_donation.html
+   │ │ │ │ ├── statistics_donation_row.html
+   │ │ │ │ ├── statistics_richest.html
    │ │ │ │ ├── statistics_richest_user.html
    │ │ │ ├── upgrades
    │ │ │ │ ├── index.html
@@ -175,14 +178,21 @@ Follow the next steps in order to update your copy of this plugin.
 
 To display NewPoints data it is required that you edit the following template for each of your themes.
 
-1. Place `{$newpoints_user_balance_formatted}` or `{$GLOBALS['newpoints_user_balance_formatted']}` in any template to
-   display the current user points.
-2. Place `{$newpoints_profile_user_balance_formatted}` or `{$GLOBALS['newpoints_profile_user_balance_formatted']}` in
-   any `member_profile*` template to display the profile user points.
+1. Place `{$newpoints_globals['newpoints_user_balance_formatted']}` or
+   `{$GLOBALS['newpoints_globals']['newpoints_user_balance_formatted']}` in any template to display the current user
+   points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name. Note
+   that `{$newpoints_user_balance_formatted}` and `{$mypoints}` has been deprecated and will be removed in
+   the future.
+2. Place `{$memprofile['newpoints_user_balance_formatted']}` or
+   `{$GLOBALS['memprofile']['newpoints_user_balance_formatted']}` in any `member_profile*` template to display the
+   profile user points. Where `newpoints` in
+   `newpoints_user_balance_formatted` is the instance users column name. Note that
+   `{$newpoints_profile_user_balance_formatted}` and `{$points}` has been deprecated and will be removed in the future.
 3. Place `{$post['newpoints_postbit']}` in the `postbit` or `postbit_classic` templates to display the post user
    NewPoints details.
-4. Place `{$post['newpoints_balance_formatted']}` in the `postbit` or `postbit_classic` templates to display the post
-   user points.
+4. Place `{$post['newpoints_user_balance_formatted']}` in the `postbit` or `postbit_classic` templates to display the
+   post user points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name. Note
+   that `{$post['newpoints_balance_formatted']}` and `{$points}` has been deprecated and will be removed in the future.
 5. Place `<!--NEWPOINTS_POST_USER_DETAILS-->` in the `postbit_author_user` template to display the post user NewPoints
    details inside the author template.
 6. Place `<!--NEWPOINTS_POST_USER_POINTS-->` in the `postbit_author_user` template to display the post user points
@@ -191,10 +201,13 @@ To display NewPoints data it is required that you edit the following template fo
    NewPoints details.
 8. Place `{$newpoints_header_menu}` after `{$menu_calendar}`in the `header` template to display a link to the NewPoints
    main page.
-9. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_formatted']}</td>` before `{$referral_bit}` in the
-   `memberlist_user` template to display the user NewPoints amount formatted.
+9. Place `<td class="{$alt_bg}" align="center">{$user['newpoints_user_balance_formatted']}</td>` before
+   `{$referral_bit}` in the `memberlist_user` template to display the user NewPoints amount formatted. Where `newpoints`
+   in `newpoints_user_balance_formatted` is the instance users column name. Note that `{$user['newpoints_formatted']}`
+   and `{$user['newpoints_formatted']}` has been deprecated and will be removed in the future.
 10. Place
-    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
+    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`.
+    Where `newpoints` is the instance users column name.
     after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
 
 [Go up to Table of Contents](#table_of_contents)
@@ -205,31 +218,19 @@ Below you can find a description of the plugin settings.
 
 ### Main Settings
 
-- **Currency Name** `text` Default: `Points`
-    - _Currency name to use in the forums._
-- **Currency Prefix** `text`
-    - _Currency prefix to render before the format of points._
-- **Currency Suffix** `text`
-    - _Currency suffix to render before the format of points._
-- **Decimal Places** `numeric` Default: `2`
-    - _Number of decimal spaces to use for the currency._
-- **Stats: Richest Users** `numeric` Default: `10`
-    - _Maximum number of richest users to display in the stats page._
 - **Group Rate For Primary Group Only** `yesNo`
     - _If you set this to yes, group rate rules will be calculated using only the primary user group. If you turn this
       off, all group rate rules wil be pondered and the closest value to 1 will always be used._
-- **Main File Name** `numeric` Default: `newpoints.php`
-    - _If you rename the main NewPoints file, update this setting._
 
 ### File Level Settings <a name = "file_level_settings"></a>
 
-Additionally, you can force your settings by updating the `SETTINGS` array constant in the `Newpoints\Core`
+Additionally, you can force your settings by updating the `SETTINGS` array constant in the `NewPoints\Core`
 namespace in the `./inc/plugins/newpoints.php` file. Any setting set this way will always bypass any front-end
 configuration. Use the setting key as shown below:
 
 ```PHP
-define('Newpoints\Core\SETTINGS', [
-    'main_file' => 'newpoints.php',
+define('NewPoints\Core\SETTINGS', [
+    'disable_plugins' => true
 ]);
 ```
 
@@ -268,6 +269,10 @@ The following is a list of templates available for this plugin.
 - `newpoints_statistics`
     - _front end_;
 - `newpoints_statistics_donation`
+    - _front end_;
+- `newpoints_statistics_donation_row`
+    - _front end_;
+- `newpoints_statistics_richest`
     - _front end_;
 - `newpoints_statistics_richest_user`
     - _front end_;
@@ -337,34 +342,34 @@ Provides a list of available variables, functions, and methods for plugins to us
 - `newpoints_admin_newpoints_permissions` (To be deprecated, use `newpoints_admin_permissions` instead.)
 - `newpoints_admin_user_groups_edit_graph_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_intermediate` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_end` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_commit_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
 - `newpoints_admin_formcontainer_end_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_intermediate` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_user_groups_edit_graph_end` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
     - `(array) &$form_fields`
 - `newpoints_admin_forum_management_edit_commit_start` `array &$hook_arguments` argument is passed with the following
   variables:
-    - `(array) &$data_fields`
+    - `(array) &$fields_data`
 
 - `newpoints_global_start` (To be deprecated, use core `global_start` instead.)
 - `newpoints_xmlhttp` (To be deprecated, use core `xmlhttp` instead.)
@@ -425,7 +430,7 @@ Provides a list of available variables, functions, and methods for plugins to us
 - `newpoints_admin_settings_change_commit`
 - `newpoints_admin_settings_start`
 
-### List of available methods at the `Newpoints\Core` namespace: <a name="plugin_methods"></a>
+### List of available methods at the `NewPoints\Core` namespace: <a name="plugin_methods"></a>
 
 - `language_load(): bool { ... }`
 
@@ -433,19 +438,19 @@ Provides a list of available variables, functions, and methods for plugins to us
 
 The following is a list of constants are defined dynamically, `defined()`should be used to make sure they are defined.
 
-- `\Newpoints\DECIMAL_DATA_TYPE_SIZE (string)` Default: `16,4` To be used for DECIMAL data types.
-- `\Newpoints\DECIMAL_DATA_TYPE_STEP (float)` Default: `0.0001` To be used for DECIMAL data types. Example:
+- `\NewPoints\DECIMAL_DATA_TYPE_SIZE (string)` Default: `16,4` To be used for DECIMAL data types.
+- `\NewPoints\DECIMAL_DATA_TYPE_STEP (float)` Default: `0.0001` To be used for DECIMAL data types. Example:
 
 ```PHP
 const FIELDS_DATA = [
     'foo_table' => [
         'foo_column' => [
             'type' => 'DECIMAL',
-            'size' => \Newpoints\DECIMAL_DATA_TYPE_SIZE,
+            'size' => \NewPoints\DECIMAL_DATA_TYPE_SIZE,
             'default' => 0,
-            'form_type' => \Newpoints\Core\FORM_TYPE_NUMERIC_FIELD,
+            'form_type' => \NewPoints\Core\FORM_TYPE_NUMERIC_FIELD,
             'form_options' => [
-                'step' => \Newpoints\DECIMAL_DATA_TYPE_STEP,
+                'step' => \NewPoints\DECIMAL_DATA_TYPE_STEP,
             ]
         ],
     ]

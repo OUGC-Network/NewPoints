@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,11 +29,11 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\settings_add;
-use function Newpoints\Core\settings_rebuild_cache;
-use function Newpoints\Core\settings_remove;
+use function NewPoints\Core\get_setting;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\settings_add;
+use function NewPoints\Core\settings_rebuild_cache;
+use function NewPoints\Core\settings_remove;
 
 if (!defined('IN_MYBB')) {
     die('Direct initialization of this file is not allowed.<br /><br />Please make sure IN_MYBB is defined.');
@@ -41,6 +41,7 @@ if (!defined('IN_MYBB')) {
 
 global $plugins;
 
+$plugins->add_hook('newpoints_admin_settings_intermediate', 'newpoints_hello_world_admin_settings_intermediate');
 $plugins->add_hook('pre_output_page', 'newpoints_hello_world');
 
 function newpoints_hello_info(): array
@@ -146,19 +147,30 @@ function newpoints_hello_deactivate(): bool
     return true;
 }
 
+function newpoints_hello_world_admin_settings_intermediate(array &$hook_arguments): array
+{
+    language_load('newpoints_hello');
+
+    //unset($hook_arguments['active_plugins']['newpoints_signature_market']);
+
+    $hook_arguments['newpoints_hello'] = [];
+
+    return $hook_arguments;
+}
 
 function newpoints_hello_world(string &$page): string
 {
     global $lang;
 
-    if (!get_setting('hello_show')) {
-        return $page;
-    }
-
-    // load language files
     language_load('newpoints_hello');
 
-    $page = str_replace('<!-- end: header -->', '<!-- end: header -->' . $lang->newpoints_hello_message, $page);
+    if (get_setting('hello_show')) {
+        $page = str_replace(
+            '<!-- end: header -->',
+            '<!-- end: header -->' . $lang->newpoints_hello_message,
+            $page
+        );
+    }
 
     return $page;
 }

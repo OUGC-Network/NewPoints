@@ -1,10 +1,15 @@
 {
   "manage_groups": {
     "type": "groupselect",
-    "value": 4
+    "value": 4,
+    "instance": true
   },
   "per_page": {
     "type": "numeric",
     "value": 10
+  },
+  "menu_order": {
+    "type": "numeric",
+    "value": 900
   }
 }

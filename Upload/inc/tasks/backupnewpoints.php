@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,25 +29,19 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\get_setting;
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\get_setting;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\run_hooks;
+
+use const NewPoints\Core\FIELDS_DATA;
+use const NewPoints\Core\TABLES_DATA;
 
 function task_backupnewpoints(array &$task): array
 {
-    if (get_setting('disableBackUpSystem')) {
-        return $task;
-    }
-
-    global $mybb, $db, $lang, $cache, $plugins;
+    global $lang;
 
     language_load();
-
-    $hook_arguments = [
-        'task' => &$task
-    ];
-
-    $hook_arguments = run_hooks('task_backup', $hook_arguments);
 
     backupnewpoints_backupdb();
 
@@ -57,29 +51,24 @@ function task_backupnewpoints(array &$task): array
 }
 
 // a modified copy of task_backupdb() from backupdb.php
-function backupnewpoints_backupdb(): bool
+function backupnewpoints_backupdb(): void
 {
+    if (get_setting('main_disable_backups')) {
+        return;
+    }
+
     global $mybb, $db, $config;
-    static $contents;
 
     set_time_limit(0);
 
-    if (!defined('MYBB_ADMIN_DIR')) {
-        if (!isset($config['admin_dir'])) {
-            $config['admin_dir'] = 'admin';
-        }
-
-        define('MYBB_ADMIN_DIR', MYBB_ROOT . $config['admin_dir'] . '/');
-    }
+    $admin_directory = defined('MYBB_ADMIN_DIR') ? MYBB_ADMIN_DIR : MYBB_ROOT . ($config['admin_dir'] ?? 'admin') . '/';
 
     // Check if folder is writable, before allowing submission
-    if (!is_writable(MYBB_ADMIN_DIR . '/backups/backupnewpoints')) {
-        return false;
+    if (!is_writable($admin_directory . '/backups/backupnewpoints')) {
+        return;
     }
 
-    $db->set_table_prefix('');
-
-    $file = MYBB_ADMIN_DIR . '/backups/backupnewpoints/backup_' . substr(
+    $file = $admin_directory . '/backups/backupnewpoints/backup_' . substr(
             md5(($mybb->user['uid'] ?? 0) . TIME_NOW),
             0,
             10
@@ -91,112 +80,129 @@ function backupnewpoints_backupdb(): bool
         $fp = fopen($file . '.sql', 'w');
     }
 
-    // backup default tables and newpoints field from users table
-    $tables = [
-        $db->table_prefix . 'newpoints_log',
-        $db->table_prefix . 'newpoints_settings',
-        $db->table_prefix . 'newpoints_forumrules',
-        $db->table_prefix . 'newpoints_grouprules',
-        $db->table_prefix . 'users',
-        $db->table_prefix . 'datacache'
-    ];
-    $backup_fields = ['newpoints'];
+    if (!is_resource($fp)) {
+        return;
+    }
 
-    $backup_fields = run_hooks('task_backup_tables', $backup_fields);
+    $tables_data = array_merge_recursive(TABLES_DATA, FIELDS_DATA);
+
+    $hook_arguments = [
+        'tables_data' => &$tables_data,
+    ];
+
+    $hook_arguments = run_hooks('backup_start', $hook_arguments);
+
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        $tables_data['users'][$instance_data['users_column_name']] = [];
+    }
 
     $time = date('dS F Y \a\t H:i', TIME_NOW);
-    $header = "-- MyBB Database Backup\n-- Generated: {$time}\n-- -------------------------------------\n\n";
-    $contents = $header;
-    foreach ($tables as $table) {
-        run_hooks('task_backup_table');
-        if ($table == $db->table_prefix . 'users') {
-            backupnewpoints_clear_overflow($fp, $contents);
 
-            $query = $db->simple_select($table, 'uid,' . implode(',', $backup_fields));
-            while ($row = $db->fetch_array($query)) {
+    $header = "-- MyBB Database Backup\n-- Generated: {$time}\n-- -------------------------------------\n\n";
+
+    $contents = $header;
+
+    foreach ($tables_data as $table_name => $fields_data) {
+        if (in_array($table_name, ['users', 'threads', 'usergroups', 'forums'])) {
+            \NewPoints\Hooks\Forum\backupnewpoints_clear_overflow($fp, $contents);
+
+            $field_list = array_keys($fields_data);
+
+            if ($table_name === 'users') {
+                $field_list[] = 'uid';
+            } elseif ($table_name === 'threads') {
+                $field_list[] = 'tid';
+            } elseif ($table_name === 'usergroups') {
+                $field_list[] = 'gid';
+            } else {
+                $field_list[] = 'fid';
+            }
+
+            $query = $db->simple_select($table_name, implode(',', $field_list));
+
+            while ($row_data = $db->fetch_array($query)) {
                 $update = '';
 
-                foreach ($backup_fields as $field) {
-                    $update .= 'UPDATE `' . TABLE_PREFIX . "users` SET `{$field}`='{$row[$field]}' WHERE `uid`='{$row['uid']}';\n";
+                foreach ($field_list as $field_name) {
+                    if ($table_name === 'users') {
+                        $update .= 'UPDATE `' . $db->table_prefix . "users` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `uid`='{$row_data['uid']}';\n";
+                    } elseif ($table_name === 'threads') {
+                        $update .= 'UPDATE `' . $db->table_prefix . "threads` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `tid`='{$row_data['tid']}';\n";
+                    } elseif ($table_name === 'usergroups') {
+                        $update .= 'UPDATE `' . $db->table_prefix . "usergroups` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `gid`='{$row_data['gid']}';\n";
+                    } else {
+                        $update .= 'UPDATE `' . $db->table_prefix . "forums` SET `{$field_name}`='{$row_data[$field_name]}' WHERE `fid`='{$row_data['fid']}';\n";
+                    }
                 }
 
                 $contents .= $update;
+
                 backupnewpoints_clear_overflow($fp, $contents);
             }
-        } elseif ($table == $db->table_prefix . 'datacache') {
-            backupnewpoints_clear_overflow($fp, $contents);
-
-            $query = $db->simple_select($table, 'cache', "title='newpoints_plugins'", ['limit' => 1]);
-            $row = $db->fetch_array($query);
-
-            $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache`='{$row['cache']}' WHERE `title`='newpoints_plugins';\n";
-            backupnewpoints_clear_overflow($fp, $contents);
-
-            $query = $db->simple_select($table, 'cache', "title='newpoints_plugins'", ['limit' => 1]);
-            $row = $db->fetch_array($query);
-
-            $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache`='{$row['cache']}' WHERE `title`='newpoints_rules';\n";
-            backupnewpoints_clear_overflow($fp, $contents);
-
-            $query = $db->simple_select($table, 'cache', "title='newpoints_plugins'", ['limit' => 1]);
-            $row = $db->fetch_array($query);
-
-            $contents .= 'UPDATE `' . $db->table_prefix . "datacache` SET `cache`='{$row['cache']}' WHERE `title`='newpoints_settings';\n";
-            backupnewpoints_clear_overflow($fp, $contents);
         } else {
             $field_list = [];
-            $fields_array = $db->show_fields_from($table);
+
+            $fields_array = $db->show_fields_from($table_name);
+
             foreach ($fields_array as $field) {
-                $field_list[] = $field['Field'];
+                if (isset($fields_data[$field['Field']]) && empty($fields_data[$field['Field']]['skip_backup'])) {
+                    $field_list[] = $field['Field'];
+                }
             }
 
-            $fields = implode(',', $field_list);
-
-            /*$structure=$db->show_create_table($table).";\n";
+            /*$structure=$db->show_create_table($table_name).";\n";
             $contents .= $structure;*/
             backupnewpoints_clear_overflow($fp, $contents);
 
-            if ($table == $db->table_prefix . 'datacache') {
-                $where = "title='newpoints_plugins'";
-            } else {
-                $where = '';
-            }
+            $query = $db->simple_select($table_name, implode(',', $field_list));
 
-            $query = $db->simple_select($table, '*', $where);
-            while ($row = $db->fetch_array($query)) {
-                $insert = "INSERT INTO {$table} ($fields) VALUES (";
-                $comma = '';
-                foreach ($field_list as $field) {
-                    if (!isset($row[$field]) || trim($row[$field]) == '') {
-                        $insert .= $comma . "''";
-                    } else {
-                        $insert .= $comma . "'" . $db->escape_string($row[$field]) . "'";
+            while ($row_data = $db->fetch_array($query)) {
+                foreach ($fields_data as $fields_name => $field_data) {
+                    if (!empty($field_data['primary_key'])) {
                     }
+                }
+
+                $fields_list_string = implode(',', $field_list);
+
+                $values = '';
+
+                $comma = '';
+
+                foreach ($field_list as $field_name) {
+                    if (!isset($row_data[$field_name]) || trim($row_data[$field_name]) === '') {
+                        $values .= $comma . "''";
+                    } else {
+                        $values .= $comma . "'" . $db->escape_string($row_data[$field_name]) . "'";
+                    }
+
                     $comma = ',';
                 }
-                $insert .= ");\n";
-                $contents .= $insert;
+
+                $contents .= "REPLACE INTO {$db->table_prefix}{$table_name} ({$fields_list_string}) VALUES ({$values});\n";
+
                 backupnewpoints_clear_overflow($fp, $contents);
             }
         }
     }
 
-    $db->set_table_prefix($db->table_prefix);
-
     if (function_exists('gzopen')) {
         gzwrite($fp, $contents);
+
         gzclose($fp);
     } else {
         fwrite($fp, $contents);
+
         fclose($fp);
     }
-
-    return true;
 }
 
 // Allows us to refresh cache to prevent over flowing
-function backupnewpoints_clear_overflow($fp, string &$contents): string
+function backupnewpoints_clear_overflow($fp, string &$contents): void
 {
+    if (!is_resource($fp)) {
+        return;
+    }
+
     if (function_exists('gzopen')) {
         gzwrite($fp, $contents);
     } else {
@@ -204,6 +210,4 @@ function backupnewpoints_clear_overflow($fp, string &$contents): string
     }
 
     $contents = '';
-
-    return $contents;
 }

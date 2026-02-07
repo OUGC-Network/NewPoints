@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,8 +29,8 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\rules_rebuild_cache;
-use function Newpoints\Core\settings_rebuild_cache;
+use function NewPoints\Core\rules_rebuild_cache;
+use function NewPoints\Core\settings_rebuild_cache;
 
 if (!defined('IN_MYBB')) {
     die('This file cannot be accessed directly.');

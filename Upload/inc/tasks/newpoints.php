@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,11 +29,12 @@
 
 declare(strict_types=1);
 
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\users_update;
+use function NewPoints\Core\instance_get;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\users_update;
 
-function task_newpoints($task)
+function task_newpoints(array &$task): array
 {
     global $mybb, $lang, $db;
 
@@ -41,7 +42,11 @@ function task_newpoints($task)
 
     run_hooks('task_main');
 
-    users_update();
+    foreach (instance_get() as $instance_id => $instance_data) {
+        users_update($instance_id);
+    }
 
     add_task_log($task, $lang->newpoints_task_main_ran);
+
+    return $task;
 }

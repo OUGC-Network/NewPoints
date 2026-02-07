@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -27,6 +27,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ****************************************************************************/
 
+use NewPoints\Core\IncomePermissions;
+
 $l['newpoints'] = 'NewPoints';
 
 $l['newpoints_header_menu'] = 'NewPoints';
@@ -34,11 +36,11 @@ $l['newpoints_header_menu'] = 'NewPoints';
 $l['newpoints_home'] = 'Inicio';
 $l['newpoints_menu'] = 'Menú';
 $l['newpoints_donate'] = 'Donar';
-$l['newpoints_donated'] = 'Has donado exitosamente {1} al usuario seleccionado.';
+$l['newpoints_donated'] = 'Has donado exitosamente {3} {2} al usuario seleccionado.';
 $l['newpoints_user'] = 'Usuario';
 $l['newpoints_user_desc'] = 'Ingresa el nombre de usuario de la persona a la que deseas enviar una donación.';
 $l['newpoints_amount'] = 'Cantidad';
-$l['newpoints_amount_desc'] = 'Ingresa la cantidad de puntos que deseas enviar al usuario.';
+$l['newpoints_amount_desc'] = 'Ingresa la cantidad que deseas enviar al usuario.';
 $l['newpoints_reason'] = 'Razón';
 $l['newpoints_reason_desc'] = '(Opcional) Ingresa una razón para la donación.';
 $l['newpoints_submit'] = 'Enviar';
@@ -52,7 +54,7 @@ $l['newpoints_invalid_user'] = 'Has ingresado un nombre de usuario inválido.';
 $l['newpoints_donate_log'] = '{1}-{2}-{3}';
 $l['newpoints_stats_disabled'] = 'Las estadísticas han sido deshabilitadas por el administrador.';
 $l['newpoints_statistics'] = 'Estadísticas';
-$l['newpoints_richest_users'] = 'Usuarios más ricos';
+$l['newpoints_richest_users'] = 'Usuarios más ricos ({1})';
 $l['newpoints_last_donations'] = 'Últimas donaciones';
 $l['newpoints_from'] = 'De';
 $l['newpoints_to'] = 'A';
@@ -62,45 +64,43 @@ $l['newpoints_not_enough_points'] = 'No tienes suficientes puntos. Requerido: {1
 $l['newpoints_amount_paid'] = 'Cantidad Pagada';
 $l['newpoints_source'] = 'Fuente';
 
-$l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo.';
-$l['newpoints_home_description_primary'] = 'Hay algunas opciones en el menú a la izquierda que puedes usar.';
-$l['newpoints_home_description_header'] = '¿Cómo ganas puntos?';
+$l['newpoints_home_desc'] = 'NewPoints es un sistema de puntos complejo pero eficiente para MyBB.';
+$l['newpoints_home_description_header'] = '¿Cómo ganas {2}?';
 $l['newpoints_home_description_secondary'] = '';
-$l['newpoints_home_description_footer'] = 'Contacta a tu administrador si tienes alguna pregunta.';
-$l['newpoints_home_user_rate_description'] = 'Tu tasa para ganar puntos es <code>{1}</code> y tu tasa para gastar puntos es <code>{2}</code>.';
+$l['newpoints_home_user_rate_description'] = 'Tu tasa para ganar {2} es <code>{3}</code> y tu tasa para gastar {2} es <code>{4}</code>.';
 
 $l['newpoints_action'] = 'Acción';
 $l['newpoints_chars'] = 'Caracteres';
-$l['newpoints_max_donations_control'] = 'Has alcanzado el máximo de {1} en los últimos 15 minutos. Por favor, espera antes de hacer una nueva.';
+$l['newpoints_max_donations_control'] = 'Has alcanzado el máximo de {3} {2} en los últimos 15 minutos. Por favor, espera antes de hacer una nueva.';
 
 // Settings translation
 $l['newpoints_income_source'] = 'Fuente';
-$l['newpoints_income_amount'] = '{1} Recibido';
-$l['newpoints_income_thread'] = 'Nuevo Tema';
+$l['newpoints_income_amount'] = '{1} Recibidos';
+$l[IncomePermissions::UserIncomeThread] = 'Nuevo Tema';
 $l['newpoints_income_thread_desc'] = 'Cantidad de puntos recibidos por cada nuevo tema.';
-$l['newpoints_income_thread_reply'] = 'Nueva Respuesta de Tema';
+$l[IncomePermissions::UserIncomeThreadReply] = 'Nueva Respuesta de Tema';
 $l['newpoints_income_thread_reply_desc'] = 'Cantidad de puntos recibidos por cada respuesta a un tema.';
-$l['newpoints_income_thread_rate'] = 'Tasa de Nuevo Tema';
+$l[IncomePermissions::UserIncomeThreadRate] = 'Tasa de Nuevo Tema';
 $l['newpoints_income_thread_rate_desc'] = 'Cantidad de puntos recibidos por cada nueva tasa de tema recibida.';
-$l['newpoints_income_post'] = 'Nueva Publicación';
+$l[IncomePermissions::UserIncomePost] = 'Nueva Publicación';
 $l['newpoints_income_post_desc'] = 'Cantidad de puntos recibidos por cada nueva publicación con al menos {1} caracteres.';
-$l['newpoints_income_post_character'] = 'Caracter de Publicación';
+$l[IncomePermissions::UserIncomePostCharacter] = 'Caracter de Publicación';
 $l['newpoints_income_post_character_desc'] = 'Cantidad de puntos recibidos por cada carácter en un tema o publicación.';
-$l['newpoints_income_page_view'] = 'Vista de Página';
+$l[IncomePermissions::UserIncomePageView] = 'Vista de Página';
 $l['newpoints_income_page_view_desc'] = 'Cantidad de puntos recibidos por cada vista de página.';
-$l['newpoints_income_visit'] = 'Visita';
+$l[IncomePermissions::UserIncomeVisit] = 'Visita';
 $l['newpoints_income_visit_desc'] = 'Cantidad de puntos recibidos por cada visita cada {1} minutos.';
-$l['newpoints_income_poll'] = 'Nueva Encuesta';
+$l[IncomePermissions::UserIncomePoll] = 'Nueva Encuesta';
 $l['newpoints_income_poll_desc'] = 'Cantidad de puntos recibidos por cada nueva encuesta.';
-$l['newpoints_income_poll_vote'] = 'Nuevo Voto de Encuesta';
+$l[IncomePermissions::UserIncomePollVote] = 'Nuevo Voto de Encuesta';
 $l['newpoints_income_poll_vote_desc'] = 'Cantidad de puntos recibidos por cada voto en una encuesta.';
-$l['newpoints_income_user_allowance'] = 'Asignación de Usuario';
+$l[IncomePermissions::UserIncomeUserAllowance] = 'Asignación de Usuario';
 $l['newpoints_income_user_allowance_desc'] = 'Cantidad de puntos recibidos cada {1} minutos.';
-$l['newpoints_income_user_registration'] = 'Nuevo Registro';
+$l[IncomePermissions::UserIncomeUserRegistration] = 'Nuevo Registro';
 $l['newpoints_income_user_registration_desc'] = 'Cantidad de puntos recibidos cuando los usuarios se registran en el foro.';
-$l['newpoints_income_user_referral'] = 'Nueva Referencia';
+$l[IncomePermissions::UserIncomeUserReferral] = 'Nueva Referencia';
 $l['newpoints_income_user_referral_desc'] = 'Cantidad de puntos recibidos por cada usuario referido al foro.';
-$l['newpoints_income_private_message'] = 'Nuevo Mensaje Privado';
+$l[IncomePermissions::UserIncomePrivateMessage] = 'Nuevo Mensaje Privado';
 $l['newpoints_income_private_message_desc'] = 'Cantidad de puntos recibidos por cada mensaje privado enviado.';
 
 $l['newpoints_search_user'] = 'Buscar un usuario..';
@@ -143,7 +143,8 @@ $l['newpoints_logs_page_table_log_forum'] = 'Foro: <a href="{1}/{2}">{3}</a>';
 $l['newpoints_logs_page_table_log_post'] = 'Publicación: <a href="{1}/{2}">{3}</a>';
 $l['newpoints_logs_page_table_log_user'] = 'Usuario: {1}';
 
-$l['newpoints_logs_page_table_points'] = 'Puntos';
+$l['newpoints_logs_page_table_points'] = 'Puntos';#deprecated
+$l['newpoints_logs_page_table_amount'] = 'Cantidad';
 $l['newpoints_logs_page_table_action_user'] = 'Usuario';
 $l['newpoints_logs_page_table_action_primary'] = 'Primario';
 $l['newpoints_logs_page_table_action_secondary'] = 'Secundario';
@@ -173,13 +174,14 @@ $l['newpoints_wol_location_stats'] = 'Viendo la página de <a href="{1}/{2}">Est
 $l['newpoints_wol_location_donation'] = 'Viendo la página de <a href="{1}/{2}">Donación</a>';
 $l['newpoints_wol_location_logs'] = 'Viendo la página de <a href="{1}/{2}">Registros</a>';
 
-$l['newpoints_log_pm_add_subject'] = '{1} {2} fueron añadidos a tu cuenta.';
-$l['newpoints_log_pm_add_message'] = 'Hola {1}, {2} {3} fueron añadidos a tu cuenta.';
-$l['newpoints_log_pm_subtract_subject'] = '{1} {2} fueron restados de tu cuenta.';
-$l['newpoints_log_pm_subtract_message'] = 'Hola {1}, {2} {3} fueron restados de tu cuenta.';
+$l['newpoints_log_pm_add_subject'] = '{3} {2} fueron añadidos a tu cuenta.';
+$l['newpoints_log_pm_add_message'] = 'Hola {3}, {4} {2} fueron añadidos a tu cuenta.';
+$l['newpoints_log_pm_subtract_subject'] = '{3} {2} fueron restados de tu cuenta.';
+$l['newpoints_log_pm_subtract_message'] = 'Hola {3}, {4} {2} fueron restados de tu cuenta.';
 
-$l['newpoints_alert_text_core_add_points'] = '{2} fueron añadidos a tu cuenta.';
-$l['newpoints_alert_text_core_subtract_points'] = '{2} fueron restados de tu cuenta.';
+$l['newpoints_alert_text_core_add_points'] = '{4} {1} fueron añadidos a tu cuenta.';
+$l['newpoints_alert_text_core_subtract_points'] = '{4} {1} fueron restados de tu cuenta.';
+$l['newpoints_alert_text_core_donation_received'] = 'You received {4} {2} from {5}.';
 
 $l['myalerts_setting_newpoints_core_add_points'] = '¿Recibir alerta al recibir puntos?';
 $l['myalerts_setting_newpoints_core_subtract_points'] = '¿Recibir alerta al perder puntos?';

@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -29,43 +29,32 @@
 
 declare(strict_types=1);
 
-namespace Newpoints\Hooks\Shared;
+namespace NewPoints\Hooks\Shared;
 
+use Exception;
 use MyBB;
 use PMDataHandler;
 use postDatahandler;
 use userDataHandler;
 
-use function Newpoints\Core\count_characters;
-use function Newpoints\Core\get_income_value;
-use function Newpoints\Core\log_add;
-use function Newpoints\Core\points_add_simple;
-use function Newpoints\Core\points_subtract;
-use function Newpoints\Core\run_hooks;
-use function Newpoints\Core\user_can_get_points;
-use function Newpoints\Core\users_get_group_permissions;
+use function NewPoints\Core\cache_get_instances;
+use function NewPoints\Core\count_characters;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\run_hooks;
 
-use const Newpoints\Core\FIELDS_DATA;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX;
-use const Newpoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD;
-use const Newpoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
-use const Newpoints\Core\INCOME_TYPE_THREAD;
-use const Newpoints\Core\INCOME_TYPE_THREAD_REPLY;
-use const Newpoints\Core\INCOME_TYPE_POST;
-use const Newpoints\Core\INCOME_TYPE_POST_CHARACTER;
-use const Newpoints\Core\INCOME_TYPE_USER_REGISTRATION;
-use const Newpoints\Core\INCOME_TYPE_USER_REFERRAL;
-use const Newpoints\Core\INCOME_TYPE_PRIVATE_MESSAGE;
-use const Newpoints\Core\LOGGING_TYPE_CHARGE;
-use const Newpoints\Core\LOGGING_TYPE_INCOME;
-use const Newpoints\Core\POST_VISIBLE_STATUS_VISIBLE;
+use const NewPoints\Core\FIELDS_DATA;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX;
+use const NewPoints\Core\FORM_TYPE_CHECK_BOX_LEGACY;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD;
+use const NewPoints\Core\FORM_TYPE_NUMERIC_FIELD_LEGACY;
+use const NewPoints\Core\POST_VISIBLE_STATUS_VISIBLE;
 
 function datahandler_post_insert_post_end(postDatahandler &$data_handler): postDatahandler
 {
     $post_data = &$data_handler->data;
 
-    if (!empty($post_data['savedraft']) || empty($post_data['message']) || empty($post_data['uid'])) {
+    if (!empty($post_data['savedraft']) || empty($post_data['uid'])) {
         return $data_handler;
     }
 
@@ -77,98 +66,61 @@ function datahandler_post_insert_post_end(postDatahandler &$data_handler): postD
 
     $forum_id = (int)$post_data['fid'];
 
-    $income_bonus = 0;
-
-    $user_group_permissions = users_get_group_permissions($post_user_id);
-
-    $characters_count = count_characters($post_data['message']);
-
-    if ($characters_count >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
-        $income_bonus = $characters_count * get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-    }
-
     $thread_id = (int)$post_data['tid'];
 
     $post_id = (int)$data_handler->pid;
-
-    $post_user_group_permissions = users_get_group_permissions($post_user_id);
-
-    if (user_can_get_points($post_user_id, $forum_id)) {
-        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-    }
-
-    if (user_can_get_points($post_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_POST, $post_user_id, $forum_id);
-
-        $income_value *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple(
-                $post_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-    }
 
     $thread_data = get_thread($thread_id);
 
     $thread_user_id = (int)$thread_data['uid'];
 
-    if ($thread_user_id !== $post_user_id && user_can_get_points($thread_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_THREAD_REPLY, $thread_user_id, $forum_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-        $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-        $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple(
-                $thread_user_id,
-                $income_value
+            $instance->income_post()
+                ->income_post_characters($post_data['message']);
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
             );
+        }
 
-            log_add(
-                'income_' . INCOME_TYPE_THREAD_REPLY,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
+        if ($thread_user_id !== $post_user_id) {
+            try {
+                $instance = instance_object($instance_id, $thread_user_id)
+                    ->set_forum($forum_id)
+                    ->set_thread($thread_id)
+                    ->set_post($post_id)
+                    ->income_thread_reply();
+
+                if (!$instance->is_enabled()) {
+                    continue;
+                }
+
+                $instance->income_thread_reply();
+            } catch (Exception $e) {
+                log_error(
+                    $instance_id,
+                    $e->getMessage(),
+                    user_id: $thread_user_id,
+                    post_id: $forum_id,
+                    thread_id: $thread_id,
+                    forum_id: $forum_id,
+                );
+            }
         }
     }
 
@@ -195,8 +147,6 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
 
     $forum_id = (int)$post_data['fid'];
 
-    $income_bonus = get_income_value(INCOME_TYPE_POST_CHARACTER, $post_user_id, $forum_id);
-
     $old_character_count = count_characters(get_post($post_data['pid'])['message']);
 
     $new_character_count = count_characters($post_data['message']);
@@ -205,50 +155,30 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
         return $data_handler;
     }
 
-    $income_bonus = ($new_character_count - $old_character_count) * $income_bonus;
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-    $post_user_group_permissions = users_get_group_permissions($post_user_id);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-    if ($income_bonus > 0 && user_can_get_points($post_user_id, $forum_id)) {
-        $income_bonus *= $post_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            points_add_simple(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                'income_post_update',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $post_id,
-                $thread_id,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-    } elseif ($income_bonus < 0 && user_can_get_points($post_user_id, $forum_id)) {
-        $income_bonus *= ($post_user_group_permissions['newpoints_rate_subtraction'] / 100);
-
-        if ($income_bonus) {
-            points_subtract(
-                $post_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($post_user_id)['username'] ?? '',
-                $post_user_id,
-                $income_bonus,
-                $thread_id,
-                $post_id,
-                $forum_id,
-                LOGGING_TYPE_CHARGE
+            if ($old_character_count - $new_character_count < 0) {
+                $instance->income_post_characters(characters_count: $new_character_count - $old_character_count);
+            } elseif ($old_character_count - $new_character_count > 0) {
+                $instance->charge_post_characters(characters_count: $new_character_count - $old_character_count);
+            }
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
             );
         }
     }
@@ -258,11 +188,11 @@ function datahandler_post_update_end(postDatahandler &$data_handler): postDataha
 
 function datahandler_post_insert_thread_end(postDatahandler &$data_handler): postDatahandler
 {
-    $thread_data = &$data_handler->data;
+    $post_data = &$data_handler->data;
 
-    $thread_user_id = (int)$thread_data['uid'];
+    $post_user_id = (int)$post_data['uid'];
 
-    if (!empty($thread_data['savedraft']) || !$thread_user_id) {
+    if (!empty($post_data['savedraft']) || !$post_user_id) {
         return $data_handler;
     }
 
@@ -270,68 +200,33 @@ function datahandler_post_insert_thread_end(postDatahandler &$data_handler): pos
         return $data_handler;
     }
 
-    $forum_id = (int)$thread_data['fid'];
+    $forum_id = (int)$post_data['fid'];
 
-    $thread_user_group_permissions = users_get_group_permissions($thread_user_id);
+    $thread_id = (int)$data_handler->tid;
 
-    if (user_can_get_points($thread_user_id, $forum_id)) {
-        $income_bonus = 0;
+    $post_id = (int)$data_handler->pid;
 
-        $user_group_permissions = users_get_group_permissions($thread_user_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $post_user_id)
+                ->set_forum($forum_id)
+                ->set_thread($thread_id)
+                ->set_post($post_id);
 
-        $characters_count = count_characters($thread_data['message']);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-        if ($characters_count >= $user_group_permissions['newpoints_income_post_minimum_characters']) {
-            $income_bonus = $characters_count * get_income_value(
-                    INCOME_TYPE_POST_CHARACTER,
-                    $thread_user_id,
-                    $forum_id
-                );
-        }
-
-        $income_bonus *= $thread_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_bonus) {
-            points_add_simple(
-                $thread_user_id,
-                $income_bonus
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_POST_CHARACTER,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_bonus,
-                0,
-                (int)$data_handler->tid,
-                $forum_id,
-                LOGGING_TYPE_INCOME
-            );
-        }
-    }
-
-    if (user_can_get_points($thread_user_id, $forum_id)) {
-        $income_value = get_income_value(INCOME_TYPE_THREAD, $thread_user_id, $forum_id);
-
-        $income_value *= $thread_user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple(
-                $thread_user_id,
-                $income_value
-            );
-
-            log_add(
-                'income_' . INCOME_TYPE_THREAD,
-                '',
-                get_user($thread_user_id)['username'] ?? '',
-                $thread_user_id,
-                $income_value,
-                0,
-                (int)$data_handler->tid,
-                $forum_id,
-                LOGGING_TYPE_INCOME
+            $instance->income_thread()
+                ->income_post_characters($post_data['message']);
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $post_user_id,
+                post_id: $forum_id,
+                thread_id: $thread_id,
+                forum_id: $forum_id,
             );
         }
     }
@@ -343,26 +238,26 @@ function datahandler_pm_insert_end(PMDataHandler &$data_handler): PMDataHandler
 {
     $user_id = (int)$data_handler->pm_insert_data['fromid'];
 
-    if (user_can_get_points($user_id)) {
-        $income_value = get_income_value(INCOME_TYPE_PRIVATE_MESSAGE, $user_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $user_id)
+                ->set_primary_id((int)($data_handler->pmid[0] ?? 0))
+                ->set_secondary_id((int)($data_handler->pmid[1] ?? 0))
+                ->set_tertiary_id((int)($data_handler->pmid[2] ?? 0));
 
-        $user_group_permissions = users_get_group_permissions($user_id);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-        $income_value *= $user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple($user_id, $income_value);
-
-            log_add(
-                'income_' . INCOME_TYPE_PRIVATE_MESSAGE,
-                '',
-                get_user($user_id)['username'] ?? '',
-                $user_id,
-                $income_value,
-                (int)($data_handler->pmid[0] ?? 0),
-                (int)($data_handler->pmid[1] ?? 0),
-                (int)($data_handler->pmid[2] ?? 0),
-                LOGGING_TYPE_INCOME
+            $instance->income_private_message();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $user_id,
+                primary_id: (int)($data_handler->pmid[0] ?? 0),
+                secondary_id: (int)($data_handler->pmid[1] ?? 0),
+                tertiary_id: (int)($data_handler->pmid[2] ?? 0),
             );
         }
     }
@@ -381,19 +276,20 @@ function datahandler_user_validate(userDataHandler &$data_handler): userDataHand
 
     global $mybb;
 
-    $data_fields = FIELDS_DATA['users'];
+    $fields_data = FIELDS_DATA['users'];
 
     $hook_arguments = [
         'data_handler' => &$data_handler,
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('datahandler_user_validate', $hook_arguments);
 
     $user_data = &$data_handler->data;
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type'])) {
             continue;
@@ -423,11 +319,12 @@ function datahandler_user_validate(userDataHandler &$data_handler): userDataHand
 
 function datahandler_user_update(userDataHandler &$data_handler): userDataHandler
 {
-    $data_fields = FIELDS_DATA['users'];
+    $fields_data = FIELDS_DATA['users'];
 
     $hook_arguments = [
         'data_handler' => &$data_handler,
-        'data_fields' => &$data_fields,
+        'fields_data' => &$fields_data,
+        'data_fields' => &$fields_data,
     ];
 
     $hook_arguments = run_hooks('datahandler_user_update', $hook_arguments);
@@ -436,15 +333,15 @@ function datahandler_user_update(userDataHandler &$data_handler): userDataHandle
 
     global $mybb, $db;
 
-    foreach ($data_fields as $data_field_key => $data_field_data) {
-        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['formType'] ?? null);
+    foreach ($fields_data as $data_field_key => $data_field_data) {
+        $data_field_data['form_type'] = $data_field_data['form_type'] ?? ($data_field_data['form_type'] ?? null);
 
         if (empty($data_field_data['form_type']) ||
             (!isset($user_data[$data_field_key]) && !isset($mybb->input[$data_field_key]))) {
             continue;
         }
 
-        if (in_array($data_field_data['type'], ['INT', 'SMALLINT', 'TINYINT'])) {
+        if (in_array($data_field_data['type'], ['BIGINT', 'INT', 'SMALLINT', 'TINYINT'])) {
             $data_handler->user_update_data[$data_field_key] = (int)($user_data[$data_field_key] ?? $mybb->input[$data_field_key]);
         } elseif (in_array($data_field_data['type'], ['FLOAT', 'DECIMAL'])) {
             $data_handler->user_update_data[$data_field_key] = (float)($user_data[$data_field_key] ?? $mybb->input[$data_field_key]);
@@ -462,52 +359,40 @@ function datahandler_user_insert_end(userDataHandler &$data_handler): userDataHa
 {
     $user_id = (int)$data_handler->uid;
 
-    $user_group_permissions = users_get_group_permissions($user_id);
-
-    if (user_can_get_points($user_id)) {
-        $income_value = get_income_value(INCOME_TYPE_USER_REGISTRATION, $user_id);
-
-        $income_value *= $user_group_permissions['newpoints_rate_addition'];
-
-        if ($income_value) {
-            points_add_simple($user_id, $income_value);
-
-            log_add(
-                'income_' . INCOME_TYPE_USER_REGISTRATION,
-                '',
-                get_user($user_id)['username'] ?? '',
-                $user_id,
-                $income_value,
-                0,
-                0,
-                0,
-                LOGGING_TYPE_INCOME
-            );
-        }
-    }
-
     $referrer_user_id = (int)($data_handler->user_insert_data['referrer'] ?? 0);
 
-    if (user_can_get_points($referrer_user_id)) {
-        $income_value = get_income_value(INCOME_TYPE_USER_REFERRAL, $referrer_user_id);
+    foreach (cache_get_instances() as $instance_id => $instance_data) {
+        try {
+            $instance = instance_object($instance_id, $user_id);
 
-        $referrer_user_group_permissions = users_get_group_permissions($referrer_user_id);
+            if (!$instance->is_enabled()) {
+                continue;
+            }
 
-        $income_value *= $referrer_user_group_permissions['newpoints_rate_addition'];
+            $instance->income_registration();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $user_id,
+            );
+        }
 
-        if ($income_value) {
-            points_add_simple($referrer_user_id, $income_value);
+        try {
+            $instance = instance_object($instance_id, $referrer_user_id)
+                ->set_primary_id($user_id);
 
-            log_add(
-                'income_' . INCOME_TYPE_USER_REFERRAL,
-                '',
-                get_user($referrer_user_id)['username'] ?? '',
-                $referrer_user_id,
-                $income_value,
-                $user_id,
-                0,
-                0,
-                LOGGING_TYPE_INCOME
+            if (!$instance->is_enabled()) {
+                continue;
+            }
+
+            $instance->income_referral();
+        } catch (Exception $e) {
+            log_error(
+                $instance_id,
+                $e->getMessage(),
+                user_id: $referrer_user_id,
+                primary_id: $user_id,
             );
         }
     }

@@ -9,7 +9,7 @@
  *
  *    Website: https://ougc.network
  *
- *    NewPoints plugin for MyBB - A complex but efficient points system for MyBB.
+ *    NewPoints is a complex but efficient points system for MyBB.
  *
  ***************************************************************************
  ****************************************************************************
@@ -31,13 +31,14 @@ declare(strict_types=1);
 
 namespace NewPoints\MyAlerts\Formatters;
 
+use Exception;
 use MybbStuff_MyAlerts_Entity_Alert;
 use MybbStuff_MyAlerts_Formatter_AbstractFormatter;
 
-use function Newpoints\Core\language_load;
-use function Newpoints\Core\log_get;
-use function Newpoints\Core\main_file_name;
-use function Newpoints\Core\points_format;
+use function NewPoints\Core\instance_object;
+use function NewPoints\Core\language_load;
+use function NewPoints\Core\log_error;
+use function NewPoints\Core\main_file_name;
 
 class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_AbstractFormatter
 {
@@ -55,16 +56,35 @@ class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_A
      */
     public function formatAlert(MybbStuff_MyAlerts_Entity_Alert $alert, array $outputAlert): string
     {
+        try {
+            $instance = instance_object((int)($alert->getExtraDetails()['instance_id'] ?? 0));
+        } catch (Exception $e) {
+            log_error(
+                (int)($alert->getExtraDetails()['instance_id'] ?? 0),
+                $e->getMessage(),
+            );
+
+            return '';
+        }
+
+        if (!$instance->is_enabled()) {
+            return '';
+        }
+
         $details = $alert->toArray();
 
         $log_id = (int)$details['object_id'];
 
-        $log_data = log_get($log_id);
+        $log_data = $instance->logger->get($log_id);
+
+        $points = (float)$log_data['points'];
 
         return $this->lang->sprintf(
             $this->lang->newpoints_alert_text_core_add_points,
+            $instance->get_display_name_upper($points),
+            $instance->get_display_name_lower($points),
             $outputAlert['username'],
-            points_format((float)$log_data['points'])
+            $instance->points_format($points)
         );
     }
 
@@ -79,6 +99,19 @@ class newpoints_core_add_points_formatter extends MybbStuff_MyAlerts_Formatter_A
     {
         global $settings;
 
-        return $settings['bburl'] . '/' . main_file_name();
+        try {
+            $instance = instance_object((int)($alert->getExtraDetails()['instance_id'] ?? 0));
+
+            if ($instance->is_enabled()) {
+                return $settings['bburl'] . '/' . main_file_name();
+            }
+        } catch (Exception $e) {
+            log_error(
+                (int)($alert->getExtraDetails()['instance_id'] ?? 0),
+                $e->getMessage(),
+            );
+        }
+
+        return $settings['bburl'];
     }
 }

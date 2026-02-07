@@ -1,26 +1,32 @@
 <form action="{$mybb->settings['bburl']}/{$newpoints_file}" method="POST">
-    <input type="hidden" name="postcode" value="{$mybb->post_code}"/>
-    <input type="hidden" name="action" value="do_donate"/>
+    <input type="hidden" name="my_post_key" value="{$mybb->post_code}"/>
+    <input type="hidden" name="action" value="donate"/>
     <input type="hidden" name="pid" value="{$pid}"/>
+    {$input_hidden}
     <table border="0" cellspacing="{$theme['borderwidth']}" cellpadding="{$theme['tablespace']}" class="tborder">
         <tr>
-            <td class="thead" colspan="2"><strong>{$lang->newpoints_donate}</strong></td>
+            <td class="thead" colspan="2"><strong>{$table_title}</strong></td>
         </tr>
+        {$username_row}
         <tr>
-            <td class="trow1" width="50%"><strong>{$lang->newpoints_user}:</strong><br/><span class="smalltext">{$lang->newpoints_user_desc}</span>
+            <td class="trow2" width="50%">
+                <strong>{$lang->newpoints_amount}:</strong><br/>
+                <span class="smalltext">{$lang->newpoints_amount_desc}</span>
             </td>
-            <td class="trow1" width="50%"><input type="text" name="username" value="{$user['username']}" class="textbox"
-                                                 id="username" size="20"/></td>
+            <td class="trow2" width="50%">
+                <input type="number" name="amount" value="{$amount}" class="textbox" size="20" step="{$input_step}"
+                       min="0"/>
+            </td>
         </tr>
+        {$instances_row}
         <tr>
-            <td class="trow2" width="50%"><strong>{$lang->newpoints_amount}:</strong><br/><span class="smalltext">{$lang->newpoints_amount_desc}</span>
+            <td class="trow1" width="50%">
+                <strong>{$lang->newpoints_reason}:</strong><br/>
+                <span class="smalltext">{$lang->newpoints_reason_desc}</span>
             </td>
-            <td class="trow2" width="50%"><input type="text" name="amount" value="" class="textbox" size="20"/></td>
-        </tr>
-        <tr>
-            <td class="trow1" width="50%"><strong>{$lang->newpoints_reason}:</strong><br/><span class="smalltext">{$lang->newpoints_reason_desc}</span>
+            <td class="trow1" width="50%">
+                <input type="text" name="reason" value="" class="textbox" size="20"/>
             </td>
-            <td class="trow1" width="50%"><input type="text" name="reason" value="" class="textbox" size="20"/></td>
         </tr>
         <tr>
             <td class="tfoot" colspan="2" align="center">
