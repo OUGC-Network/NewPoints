@@ -1,0 +1,61 @@
+{% extends '@ext.newpoints/master.twig' %}
+
+{% block head %}
+    <title>{{ lang.newpoints_title_home }} - {{ mybb.settings.bbname }}</title>
+{% endblock head %}
+
+{% block newpointsHeader %}
+    <header class="page-header">
+        <h1 class="title title--page">{{ lang.newpoints_header_home }}</h1>
+    </header>
+{% endblock newpointsHeader %}
+
+{% block newpointsBody %}
+    {% for name,table in income_tables %}
+        <section class="block block--container">
+            <h3>{{ table.instance.get_display_name_upper() }}</h3>
+            {{ trans(
+                'newpoints_home_description_header',
+                table.instance.get_display_name_upper(),
+                table.instance.get_display_name_lower()) }}<br/><br/>
+            {% if table.income_settings is not empty %}
+
+                <div class="grid-table two-columns grid-table-width-50">
+                    <div class="grid-header">
+                        <div>
+                            <strong>{{ lang.newpoints_income_source }}</strong>
+                        </div>
+                        <div class="centered-column">
+                            <strong>{{ trans(
+                                    'newpoints_income_amount',
+                                    table.instance.get_display_name_upper(),
+                                    table.instance.get_display_name_lower()) }}</strong>
+                        </div>
+                    </div>
+                    {% for key,value in table.income_settings %}
+                        <div class="grid-row">
+                            <div>
+                                <span class="list__field" style="border-bottom: 1px dashed; cursor: help;"
+                                      title="{{ attribute(lang, key ~ '_desc') }}">{{ attribute(lang, key) }}</span>
+                            </div>
+                            <div class="centered-column">
+                                {{ value }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <br/>
+
+            {{ lang.newpoints_home_description_secondary }}<br/><br/>
+            {{ table.user_rate_description }}<br/>
+            {{ trans(
+                'newpoints_home_user_rate_description',
+                table.instance.get_display_name_upper(),
+                table.instance.get_display_name_lower(),
+                table.instance.get_user_permission_rate_addition(),
+                table.instance.get_user_permission_rate_substraction()) }}
+        </section>
+    {% endfor %}
+    {{ latest_transactions|raw }}
+{% endblock newpointsBody %}

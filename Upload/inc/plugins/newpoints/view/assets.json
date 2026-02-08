@@ -1,0 +1,12 @@
+{
+  "assets": {
+    "styles/newpoints.css": {
+      "source": "newpoints.scss",
+      "attached_to": [
+        {
+          "script": "newpoints.php"
+        }
+      ]
+    }
+  }
+}

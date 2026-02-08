@@ -1,0 +1,18 @@
+{% extends '@ext.newpoints/master.twig' %}
+
+{% block head %}
+    <title>{{ lang.newpoints_title_statistics }} - {{ mybb.settings.bbname }}</title>
+{% endblock head %}
+
+{% block newpointsHeader %}
+    <header class="page-header">
+        <h1 class="title title--page">{{ lang.newpoints_header_statistics }}</h1>
+    </header>
+{% endblock newpointsHeader %}
+
+{% block newpointsBody %}
+    <div class="block-columns">
+        {{ statistics_items_left|raw }}
+        {{ statistics_items_right|raw }}
+    </div>
+{% endblock newpointsBody %}

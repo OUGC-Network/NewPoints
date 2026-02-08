@@ -102,7 +102,7 @@ function add_hooks(string $namespace): void
                 $priority = 10;
             }
 
-            $plugins->add_hook($hook_name, $callable, $priority);
+            $plugins->add_hook($hook_name, $callable, (int)$priority);
         }
     }
 }
@@ -1910,7 +1910,7 @@ function task_delete(string $plugin_code = ''): bool
     return true;
 }
 
-function page_build_menu_options(): string
+function page_build_menu_options(): array|string
 {
     static $menu = null;
 
@@ -1919,6 +1919,13 @@ function page_build_menu_options(): string
     }
 
     global $mybb, $lang, $theme;
+
+    if ($mybb->version_code >= 1900) {
+        $menu = [];
+    } else {
+        $menu = '';
+    }
+
 
     $menu_items = [
         /*0 => [
@@ -1957,6 +1964,7 @@ function page_build_menu_options(): string
             'lang_string' => 'newpoints_statistics',
             'category' => 'main',
             'display_order' => get_setting('stats_menu_order'),
+            'icon' => 'chart-pie',
         ];
     }
 
@@ -1966,6 +1974,7 @@ function page_build_menu_options(): string
             'lang_string' => 'newpoints_donate',
             'category' => 'user',
             'display_order' => get_setting('donations_menu_order'),
+            'icon' => 'share',
         ];
     }
 
@@ -1976,6 +1985,7 @@ function page_build_menu_options(): string
         'lang_string' => 'newpoints_logs_menu_title',
         'category' => 'user',
         'display_order' => get_setting('logs_menu_order'),
+        'icon' => 'cogs',
     ];
 
     //$menu_items = array_merge($menu_items, $instance->get_menu_items());
@@ -2017,7 +2027,11 @@ function page_build_menu_options(): string
 
         $alternative_background = alt_trow(true);
 
-        $options = '';
+        if ($mybb->version_code >= 1900) {
+            $options = [];
+        } else {
+            $options = '';
+        }
 
         foreach ($menu_items as $option) {
             if (isset($option['setting']) && !get_setting($option['setting'])) {
@@ -2052,9 +2066,15 @@ function page_build_menu_options(): string
                 $option = (array)$option;
             }
 
+            $option['url'] = $action_url;
+
             $option = run_hooks('menu_build_option', $option);
 
-            $options .= eval(templates_get('option'));
+            if ($mybb->version_code >= 1900) {
+                $options[$option['action']] = $option;
+            } else {
+                $options .= eval(templates_get('option'));
+            }
 
             $alternative_background = alt_trow();
         }
@@ -2063,7 +2083,11 @@ function page_build_menu_options(): string
 
         $menu_category_title = $lang->{$menu_category_title};
 
-        $menu .= eval(templates_get('menu_category'));
+        if ($mybb->version_code >= 1900) {
+            $menu[$category_key] = $options;
+        } else {
+            $menu .= eval(templates_get('menu_category'));
+        }
     }
 
     return $menu;
@@ -2076,7 +2100,17 @@ function page_build_menu(): string
 
     $menu_options = page_build_menu_options();
 
-    return eval(templates_get('menu'));
+    if ($mybb->version_code >= 1900) {
+        return \MyBB\View\template(
+            '@ext.newpoints/menu.twig',
+            [
+                'categories' => $menu_options,
+                'url_main' => $newpoints_file,
+            ]
+        );
+    } else {
+        return eval(templates_get('menu'));
+    }
 }
 
 function main_file_name(): string
@@ -2857,11 +2891,15 @@ function cache_get_instances(?int $instance_id = null): array
     return $instance_objects;
 }
 
-function build_income_table(Instance $instance, string $template_prefix = 'home'): string
+function build_income_table(Instance $instance, string $template_prefix = 'home'): array|string
 {
-    global $lang;
+    global $mybb, $lang;
 
-    $income_settings = '';
+    if ($mybb->version_code >= 1900) {
+        $income_settings = [];
+    } else {
+        $income_settings = '';
+    }
 
     $income_amount = $lang->sprintf(
         $lang->newpoints_income_amount,
@@ -2938,10 +2976,18 @@ function build_income_table(Instance $instance, string $template_prefix = 'home'
             $value = $instance->points_format($income_value);
         }
 
-        $income_settings .= eval(templates_get($template_prefix . '_income_row'));
+        if ($mybb->version_code >= 1900) {
+            $income_settings[$income_key] = $value;
+        } else {
+            $income_settings .= eval(templates_get($template_prefix . '_income_row'));
+        }
     }
 
-    return eval(templates_get($template_prefix . '_income_table'));
+    if ($mybb->version_code >= 1900) {
+        return $income_settings;
+    } else {
+        return eval(templates_get($template_prefix . '_income_table'));
+    }
 }
 
 // control_object by Zinga Burga from MyBBHacks ( mybbhacks.zingaburga.com )

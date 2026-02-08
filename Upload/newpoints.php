@@ -137,6 +137,10 @@ $filter = $mybb->get_input('filter', MyBB::INPUT_ARRAY);
 
 $filter['instances'] = array_filter(array_map('intval', $filter['instances'] ?? []));
 
+$templates_context = [
+    'newpoints_menu' => $newpoints_menu,
+];
+
 if ($mybb->get_input('action') == 'stats') {
     add_breadcrumb($lang->newpoints_statistics, $url->build(['action' => 'stats']));
 
@@ -167,9 +171,15 @@ if ($mybb->get_input('action') == 'stats') {
             continue;
         }
 
+        $templates_context['instance'] = $instance;
+
         $fields['users_column_name'] = $instance->users_column_get();
 
-        $richest_users = '';
+        if ($mybb->version_code >= 1900) {
+            $richest_users = [];
+        } else {
+            $richest_users = '';
+        }
 
         // get richest users
         $query = $db->simple_select(
@@ -197,12 +207,19 @@ if ($mybb->get_input('action') == 'stats') {
 
             run_hooks('stats_richest_users');
 
-            $richest_users .= eval(templates_get('statistics_richest_user'));
+            if ($mybb->version_code >= 1900) {
+                $richest_users[(int)$user['uid']] = [
+                    'user' => $user,
+                    'amount' => $newpoints_amount,
+                ];
+            } else {
+                $richest_users .= eval(templates_get('statistics_richest_user'));
+            }
 
             $bgcolor = alt_trow();
         }
 
-        if (!$richest_users) {
+        if ($mybb->version_code < 1900 && !$richest_users) {
             $colspan = 2;
 
             $no_results = $lang->newpoints_noresults;
@@ -216,7 +233,16 @@ if ($mybb->get_input('action') == 'stats') {
             $instance->get_display_name_lower()
         );
 
-        $statistics_items_left[] = eval(templates_get('statistics_richest'));
+        $templates_context['richest_users'] = $richest_users;
+
+        if ($mybb->version_code >= 1900) {
+            $statistics_items_left[] = \MyBB\View\template(
+                '@ext.newpoints/statistics_richest.twig',
+                $templates_context
+            );
+        } else {
+            $statistics_items_left[] = eval(templates_get('statistics_richest'));
+        }
     }
 
     run_hooks('stats_middle');
@@ -227,7 +253,11 @@ if ($mybb->get_input('action') == 'stats') {
             return $instance->user_permissions[Permissions::CanSeeStats] ? $instance->instance_id : 0;
         }, $instance_objects)) . "')";
 
-    $last_donations = '';
+    if ($mybb->version_code >= 1900) {
+        $last_donations = [];
+    } else {
+        $last_donations = '';
+    }
 
     // get latest donations
     $query = $db->simple_select(
@@ -275,12 +305,20 @@ if ($mybb->get_input('action') == 'stats') {
 
         run_hooks('stats_last_donations');
 
-        $last_donations .= eval(templates_get('statistics_donation'));
+        if ($mybb->version_code >= 1900) {
+            $last_donations[] = [
+                'instance' => $instance,
+                'donation' => $donation,
+                'amount' => $amount,
+            ];
+        } else {
+            $last_donations .= eval(templates_get('statistics_donation'));
+        }
 
         $bgcolor = alt_trow();
     }
 
-    if (!$last_donations) {
+    if ($mybb->version_code < 1900 && !$last_donations) {
         $colspan = 4;
 
         $no_results = $lang->newpoints_noresults;
@@ -288,7 +326,16 @@ if ($mybb->get_input('action') == 'stats') {
         $last_donations = eval(templates_get('no_results'));
     }
 
-    $statistics_items_right[] = eval(templates_get('statistics_donation_row'));
+    $templates_context['donations'] = $last_donations;
+
+    if ($mybb->version_code >= 1900) {
+        $statistics_items_right[] = \MyBB\View\template(
+            '@ext.newpoints/statistics_donation.twig',
+            $templates_context
+        );
+    } else {
+        $statistics_items_right[] = eval(templates_get('statistics_donation_row'));
+    }
 
     run_hooks('stats_end');
 
@@ -296,11 +343,22 @@ if ($mybb->get_input('action') == 'stats') {
 
     $statistics_items_left = implode('', $statistics_items_left);
 
-    $newpoints_content = eval(templates_get('statistics'));
+    $templates_context['statistics_items_right'] = $statistics_items_right;
 
-    $page_title = $lang->newpoints_statistics;
+    $templates_context['statistics_items_left'] = $statistics_items_left;
 
-    $page = eval(templates_get('page'));
+    if ($mybb->version_code >= 1900) {
+        $page = \MyBB\View\template(
+            '@ext.newpoints/statistics.twig',
+            $templates_context
+        );
+    } else {
+        $newpoints_content = eval(templates_get('statistics'));
+
+        $page_title = $lang->newpoints_statistics;
+
+        $page = eval(templates_get('page'));
+    }
 
     output_page($page);
 
@@ -1142,7 +1200,11 @@ if ($mybb->get_input('action') == 'stats') {
 } elseif (empty($mybb->input['action'])) {
     $latest_transactions = [];
 
-    $income_tables = '';
+    if ($mybb->version_code >= 1900) {
+        $income_tables = [];
+    } else {
+        $income_tables = '';
+    }
 
     run_hooks('home_start');
 
@@ -1176,14 +1238,32 @@ if ($mybb->get_input('action') == 'stats') {
             $instance->get_display_name_lower(),
         );
 
-        $income_tables .= eval(templates_get('home_income'));
+        if ($mybb->version_code >= 1900) {
+            $income_tables[] = [
+                'instance' => $instance,
+                'income_settings' => $income_settings,
+            ];
+        } else {
+            $income_tables .= eval(templates_get('home_income'));
+        }
     }
 
-    run_hooks('home_end');
+    $templates_context['income_tables'] = &$income_tables;
+
+    $templates_context['latest_transactions'] = &$latest_transactions;
+
+    run_hooks('home_end', $templates_context);
 
     $latest_transactions = implode(' ', $latest_transactions);
 
-    $page = eval(templates_get('home'));
+    if ($mybb->version_code >= 1900) {
+        $page = \MyBB\View\template(
+            '@ext.newpoints/home.twig',
+            $templates_context
+        );
+    } else {
+        $page = eval(templates_get('home'));
+    }
 
     output_page($page);
 

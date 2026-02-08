@@ -1,0 +1,36 @@
+<div class="block-columns__item block block--container">
+    <h2 class="title title--minor">
+        {{ lang.newpoints_last_donations }}
+    </h2>
+    {% if donations|length > 0 %}
+        {% for stat in donations %}
+            <div class="row row--simple-columns buddy-request">
+                <div>
+                    {{ stat.instance.get_display_name_upper() }}
+                </div>
+                <div>
+                    <a href="{{ get_profile_link(stat.donation.from_uid) }}">{{ {
+                            'username': stat.donation.from_username,
+                            'usergroup': stat.donation.from_usergroup,
+                            'displaygroup': stat.donation.from_displaygroup}|format_name }}</a>
+                </div>
+                <div>
+                    <a href="{{ get_profile_link(stat.donation.to_username) }}">{{ {
+                            'username': stat.donation.to_username,
+                            'usergroup': stat.donation.to_usergroup,
+                            'displaygroup': stat.donation.to_displaygroup}|format_name }}</a>
+                </div>
+                <div>
+                    {{ stat.amount }}
+                </div>
+                <div>
+                    {{ stat.donation.date|my_date }}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-results">
+            {{ lang.newpoints_noresults }}
+        </div>
+    {% endif %}
+</div>

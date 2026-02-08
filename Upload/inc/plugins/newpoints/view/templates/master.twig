@@ -1,0 +1,12 @@
+{% extends 'layouts/master.twig' %}
+
+{% block body %}
+    <div class="page-columns page-columns--menu">
+        {{ newpoints_menu|raw }}
+
+        <div class="page-content page-content--menu">
+            {% block newpointsHeader %}{% endblock newpointsHeader %}
+            {% block newpointsBody %}{% endblock newpointsBody %}
+        </div>
+    </div>
+{% endblock body %}

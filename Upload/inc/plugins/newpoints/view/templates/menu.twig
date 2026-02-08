@@ -1,0 +1,30 @@
+<nav class="section-menu">
+    <input type="checkbox" id="show-section-menu" class="section-menu__checkbox">
+    <h1 class="section-menu__title">
+        <label for="show-section-menu" class="section-menu__toggle">
+            {{ include('partials/icon.twig', {icon: 'bars', class: 'section-menu__menu-icon fa-fw'}, with_context = false) }}
+            <span class="section-menu__title-text">{{ lang.newpoints_menu }}</span>
+            {{ include('partials/icon.twig', {icon: 'minus', class: 'section-menu__collapse fa-fw'}, with_context = false) }}
+            {{ include('partials/icon.twig', {icon: 'plus', class: 'section-menu__expand fa-fw'}, with_context = false) }}
+        </label>
+    </h1>
+    {% for category,items in categories %}
+        <ul class="section-menu__links sidebar-navigation">
+            <li class="section-menu__item section-menu__item--dashboard section-menu__item--active section-menu__item--category">
+                <a href="{{ mybb.settings.bburl }}/{{ url_main }}" class="section-menu__link">
+                    <span class="section-menu__text">{{ trans('newpoints_menu_category_' ~ category) }}</span>
+                </a>
+            </li>
+            {% for action,menu in items %}
+                <li class="section-menu__item section-menu__item--dashboard{% if action is not empty and mybb.input.action == action %} section-menu__item--active{% endif %}">
+                    <a href="{{ mybb.settings.bburl }}/{{ menu.url }}" class="section-menu__link">
+                        {% if menu.icon is defined %}
+                            {{ include('partials/icon.twig', {icon: menu.icon, class: 'section-menu__icon fa-fw'}, with_context = false) }}
+                        {% endif %}
+                        <span class="section-menu__text">{{ menu.lang_string is defined and attribute(lang, menu.lang_string) is defined ? attribute(lang, menu.lang_string) : action|capitalize }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+</nav>
