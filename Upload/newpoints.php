@@ -30,9 +30,9 @@
 declare(strict_types=1);
 
 use NewPoints\Core\Permissions;
-
 use NewPoints\System\Url;
 
+use function MyBB\View\template;
 use function NewPoints\Core\alert_send;
 use function NewPoints\Core\build_income_table;
 use function NewPoints\Core\build_instances_select;
@@ -50,6 +50,7 @@ use function NewPoints\Core\post_parser;
 use function NewPoints\Core\private_message_send;
 use function NewPoints\Core\run_hooks;
 use function NewPoints\Core\templates_get;
+use function NewPoints\Core\templates_get_twig;
 use function NewPoints\Core\users_get_by_username;
 
 use const NewPoints\DECIMAL_DATA_TYPE_STEP;
@@ -137,8 +138,15 @@ $filter = $mybb->get_input('filter', MyBB::INPUT_ARRAY);
 
 $filter['instances'] = array_filter(array_map('intval', $filter['instances'] ?? []));
 
+$errors = [];
+
+$input_step = DECIMAL_DATA_TYPE_STEP;
+
 $templates_context = [
     'newpoints_menu' => $newpoints_menu,
+    'errors' => &$errors,
+    'url_main' => $newpoints_file,
+    'input_step' => $input_step,
 ];
 
 if ($mybb->get_input('action') == 'stats') {
@@ -236,10 +244,7 @@ if ($mybb->get_input('action') == 'stats') {
         $templates_context['richest_users'] = $richest_users;
 
         if ($mybb->version_code >= 1900) {
-            $statistics_items_left[] = \MyBB\View\template(
-                '@ext.newpoints/statistics_richest.twig',
-                $templates_context
-            );
+            $statistics_items_left[] = templates_get_twig('statistics_richest', $templates_context);
         } else {
             $statistics_items_left[] = eval(templates_get('statistics_richest'));
         }
@@ -275,7 +280,6 @@ if ($mybb->get_input('action') == 'stats') {
 
     while ($donation = $db->fetch_array($query)) {
         $instance_id = (int)$donation['instance_id'];
-
 
         $instance = $instance_objects[$instance_id];
 
@@ -329,10 +333,7 @@ if ($mybb->get_input('action') == 'stats') {
     $templates_context['donations'] = $last_donations;
 
     if ($mybb->version_code >= 1900) {
-        $statistics_items_right[] = \MyBB\View\template(
-            '@ext.newpoints/statistics_donation.twig',
-            $templates_context
-        );
+        $statistics_items_right[] = templates_get_twig('statistics_donation', $templates_context);
     } else {
         $statistics_items_right[] = eval(templates_get('statistics_donation_row'));
     }
@@ -348,10 +349,7 @@ if ($mybb->get_input('action') == 'stats') {
     $templates_context['statistics_items_left'] = $statistics_items_left;
 
     if ($mybb->version_code >= 1900) {
-        $page = \MyBB\View\template(
-            '@ext.newpoints/statistics.twig',
-            $templates_context
-        );
+        $page = templates_get_twig('statistics', $templates_context);
     } else {
         $newpoints_content = eval(templates_get('statistics'));
 
@@ -378,8 +376,6 @@ if ($mybb->get_input('action') == 'stats') {
         error_no_permission();
     }
 
-    $errors = [];
-
     $to_user_id = $mybb->get_input('uid', MyBB::INPUT_INT);
 
     $to_user_data = [];
@@ -403,6 +399,8 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     $instance_id = (int)$mybb->get_input('instance_id', MyBB::INPUT_INT);
+
+    $templates_context['instance_id'] = &$instance_id;
 
     $table_title = $lang->newpoints_donate;
 
@@ -597,17 +595,23 @@ if ($mybb->get_input('action') == 'stats') {
 
     $input_hidden = $instances_row = '';
 
-    $input_step = DECIMAL_DATA_TYPE_STEP;
-
     if ($instance_id && $mybb->request_method !== 'post') {
         $input_hidden = eval(templates_get('donate_form_input_instance'));
     } else {
         $instances_select = build_instances_select(filter: $filter);
 
-        $instances_row = eval(templates_get('donate_form_select_instance'));
+        $templates_context['instances_select'] = &$instances_select;
+
+        if ($mybb->version_code < 1900) {
+            $instances_select = build_instances_select(filter: $filter);
+        }
     }
 
-    $form = eval(templates_get('donate_form'));
+    if ($mybb->version_code >= 1900) {
+        $form = templates_get_twig('donate_form', $templates_context);
+    } else {
+        $form = eval(templates_get('donate_form'));
+    }
 
     if ($mybb->get_input('modal', 1)) {
         $code = $form;
@@ -619,7 +623,13 @@ if ($mybb->get_input('action') == 'stats') {
         exit;
     }
 
-    $page = eval(templates_get('donate'));
+    $templates_context['form'] = $form;
+
+    if ($mybb->version_code >= 1900) {
+        $page = templates_get_twig('donate', $templates_context);
+    } else {
+        $page = eval(templates_get('donate'));
+    }
 
     run_hooks('donate_end');
 
@@ -665,8 +675,6 @@ if ($mybb->get_input('action') == 'stats') {
     if ($per_page < 1) {
         $per_page = 10;
     }
-
-    $errors = [];
 
     $where_clauses = array_map(function ($where_clause) {
         return 'l.' . $where_clause;
@@ -1257,10 +1265,7 @@ if ($mybb->get_input('action') == 'stats') {
     $latest_transactions = implode(' ', $latest_transactions);
 
     if ($mybb->version_code >= 1900) {
-        $page = \MyBB\View\template(
-            '@ext.newpoints/home.twig',
-            $templates_context
-        );
+        $page = templates_get_twig('home', $templates_context);
     } else {
         $page = eval(templates_get('home'));
     }

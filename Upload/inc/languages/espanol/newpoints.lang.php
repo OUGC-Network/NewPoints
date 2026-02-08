@@ -120,6 +120,16 @@ $l['newpoints_buttons_orders'] = 'Ver Pedidos';
 
 $l['newpoints_manage_page_breadcrumb'] = 'Gestionar';
 
+// Page titles
+$l['newpoints_title_home'] = 'NewPoints';
+$l['newpoints_title_statistics'] = 'Estadísticas de NewPoints';
+$l['newpoints_title_donate'] = 'Donaciones de NewPoints';
+
+// Page headers
+$l['newpoints_header_home'] = 'NewPoints';
+$l['newpoints_header_statistics'] = 'Estadísticas';
+$l['newpoints_header_donate'] = 'Donaciones';
+
 // Logs
 $l['newpoints_logs_menu_title'] = 'Registros';
 $l['newpoints_logs_page_title'] = 'Registros';

@@ -50,7 +50,10 @@ use pluginSystem;
 use postParser;
 use ReflectionProperty;
 use NewPoints\System\Instance;
+use Twig\Environment;
 
+use function MyBB\app;
+use function MyBB\View\template;
 use function NewPoints\Hooks\Forum\myalerts_register_client_alert_formatters;
 
 use const NewPoints\ROOT;
@@ -402,6 +405,33 @@ function templates_get(
     }
 
     return $templates->render(templates_get_name($template_name, $plugin_prefix), true, $enable_html_comments);
+}
+
+function templates_get_twig(string $template_name = '', array $context = []): string
+{
+    /** @var Environment $twig */
+    $twig = app(Environment::class);
+
+    static $strict_variables_enabled = null;
+
+    if ($strict_variables_enabled === null) {
+        $strict_variables_enabled = $twig->isStrictVariables();
+    }
+
+    if (!$strict_variables_enabled) {
+        $twig->enableStrictVariables();
+    }
+
+    $contents = template(
+        '@ext.newpoints/' . $template_name . '.twig',
+        $context
+    );
+
+    if (!$strict_variables_enabled) {
+        $twig->disableStrictVariables();
+    }
+
+    return $contents;
 }
 
 /**
@@ -2101,7 +2131,7 @@ function page_build_menu(): string
     $menu_options = page_build_menu_options();
 
     if ($mybb->version_code >= 1900) {
-        return \MyBB\View\template(
+        return template(
             '@ext.newpoints/menu.twig',
             [
                 'categories' => $menu_options,
@@ -3137,12 +3167,24 @@ function build_instances_select(
 
     $instance_objects = $instance_objects ?: instance_get_enabled();
 
-    $select_options = '';
+    if ($mybb->version_code >= 1900) {
+        $select_options = [];
+    } else {
+        $select_options = '';
+    }
 
     if ($show_blank) {
-        $option_value = $selected_element = $option_name = '';
+        if ($mybb->version_code >= 1900) {
+            $select_options[] = [
+                'name' => '',
+                'value' => '',
+                'is_selected' => '',
+            ];
+        } else {
+            $option_value = $selected_element = $option_name = '';
 
-        $select_options .= eval(templates_get('input_select_option'));
+            $select_options .= eval(templates_get('input_select_option'));
+        }
     }
 
     $select_multiple = $is_multiple ? 'multiple="multiple"' : '';
@@ -3154,15 +3196,38 @@ function build_instances_select(
 
         $option_name = $instance->get_display_name_upper();
 
-        $selected_element = '';
+        $is_selected = false;
 
-        if (!empty($mybb->input['instance_id']) && $option_value === $mybb->get_input('instance_id', MyBB::INPUT_INT) ||
+        if (!empty($mybb->input['instance_id']) &&
+            $option_value === $mybb->get_input('instance_id', MyBB::INPUT_INT) ||
             !empty($filter['instances']) && in_array($option_value, $filter['instances'])) {
-            $selected_element = 'selected="selected"';
+            $is_selected = true;
         }
 
-        $select_options .= eval(templates_get('input_select_option'));
+        if ($mybb->version_code >= 1900) {
+            $select_options[] = [
+                'name' => $option_name,
+                'value' => $option_value,
+                'is_selected' => $is_selected,
+            ];
+        } else {
+            $selected_element = '';
+
+            if ($is_selected) {
+                $selected_element = 'selected="selected"';
+            }
+
+            $select_options .= eval(templates_get('input_select_option'));
+        }
     }
 
-    return eval(templates_get('input_select'));
+    if ($mybb->version_code >= 1900) {
+        return templates_get_twig('input_select', [
+            'name' => $select_name,
+            'is_multiple' => $select_multiple,
+            'options' => $select_options,
+        ]);
+    } else {
+        return eval(templates_get('input_select'));
+    }
 }

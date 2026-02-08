@@ -1,0 +1,64 @@
+<form action="{{ mybb.settings.bburl }}/{{ url_main }}" method="post">
+    <div class="block block--form form form--compose compose">
+        <section class="section section--form compose__primary-section">
+            {% if mybb.input.uid is not defined %}
+                <div class="row row--form field">
+                    <h3 class="field__name">
+                        <label for="donation_user">{{ lang.newpoints_user }}</label>
+                    </h3>
+                    <div>{{ lang.newpoints_user_desc }}</div>
+                    <div class="compose__container">
+                        <input type="text" name="username"
+                               value="{{ mybb.input.username is defined ? mybb.input.username }}" class="textbox"
+                               size="20" id="donation_user"/>
+                    </div>
+                </div>
+            {% endif %}
+            {% if instance_id and mybb.request_method != 'post' %}
+                <input type="hidden" name="instance_id" value="{{ instance_id }}"/>
+            {% else %}
+                <div class="row row--form field">
+                    <h3 class="field__name">
+                        <label for="donation_instance">{{ lang.newpoints_instance }}</label>
+                    </h3>
+                    <div>{{ lang.newpoints_instance_desc }}</div>
+                    <div class="compose__container">
+                        <div class="select-field">
+                            {{ instances_select|raw }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="row row--form field">
+                <h3 class="field__name">
+                    <label for="donation_amount">{{ lang.newpoints_amount }}</label>
+                </h3>
+                <div>{{ lang.newpoints_amount_desc }}</div>
+                <div class="compose__container">
+                    <input type="number" name="amount" value="{{ mybb.input.amount is defined ? mybb.input.amount }}"
+                           class="textbox" size="20" step="{{ input_step }}" min="0" id="donation_amount"/>
+                </div>
+            </div>
+            <div class="row row--form field">
+                <h3 class="field__name">
+                    <label for="donation_reason">{{ lang.newpoints_reason }}</label>
+                </h3>
+                <div>{{ lang.newpoints_reason_desc }}</div>
+                <div class="compose__container">
+                    <input type="text" name="reason" value="{{ mybb.input.reason is defined ? mybb.input.reason }}"
+                           class="textbox" size="20" id="donation_reason"/>
+                </div>
+            </div>
+        </section>
+
+        <div class="block__footer">
+            <button type="submit" class="button button--big" name="submit" tabindex="3" accesskey="s">
+                {{ include('partials/icon.twig', {icon: 'share', class: 'button__icon'}, with_context = false) }}
+                <span class="button__text">{{ lang.newpoints_submit }}</span>
+            </button>
+        </div>
+    </div>
+    <input type="hidden" name="my_post_key" value="{{ mybb.post_code }}"/>
+    <input type="hidden" name="action" value="donate"/>
+    <input type="hidden" name="pid" value="{{ mybb.input.pid is defined ? mybb.input.pid }}"/>
+</form>

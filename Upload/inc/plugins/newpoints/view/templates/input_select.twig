@@ -1,0 +1,7 @@
+<label>
+    <select name="{{ name }}" {{ is_multiple ? 'multiple' }}>
+        {% for option in options %}
+            <option value="{{ option.value }}" {{ option.is_selected ? 'selected="selected"' }}>{{ option.name }}</option>
+        {% endfor %}
+    </select>
+</label>

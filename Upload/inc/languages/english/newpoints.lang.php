@@ -131,10 +131,12 @@ $l['newpoints_manage_page_breadcrumb'] = 'Manage';
 // Page titles
 $l['newpoints_title_home'] = 'NewPoints';
 $l['newpoints_title_statistics'] = 'NewPoints Statistics';
+$l['newpoints_title_donate'] = 'NewPoints Donation';
 
 // Page headers
 $l['newpoints_header_home'] = 'NewPoints';
 $l['newpoints_header_statistics'] = 'Statistics';
+$l['newpoints_header_donate'] = 'NewPoints Donation';
 
 // Logs
 $l['newpoints_logs_menu_title'] = 'Logs';
