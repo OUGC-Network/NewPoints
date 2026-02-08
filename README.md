@@ -178,6 +178,13 @@ Follow the next steps in order to update your copy of this plugin.
 
 To display NewPoints data it is required that you edit the following template for each of your themes.
 
+#### MyBB 1.9
+
+8. Place `{{ get('newpoints_header_menu')|raw }}` before `{% if mybb.settings.portal %}`in the `partials/header.twig`
+   template to display a link to the NewPoints main page.
+
+#### MyBB 1.8
+
 1. Place `{$newpoints_globals['newpoints_user_balance_formatted']}` or
    `{$GLOBALS['newpoints_globals']['newpoints_user_balance_formatted']}` in any template to display the current user
    points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name. Note

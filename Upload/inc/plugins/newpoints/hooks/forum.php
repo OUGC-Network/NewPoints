@@ -50,6 +50,7 @@ use function NewPoints\Core\main_file_name;
 use function NewPoints\Core\my_alerts_initiate;
 use function NewPoints\Core\templates_get;
 use function NewPoints\Core\run_hooks;
+use function NewPoints\Core\templates_get_twig;
 
 function global_start09(): void
 {
@@ -148,11 +149,18 @@ function global_intermediate(): void
 
         $newpoints_file = main_file_name();
 
-        $instance_name_upper = $instance->get_display_name_upper();
+        if ($instance_id && $mybb->request_method !== 'post') {
+            $newpoints_header_menu .= templates_get_twig('header_menu', [
+                'instance' => $instance,
+                'url_main' => $newpoints_file,
+            ]);
+        } else {
+            $instance_name_upper = $instance->get_display_name_upper();
 
-        $instance_name_lower = $instance->get_display_name_lower();
+            $instance_name_lower = $instance->get_display_name_lower();
 
-        $newpoints_header_menu .= eval(templates_get('header_menu'));
+            $newpoints_header_menu .= eval(templates_get('header_menu'));
+        }
     }
 }
 

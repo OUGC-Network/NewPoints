@@ -595,9 +595,9 @@ if ($mybb->get_input('action') == 'stats') {
 
     $input_hidden = $instances_row = '';
 
-    if ($instance_id && $mybb->request_method !== 'post') {
+    if ($mybb->version_code < 1900 && $instance_id && $mybb->request_method !== 'post') {
         $input_hidden = eval(templates_get('donate_form_input_instance'));
-    } else {
+    } elseif ($instance_id && $mybb->request_method !== 'post') {
         $instances_select = build_instances_select(filter: $filter);
 
         $templates_context['instances_select'] = &$instances_select;

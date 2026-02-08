@@ -1,0 +1,6 @@
+<li class="main-menu__item{% if constant("THIS_SCRIPT") == "newpoints.php" %} main-menu__item--active{% endif %}">
+    <a href="{{ mybb.settings.bburl }}/{{ url_main }}" class="main-menu__link">
+        {{ include('partials/icon.twig', {icon: 'shopping-cart', class: 'main-menu__icon fa-fw'}, with_context = false) }}
+        <span class="main-menu__text">{{ instance.get_display_name_upper() }}</span>
+    </a>
+</li>
