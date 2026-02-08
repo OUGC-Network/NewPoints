@@ -180,8 +180,33 @@ To display NewPoints data it is required that you edit the following template fo
 
 #### MyBB 1.9
 
-8. Place `{{ get('newpoints_header_menu')|raw }}` before `{% if mybb.settings.portal %}`in the `partials/header.twig`
+1. Place `{{ get('newpoints_globals')['newpoints_user_balance_formatted']|raw }}` in any template to display the current
+   user points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name.
+2. Place `{{ memprofile.newpoints_user_balance_formatted|raw }}` in any `member_profile*` template to display the
+   profile user points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name.
+3. Place `{{ post.newpoints_postbit|raw }}` in the `postbit` or `postbit_classic` templates to display the post user
+   NewPoints details.
+4. Place `{{ post.newpoints_user_balance_formatted }}` in the `postbit` or `postbit_classic` templates to display the
+   post user points. Where `newpoints` in `newpoints_user_balance_formatted` is the instance users column name.
+5. Place `{{ get('newpoints_profile')|raw }}` after `{% if memprofile.showwarning %}`in the `member/profile.twig`
+   template to display the profile user NewPoints details.
+6. Place `{{ get('newpoints_header_menu')|raw }}` before `{% if mybb.settings.portal %}`in the `partials/header.twig`
    template to display a link to the NewPoints main page.
+7. Place the following code before `{% if mybb.settings.usereferrals %}` in the `memberlist/memberlist_row.twig`
+   template to display the user NewPoints amount formatted. Where `newpoints` in `newpoints_user_balance_formatted` and
+   `newpoints_instance` is the instance users column name.
+    ```twig
+    
+            <li class="list__item">
+                <span class="list__field">{{ user.newpoints_instance.get_display_name_upper() }}</span>
+                <span class="list__value">{{ user.newpoints_user_balance_formatted|raw }}</span>
+            </li>
+    ```
+8. Place the following code before `{% if mybb.settings.usereferrals %}` in the `memberlist/memberlist.twig` template to
+   add the NewPoints column to the form sort select list. Where `newpoints` is the instance users column name.
+    ```twig
+        <option value="newpoints"{% if memberlist.sort.newpoints %} selected="selected"{% endif %}>NewPoints</option>
+    ```
 
 #### MyBB 1.8
 
@@ -213,9 +238,9 @@ To display NewPoints data it is required that you edit the following template fo
    in `newpoints_user_balance_formatted` is the instance users column name. Note that `{$user['newpoints_formatted']}`
    and `{$user['newpoints_formatted']}` has been deprecated and will be removed in the future.
 10. Place
-    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`.
-    Where `newpoints` is the instance users column name.
-    after `{$referral_header}` in the `memberlist` template to display the NewPoints column header.
+    `<td class="tcat" width="10%" align="center"><span class="smalltext"><a href="{$sorturl}&amp;sort=newpoints&amp;order=descending"><strong>NewPoints</strong></a> {$orderarrow['newpoints']}</span></td>`
+    after `{$referral_header}` in the `memberlist` template to display the NewPoints column header. Where `newpoints` is
+    the instance users column name.
 
 [Go up to Table of Contents](#table_of_contents)
 

@@ -149,7 +149,7 @@ function global_intermediate(): void
 
         $newpoints_file = main_file_name();
 
-        if ($instance_id && $mybb->request_method !== 'post') {
+        if ($mybb->version_code >= 1900) {
             $newpoints_header_menu .= templates_get_twig('header_menu', [
                 'instance' => $instance,
                 'url_main' => $newpoints_file,
@@ -387,9 +387,11 @@ function postbit(array &$post): array
 
     language_load();
 
-    $replacements = [
-        '<!--NEWPOINTS_POST_USER_POINTS-->' => &$post['newpoints_balance_formatted'],
-    ];
+    if ($mybb->version_code < 1900) {
+        $replacements = [
+            '<!--NEWPOINTS_POST_USER_POINTS-->' => &$post['newpoints_balance_formatted'],
+        ];
+    }
 
     $url = new Url();
 
@@ -410,7 +412,11 @@ function postbit(array &$post): array
         $post['newpoints_balance_formatted'] = $points =
             $instance->points_format((float)$post[$instance->users_column_get()]);
 
-        $replacements["<!--NewPoints_{$instance->users_column_get()}-->"] = $newpoints_amount;
+        if ($mybb->version_code < 1900) {
+            $post['newpoints_balance_formatted_' . $instance->users_column_get()] = $newpoints_amount;
+        } else {
+            $replacements["<!--NewPoints_{$instance->users_column_get()}-->"] = $newpoints_amount;
+        }
 
         $newpoints_file = main_file_name();
 
@@ -422,12 +428,12 @@ function postbit(array &$post): array
 
         $post_id = (int)$post['pid'];
 
-        $donate = '';
+        $can_donate = $instance->user_permissions[Permissions::CanDonate] &&
+            $user_id !== $instance->get_user_id();
 
-        if (
-            $instance->user_permissions[Permissions::CanDonate] &&
-            $user_id !== $instance->get_user_id()
-        ) {
+        $donate_url = '';
+
+        if ($can_donate) {
             $donate_url = $url->build(
                 [
                     'action' => 'donate',
@@ -437,18 +443,31 @@ function postbit(array &$post): array
                     'instance_id' => $instance_id
                 ]
             );
-
-            $donate = eval(templates_get('postbit_donate'));
         }
 
-        $post['newpoints_postbit'] .= eval(templates_get('postbit'));
+        if ($mybb->version_code >= 1900) {
+            $post['newpoints_postbit'] .= templates_get_twig('postbit', [
+                'instance' => $instance,
+                'url_main' => $newpoints_file,
+                'amount' => $newpoints_amount,
+                'url_donate' => $donate_url,
+            ]);
+        } else {
+            $donate = '';
+
+            $donate = eval(templates_get('postbit_donate'));
+
+            $post['newpoints_postbit'] .= eval(templates_get('postbit'));
+        }
     }
 
-    $post['user_details'] = str_replace(
-        array_keys($replacements),
-        array_values($replacements),
-        $post['user_details']
-    );
+    if ($mybb->version_code < 1900) {
+        $post['user_details'] = str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            $post['user_details']
+        );
+    }
 
     return $post;
 }
@@ -473,7 +492,7 @@ function member_profile_end(): void
     global $mybb, $currency, $points, $memprofile, $newpoints_profile, $lang, $uid;
     global $newpoints_profile_user_balance_formatted;
 
-    $newpoints_profile = '';
+    $newpoints_profile = '123';
 
     language_load();
 
@@ -504,18 +523,34 @@ function member_profile_end(): void
 
         $user_id = $uid = (int)$memprofile['uid'];
 
-        $donate = '';
+        $can_donate = $instance->user_permissions[Permissions::CanDonate] &&
+            $user_id !== $instance->get_user_id();
 
-        if ($instance->user_permissions[Permissions::CanDonate] &&
-            $user_id !== $instance->get_user_id()) {
+        $donate_url = '';
+
+        if ($can_donate) {
             $donate_url = $url->build(
                 ['action' => 'donate', 'uid' => $user_id, 'modal' => 1, 'instance_id' => $instance_id]
             );
-
-            $donate = eval(templates_get('profile_donate'));
         }
 
-        $newpoints_profile .= eval(templates_get('profile'));
+        if ($mybb->version_code >= 1900) {
+            $newpoints_profile .= templates_get_twig('profile', [
+                'instance' => $instance,
+                'url_main' => $newpoints_file,
+                'amount' => $newpoints_amount,
+                'can_donate' => $can_donate,
+                'url_donate' => $donate_url,
+            ]);
+        } else {
+            $donate = '';
+
+            if ($can_donate) {
+                $donate = eval(templates_get('profile_donate'));
+            }
+
+            $newpoints_profile .= eval(templates_get('profile'));
+        }
     }
 }
 
@@ -1594,6 +1629,8 @@ function memberlist_intermediate(): void
 
 function memberlist_user(array &$user_data): array
 {
+    global $mybb;
+
     foreach (cache_get_instances() as $instance_id => $instance_data) {
         try {
             $instance = instance_object($instance_id);
@@ -1604,6 +1641,10 @@ function memberlist_user(array &$user_data): array
 
             $user_data[$instance->users_column_get()] =
                 (float)($user_data[$instance->users_column_get()] ?? 0);
+
+            if ($mybb->version_code >= 1900) {
+                $user_data[$instance->users_column_get() . '_instance'] = $instance;
+            }
 
             $user_data[$instance->users_column_get() . '_user_balance_formatted'] =
                 $instance->points_format($user_data[$instance->users_column_get()]);

@@ -1,0 +1,14 @@
+<div class="row row--simple-columns">
+    <div class="row__primary profile-field">
+        <h4 class="profile-field__name">{{ instance.get_display_name_upper() }}</h4>
+        <p class="profile-field__value">
+            <a href="{{ mybb.settings.bburl }}/{{ url_main }}">{{ amount|raw }}</a>
+        </p>
+    </div>
+    {% if can_donate %}
+        <div class="row__controls">
+            <a href="javascript: void(0);"
+               onclick="MyBB.popupWindow('{{ mybb.settings.bburl }}/{{ donate_url }}', null, true)">{{ lang.newpoints_donate }}</a>
+        </div>
+    {% endif %}
+</div>
