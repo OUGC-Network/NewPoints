@@ -143,8 +143,11 @@ $errors = [];
 $input_step = DECIMAL_DATA_TYPE_STEP;
 
 $templates_context = [
-    'newpoints_menu' => $newpoints_menu,
-    'errors' => &$errors,
+    'menu' => $newpoints_menu,
+    'errors' => &$newpoints_errors,
+    'buttons' => &$newpoints_buttons,
+    'pagination' => &$newpoints_pagination,
+    'additional' => &$newpoints_additional,
     'url_main' => $newpoints_file,
     'input_step' => $input_step,
 ];
@@ -179,7 +182,7 @@ if ($mybb->get_input('action') == 'stats') {
             continue;
         }
 
-        $templates_context['instance'] = $instance;
+        $templates_context['instance'] = &$instance;
 
         $fields['users_column_name'] = $instance->users_column_get();
 
@@ -241,7 +244,7 @@ if ($mybb->get_input('action') == 'stats') {
             $instance->get_display_name_lower()
         );
 
-        $templates_context['richest_users'] = $richest_users;
+        $templates_context['richest_users'] = &$richest_users;
 
         if ($mybb->version_code >= 1900) {
             $statistics_items_left[] = templates_get_twig('statistics_richest', $templates_context);
@@ -330,7 +333,7 @@ if ($mybb->get_input('action') == 'stats') {
         $last_donations = eval(templates_get('no_results'));
     }
 
-    $templates_context['donations'] = $last_donations;
+    $templates_context['donations'] = &$last_donations;
 
     if ($mybb->version_code >= 1900) {
         $statistics_items_right[] = templates_get_twig('statistics_donation', $templates_context);
@@ -344,9 +347,9 @@ if ($mybb->get_input('action') == 'stats') {
 
     $statistics_items_left = implode('', $statistics_items_left);
 
-    $templates_context['statistics_items_right'] = $statistics_items_right;
+    $templates_context['statistics_items_right'] = &$statistics_items_right;
 
-    $templates_context['statistics_items_left'] = $statistics_items_left;
+    $templates_context['statistics_items_left'] = &$statistics_items_left;
 
     if ($mybb->version_code >= 1900) {
         $page = templates_get_twig('statistics', $templates_context);
@@ -585,7 +588,7 @@ if ($mybb->get_input('action') == 'stats') {
         }
     }
 
-    $errors = $errors ? inline_error($errors) : '';
+    $newpoints_errors = $errors ? inline_error($errors) : '';
 
     // make sure wen're trying to send a donation to ourselves
 
@@ -623,7 +626,7 @@ if ($mybb->get_input('action') == 'stats') {
         exit;
     }
 
-    $templates_context['form'] = $form;
+    $templates_context['form'] = &$form;
 
     if ($mybb->version_code >= 1900) {
         $page = templates_get_twig('donate', $templates_context);
@@ -641,9 +644,13 @@ if ($mybb->get_input('action') == 'stats') {
 
     $is_manage_page = false;
 
+    $templates_context['is_manage_page'] = &$is_manage_page;
+
     $mybb->input['manage'] = $mybb->get_input('manage', MyBB::INPUT_INT);
 
     $is_moderator = [];
+
+    $templates_context['is_moderator'] = &$is_moderator;
 
     foreach ($instance_objects as $instance_id => $instance) {
         if (is_member($instance->settings_get_value('logs_manage_groups'))) {
@@ -669,6 +676,8 @@ if ($mybb->get_input('action') == 'stats') {
     }
 
     $page_url = $url->build($url_params);
+
+    $templates_context['url_page'] = &$page_url;
 
     $per_page = (int)get_setting('logs_per_page');
 
@@ -730,6 +739,8 @@ if ($mybb->get_input('action') == 'stats') {
             $filter_user_name = htmlspecialchars_uni($filters['username']);
         }
     }
+
+    $templates_context['filter_user_name'] = &$filter_user_name;
 
     if (!isset($where_clauses['user']) && !$is_manage_page) {
         $where_clauses['user'] = "l.uid='{$current_user_id}'";
@@ -795,7 +806,13 @@ if ($mybb->get_input('action') == 'stats') {
 
     $alternative_background = alt_trow(true);
 
-    $logs_rows = '';
+    if ($mybb->version_code >= 1900) {
+        $logs_rows = [];
+    } else {
+        $logs_rows = '';
+    }
+
+    $templates_context['logs'] = &$logs_rows;
 
     $column_span = 9;
 
@@ -807,6 +824,8 @@ if ($mybb->get_input('action') == 'stats') {
         $thead_user = eval(templates_get('logs_table_thead_user'));
 
         $delete_url = $url->build(array_merge($url_params, ['view' => 'delete']));
+
+        $templates_context['url_delete'] = &$delete_url;
 
         $thead_options = eval(templates_get('logs_table_thead_delete'));
     }
@@ -821,10 +840,11 @@ if ($mybb->get_input('action') == 'stats') {
         $instance_id = (int)$log_data['instance_id'];
 
         try {
-            $log_points = instance_object($instance_id)
-                ->points_format((float)$log_data['points']);
+            $instance = instance_object($instance_id);
 
-            $log_instance_name_upper = instance_object($instance_id)->get_display_name_upper();
+            $log_points = $instance->points_format((float)$log_data['points']);
+
+            $log_instance_name_upper = $instance->get_display_name_upper();
         } catch (Exception $e) {
             log_error($instance_id, $e->getMessage());
         }
@@ -1113,18 +1133,33 @@ if ($mybb->get_input('action') == 'stats') {
             $column_options = eval(templates_get('logs_table_row_delete'));
         }
 
-        $logs_rows .= eval(templates_get('logs_table_row'));
+        if ($mybb->version_code >= 1900) {
+            $logs_rows[$log_id] = [
+                'instance' => $instance,
+                'data' => $log_data,
+                'action' => $log_action,
+                'points' => $log_points,
+                'primary_column' => $log_primary,
+                'secondary_column' => $log_secondary,
+                'tertiary_column' => $log_tertiary,
+                'type' => $log_type,
+            ];
+        } else {
+            $logs_rows .= eval(templates_get('logs_table_row'));
+        }
 
         $alternative_background = alt_trow();
     }
 
-    if (!$logs_rows) {
+    if ($mybb->version_code < 1900 && !$logs_rows) {
         $logs_rows = eval(templates_get('logs_table_empty'));
     }
 
     $page_title = $lang->newpoints_logs_page_title;
 
-    $newpoints_content = eval(templates_get('logs_table'));
+    if ($mybb->version_code < 1900) {
+        $newpoints_content = eval(templates_get('logs_table'));
+    }
 
     $action_types = [];
 
@@ -1176,31 +1211,67 @@ if ($mybb->get_input('action') == 'stats') {
 
     $instances_select = build_instances_select('filter[instances][]', true, filter: $filter);
 
+    $templates_context['instances_select'] = &$instances_select;
+
     run_hooks('logs_end');
 
-    $actions_select = (function () use ($action_types, $filters): string {
+    $actions_select = (function () use ($mybb, $action_types, $filters): string {
         $select_name = 'filter[actions][]';
 
-        $select_options = '';
+        if ($mybb->version_code >= 1900) {
+            $select_options = [];
+        } else {
+            $select_options = '';
+        }
 
         $select_multiple = 'multiple="multiple"';
 
         foreach ($action_types as $option_value => $option_name) {
-            $selected_element = '';
+            $is_selected = false;
 
             if (isset($filters['actions']) && in_array($option_value, $filters['actions'])) {
-                $selected_element = 'selected="selected"';
+                $is_selected = true;
             }
 
-            $select_options .= eval(templates_get('input_select_option'));
+            if ($mybb->version_code >= 1900) {
+                $select_options[] = [
+                    'name' => $option_name,
+                    'value' => $option_value,
+                    'is_selected' => $is_selected,
+                ];
+            } else {
+                $selected_element = '';
+
+                if ($is_selected) {
+                    $selected_element = 'selected="selected"';
+                }
+
+                $select_options .= eval(templates_get('input_select_option'));
+            }
         }
 
-        return eval(templates_get('input_select'));
+        if ($mybb->version_code >= 1900) {
+            return templates_get_twig('input_select', [
+                'name' => $select_name,
+                'is_multiple' => true,
+                'options' => $select_options,
+            ]);
+        } else {
+            return eval(templates_get('input_select'));
+        }
     })();
 
-    $newpoints_additional = eval(templates_get('logs_filter_table'));
+    $templates_context['actions_select'] = &$actions_select;
 
-    $page_contents = eval(templates_get('page'));
+    if ($mybb->version_code >= 1900) {
+        $newpoints_additional = templates_get_twig('logs_filter', $templates_context);
+
+        $page_contents = templates_get_twig('logs', $templates_context);
+    } else {
+        $newpoints_additional = eval(templates_get('logs_filter_table'));
+
+        $page_contents = eval(templates_get('page'));
+    }
 
     output_page($page_contents);
 

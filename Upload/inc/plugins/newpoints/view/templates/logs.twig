@@ -1,0 +1,120 @@
+{% extends '@ext.newpoints/master.twig' %}
+
+{% block head %}
+    <title>{{ lang.newpoints_title_logs }} - {{ mybb.settings.bbname }}</title>
+{% endblock head %}
+
+{% block newpointsHeader %}
+    <header class="page-header">
+        <h1 class="title title--page">{{ lang.newpoints_header_logs }}</h1>
+    </header>
+{% endblock newpointsHeader %}
+
+{% block newPointsBody %}
+    <section class="block">
+        <div class="column-headings column-headings--major">
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_id }}
+            </div>
+            {# <div class="column-headings__separator">&mdash;</div> #}
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_instance }}
+            </div>
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_action }}
+            </div>
+            {% if is_moderator and is_manage_page %}
+                <div class="column-headings__column">
+                    {{ lang.newpoints_logs_page_table_action_user }}
+                </div>
+            {% endif %}
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_amount }}
+            </div>
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_action_primary }}
+            </div>
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_action_secondary }}
+            </div>
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_action_tertiary }}
+            </div>
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_action_type }}
+            </div>
+            <div class="column-headings__column">
+                {{ lang.newpoints_logs_page_table_action_date }}
+            </div>
+            {% if is_moderator and is_manage_page %}
+                <div class="column-headings__column">
+                    {{ lang.newpoints_logs_page_table_action_options }}
+                </div>
+            {% endif %}
+        </div>
+        {% if logs|length > 0 %}
+            {% for log_id,log in logs %}
+                <div class="row row--thread    column-headings">
+                    <div class="column-headings__column">
+                        {{ log.data.lid|my_number_format }}
+                    </div>
+                    <div class="column-headings__column">
+                        {{ log.instance.get_display_name_upper() }}
+                    </div>
+                    <div class="column">
+                        {{ log.action }}
+                    </div>
+                    {% if is_moderator and is_manage_page %}
+                        <div class="column-headings__column">
+                            {% if log.data.uid is not empty %}
+                                <a href="{{ get_profile_link(log.data.uid) }}">{{ {
+                                        'username': log.data.username,
+                                        'usergroup': log.data.usergroup,
+                                        'displaygroup': log.data.displaygroup}|format_name }}</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <div class="column">
+                        {{ log.instance.points_format(log.data.points) }}
+                    </div>
+                    <div class="column">
+                        {{ log.primary_column|raw }}
+                    </div>
+                    <div class="column">
+                        {{ log.secondary_column|raw }}
+                    </div>
+                    <div class="column">
+                        {{ log.tertiary_column|raw }}
+                    </div>
+                    <div class="column">
+                        {{ log.type }}
+                    </div>
+                    <div class="column">
+                        {{ log.data.date|my_date }}
+                    </div>
+                    {% if is_moderator and is_manage_page %}
+                        <div class="column-headings__column">
+                            <form action="{{ mybb.settings.bburl }}/{{ url_delete }}" method="post">
+                                <input type="hidden" name="action" value="logs"/>
+                                <input type="hidden" name="my_post_key" value="{{ mybb.post_code }}">
+                                <input type="hidden" name="log_id" value="{{ log.data.lid }}">
+                                <input type="hidden" name="manage"
+                                       value="{{ mybb.input.manage is defined ? mybb.input.manage }}"/>
+                                <input type="hidden" name="view" value="delete"/>
+                                <input type="submit" class="button" name="submit"
+                                       value="{{ lang.newpoints_buttons_delete }}">
+                            </form>
+                        </div>
+                    {% endif %}
+                    {$column_options}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="row row--no-results no-results">
+                {{ lang.newpoints_logs_page_table_empty }}
+            </div>
+        {% endif %}
+    </section>
+{% endblock newPointsBody %}

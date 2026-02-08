@@ -10,15 +10,15 @@
     </header>
 {% endblock newpointsHeader %}
 
-{% block newpointsBody %}
+{% block newPointsBody %}
     {% for name,table in income_tables %}
         <section class="block block--container">
             <h3>{{ table.instance.get_display_name_upper() }}</h3>
-            {{ trans(
-                'newpoints_home_description_header',
-                table.instance.get_display_name_upper(),
-                table.instance.get_display_name_lower()) }}<br/><br/>
             {% if table.income_settings is not empty %}
+                {{ trans(
+                    'newpoints_home_description_header',
+                    table.instance.get_display_name_upper(),
+                    table.instance.get_display_name_lower()) }}<br/>
 
                 <div class="grid-table two-columns grid-table-width-50">
                     <div class="grid-header">
@@ -44,10 +44,10 @@
                         </div>
                     {% endfor %}
                 </div>
+                <br/>
             {% endif %}
-            <br/>
 
-            {{ lang.newpoints_home_description_secondary }}<br/><br/>
+            {{ lang.newpoints_home_description_secondary }}<br/>
             {{ trans(
                 'newpoints_home_user_rate_description',
                 table.instance.get_display_name_upper(),
@@ -57,4 +57,4 @@
         </section>
     {% endfor %}
     {{ latest_transactions|raw }}
-{% endblock newpointsBody %}
+{% endblock newPointsBody %}

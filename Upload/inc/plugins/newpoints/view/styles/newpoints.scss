@@ -20,6 +20,14 @@
   grid-template-columns: repeat(5, 1fr);
 }
 
+.grid-table.nine-columns {
+  grid-template-columns: repeat(10, 1fr);
+}
+
+.grid-table.ten-columns {
+  grid-template-columns: repeat(10, 1fr);
+}
+
 .grid-header, .grid-row {
   display: contents;
 

@@ -124,11 +124,13 @@ $l['newpoints_manage_page_breadcrumb'] = 'Gestionar';
 $l['newpoints_title_home'] = 'NewPoints';
 $l['newpoints_title_statistics'] = 'Estadísticas de NewPoints';
 $l['newpoints_title_donate'] = 'Donaciones de NewPoints';
+$l['newpoints_title_logs'] = 'Registros de NewPoints';
 
 // Page headers
 $l['newpoints_header_home'] = 'NewPoints';
 $l['newpoints_header_statistics'] = 'Estadísticas';
 $l['newpoints_header_donate'] = 'Donaciones';
+$l['newpoints_header_logs'] = 'Registros';
 
 // Logs
 $l['newpoints_logs_menu_title'] = 'Registros';

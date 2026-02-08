@@ -1,0 +1,78 @@
+<form method="post" action="{{ mybb.settings.bburl }}/{{ url_page }}">
+    <section class="block block--form form" id="member-search">
+        <div class="section section--form section--has-title">
+            <h3 class="title title--section">{{ lang.newpoints_logs_page_filter_table_title }}</h3>
+            <div class="section__container">
+                <div class="row row--form field">
+                    <h4 class="field__name">
+                        <label for="username">{{ lang.newpoints_logs_page_filter_table_user }}</label>
+                    </h4>
+                    <input type="text" class="textbox" id="username" name="filter[username]" size="35"
+                           maxlength="{{ mybb.settings.maxnamelength }}" value="{{ filter_user_name|raw }}"/>
+                </div>
+                <div class="row row--form field">
+                    <h4 class="field__name">
+                        <label for="username">{{ lang.newpoints_logs_page_filter_table_instances }}</label>
+                    </h4>
+                    <div class="select-field">
+                        {{ instances_select|raw }}
+                    </div>
+                </div>
+                <div class="row row--form field">
+                    <h4 class="field__name">
+                        <label for="username">{{ lang.newpoints_logs_page_filter_table_actions }}</label>
+                    </h4>
+                    <div class="select-field">
+                        {{ actions_select|raw }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="block__footer">
+            <button type="submit" name="submit" class="button">
+                {{ include('partials/icon.twig', {icon: 'search', class: 'button__icon'}, with_context = false) }}
+                <span class="button__text">{{ lang.newpoints_submit }}</span>
+            </button>
+        </div>
+    </section>
+    <input type="hidden" name="action" value="logs"/>
+    <input type="hidden" name="manage" value="{{ mybb.input.manage is defined ? mybb.input.manage }}"/>
+</form>
+<link rel="stylesheet" href="{$mybb->asset_url}/jscripts/select2/select2.css?ver=1807">
+<script type="text/javascript"
+        src="{$mybb->asset_url}/jscripts/select2/select2.min.js?ver=1806"></script>
+<script type="text/javascript">
+    <!--
+    if (use_xmlhttprequest == "1") {
+        MyBB.select2();
+        $("#username").select2({
+            placeholder: "{{ lang.search_user }}",
+            minimumInputLength: 2,
+            multiple: false,
+            allowClear: true,
+            ajax: { // instead of writing the function to execute the request we use Select2's convenient helper
+                url: "xmlhttp.php?action=get_users",
+                dataType: 'json',
+                data: function (term, page) {
+                    return {
+                        query: term, // search term
+                    };
+                },
+                results: function (data, page) { // parse the results into the format expected by Select2.
+                    // since we are using custom formatting functions we do not need to alter remote JSON data
+                    return {results: data};
+                }
+            },
+            initSelection: function (element, callback) {
+                var value = $(element).val();
+                if (value !== "") {
+                    callback({
+                        id: value,
+                        text: value
+                    });
+                }
+            },
+        });
+    }
+    // -->
+</script>

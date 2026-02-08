@@ -2,14 +2,15 @@
 
 {% block body %}
     <div class="page-columns page-columns--menu">
-        {{ newpoints_menu|raw }}
+        {{ menu|raw }}
 
         <div class="page-content page-content--menu">
             {% block newpointsHeader %}{% endblock newpointsHeader %}
-            {% if errors is not iterable %}
-                {{ errors|raw }}
-            {% endif %}
-            {% block newpointsBody %}{% endblock newpointsBody %}
+            {{ errors|raw }}
+            {% block newPointsBody %}{% endblock newPointsBody %}
+            {{ buttons|raw }}
+            {{ pagination|raw }}
+            {{ additional|raw }}
         </div>
     </div>
 {% endblock body %}

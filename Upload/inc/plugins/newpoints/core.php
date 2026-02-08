@@ -3224,7 +3224,7 @@ function build_instances_select(
     if ($mybb->version_code >= 1900) {
         return templates_get_twig('input_select', [
             'name' => $select_name,
-            'is_multiple' => $select_multiple,
+            'is_multiple' => $is_multiple,
             'options' => $select_options,
         ]);
     } else {
